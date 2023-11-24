@@ -6,23 +6,23 @@ layout: default
         <div class="card-title display-6 mx-2 mt-3 mb-4"><i class="bi bi-stopwatch me-4"></i>Quick Start Guide</div>
         <ul class="nav nav-tabs nav-justified fs-5 card-header-tabs" id="quickstart" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="admins-quickstart" data-bs-toggle="tab" data-bs-target="#admins-quickstart-tab-pane" type="button" role="tab" aria-controls="admins-quickstart-tab-pane" aria-selected="true">
-                    For Kafka Administrators
+                <button class="nav-link" id="deploy" data-bs-toggle="tab" data-bs-target="#deploy-tab-pane" type="button" role="tab" aria-controls="deploy-tab-pane" aria-selected="true">
+                    Deployment
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="developers-quickstart" data-bs-toggle="tab" data-bs-target="#developers-quickstart-tab-pane" type="button" role="tab" aria-controls="developers-quickstart-tab-pane" aria-selected="true">
-                    For Filter Developers
+                <button class="nav-link active" id="develop" data-bs-toggle="tab" data-bs-target="#develop-tab-pane" type="button" role="tab" aria-controls="develop-tab-pane" aria-selected="true">
+                    Development
                 </button>
             </li>
         </ul>
     </div>
     <div class="card-body tab-content p-5" id="quickstartContent">
-        <div class="tab-pane fade show active" id="admins-quickstart-tab-pane" role="tabpanel" aria-labelledby="admins-quickstart" tabindex="0">
-            {% capture admins-quickstart %}{% include_relative admins.markdown %}{% endcapture %}{{ admins-quickstart | markdownify }}
+        <div class="tab-pane fade" id="deploy-tab-pane" role="tabpanel" aria-labelledby="deploy" tabindex="0">
+            {% capture deploy %}{% include_relative deploy.markdown %}{% endcapture %}{{ deploy | markdownify }}
         </div>
-        <div class="tab-pane fade" id="developers-quickstart-tab-pane" role="tabpanel" aria-labelledby="developers-quickstart" tabindex="0">
-            {% capture developers-quickstart %}{% include_relative developers.markdown %}{% endcapture %}{{ developers-quickstart | markdownify }}
+        <div class="tab-pane fade show active" id="develop-tab-pane" role="tabpanel" aria-labelledby="develop" tabindex="0">
+            {% capture develop %}{% include_relative develop.markdown %}{% endcapture %}{{ develop | markdownify }}
         </div>
     </div>
 </div>
