@@ -22,7 +22,7 @@ We don't use the Bootstrap 5 ruby gem here, as it runs on a
 
 ### Running Locally
 
-To run the site locally, you'll first need to download the Bootstrap 5 Sass sources by running [local_setup.sh](local_setup.sh).
+To run the site locally, you'll first need to download the Bootstrap 5 Sass sources by running [bootstrap_setup.sh](bootstrap_setup.sh).
 
 Then install the site's prerequisites by running this:
 

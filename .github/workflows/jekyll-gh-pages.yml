@@ -1,5 +1,5 @@
 # Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+name: Deploy site with Jekyll
 
 on:
   # Runs on pushes targeting the default branch
@@ -28,20 +28,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.2' # Not needed with a .ruby-version file
+          cache-version: 0 # Increment this number if you need to re-download cached gems
       - name: Setup Pages
         uses: actions/configure-pages@v3
-      - name: Download Bootstrap 5 dependencies
-        run: |
-          wget "https://github.com/twbs/bootstrap/archive/v5.3.2.zip" && \
-          unzip v5.3.2.zip -d ./_sass && mkdir ./_sass/bootstrap && \
-          mv ./_sass/bootstrap-5.3.2/scss ./_sass/bootstrap/scss && \
-          rm v5.3.2.zip && rm -r ./_sass/bootstrap-5.3.2
+      - name: Install rake
+        run: gem install rake
+      - name: Update Bundler and Setup Jekyll
+        run: bundle install && bundle update --bundler
+      - name: Download Bootstrap 5 SCSS Sources
+        run: ./bootstrap_setup.sh
       - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
+        # Outputs to the './_site' directory by default
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
       - name: Upload artifact
+        # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v2
 
   # Deployment job
