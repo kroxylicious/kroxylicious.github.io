@@ -1,5 +1,7 @@
 Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters and apply your own rules to the Kafka protocol.
 
+In this quickstart you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn how filter configuration works, discover how to run Kroxylicious with custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
+
 <br />
 
 ## Getting started
