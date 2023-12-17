@@ -1,6 +1,6 @@
-Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters and apply your own rules to the Kafka protocol.
+Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol.
 
-In this quickstart you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn how filter configuration works, discover how to run Kroxylicious with custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
+In this quickstart you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn about filter configuration and running custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
 
 <br />
 
@@ -8,8 +8,7 @@ In this quickstart you will build a custom filter and use it to modify messages 
 
 #### Prerequisites
 
-To start developing your own custom filters for Kroxylicious, you will need to install **both** [JDK 17](https://openjdk.org/projects/jdk/17/) and [JDK 21](https://openjdk.org/projects/jdk/21/).
-This is because the integration tests require newer language features that aren't available in JDK 17. Alternatively, you can exclude the `integrationtests` module when you build to avoid needing to install JDK 21.
+To start developing your own custom filters for Kroxylicious, you will need to install [JDK 21](https://openjdk.org/projects/jdk/21/).
 
 You'll also need to install the [Apache Maven CLI](https://maven.apache.org/index.html) and one of either [Podman](https://podman.io/docs/installation) or [Docker](https://docs.docker.com/install/) (Note that if you are using Podman, you may encounter issues with the integration tests. There are instructions [here](https://github.com/kroxylicious/kroxylicious/blob/main/DEV_GUIDE.md#running-integration-tests-on-podman) to resolve this).
 
