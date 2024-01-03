@@ -73,3 +73,45 @@ $light: $kroxy-light;
   height: 1.7rem;
   vertical-align: middle;
 }
+
+.redhat-footer {
+  background-color: $black;
+  color: $white;
+  font-size: .8rem;
+  font-weight: 200;
+
+  .grid-wrapper { 
+    padding: .75rem 0; 
+    display: flex;
+    justify-content: space-between;
+
+    @media screen and (max-width: 1200px) {
+      justify-content: evenly;
+    }
+
+    @media screen and (max-width: 600px) {
+      display: grid;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  .license {
+    align-self: center;
+  
+    a {
+      color: $white;
+    }
+  }
+
+  .redhat-logo {
+    align-self: center;
+    
+    img { width: 14rem; }
+
+    @media screen and (max-width: 600px) {
+    padding-top: .75rem;
+    padding-bottom: 1rem;
+    }
+  }
+}
