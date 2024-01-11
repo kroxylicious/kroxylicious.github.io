@@ -4,9 +4,9 @@ In this quickstart you will build a custom filter and use it to modify messages 
 
 <br />
 
-## Getting started
+# Getting started
 
-#### Prerequisites
+### Prerequisites
 
 To start developing your own custom filters for Kroxylicious, you will need to install [JDK 21](https://openjdk.org/projects/jdk/21/).
 
@@ -14,18 +14,18 @@ You'll also need to install the [Apache Maven CLI](https://maven.apache.org/inde
 
 <br />
 
-#### Get the code
+### Get the code
 
 The easiest way to learn how to build custom filters is with our `kroxylicious-sample` module, which contains some basic find-and-replace filters for you to experiment with.
 Begin by downloading the latest `kroxylicious-sample` sources from the [Kroxylicious repository](https://github.com/kroxylicious/kroxylicious).
 
 ```shell
-git clone git@github.com:kroxylicious/kroxylicious.git
+git clone https://github.com/kroxylicious/kroxylicious.git
 ```
 
 <br />
 
-## Build
+# Build
 
 Building the sample project is easy! You can build the `kroxylicious-sample` jar either on its own or with the rest of the Kroxylicious project.
 
@@ -43,7 +43,7 @@ mvn verify -Pdist -Dquick
 
 <br />
 
-## Run
+# Run
 
 Build both `kroxylicious-sample` and `kroxylicious-app` with the `dist` profile as above, then run the following command:
 
@@ -53,7 +53,7 @@ KROXYLICIOUS_CLASSPATH="kroxylicious-sample/target/*" kroxylicious-app/target/kr
 
 <br />
 
-## Configure
+# Configure
 
 Filters can be added and removed by altering the `filters` list in the `sample-proxy-config.yml` file. You can also reconfigure the sample filters by changing the configuration values in this file.
 
@@ -64,7 +64,7 @@ The **SampleFetchResponseFilter** and **SampleProduceRequestFilter** each have t
 
 <br />
 
-#### Default Configuration
+### Default Configuration
 
 The default configuration for **SampleProduceRequestFilter** is:
 
@@ -92,6 +92,6 @@ This means that it will search for the string `bar` in the fetch data and replac
 
 <br />
 
-## Modify
+# Modify
 
 Now that you know how the sample filters work, you can start modifying them! Replace the `SampleFilterTransformer` logic with your own code, change which messages they apply to, or whatever else you like!
