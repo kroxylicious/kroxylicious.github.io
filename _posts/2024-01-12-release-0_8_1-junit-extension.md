@@ -8,6 +8,6 @@ categories:  releases junit5-extension
 ---
 
 The Kroxylicious project is very pleased to announce the [0.8.1](https://github.com/kroxylicious/kroxylicious-junit5-extension/releases/tag/v0.8.1) release of our Junit5 Extension.  This release
-[fixes an incompatibility](https://github.com/kroxylicious/kroxylicious-junit5-extension/pull/262) that will arise with Apache Kafka 3.7 that prevented embedded test Kafka clusters from starting correctly.
+[fixes an incompatibility](https://github.com/kroxylicious/kroxylicious-junit5-extension/pull/262) that was found testing the Apache Kafka 3.7 release candidates that prevented embedded test Kafka clusters from starting correctly.
 
 Please let us know, through [Slack](https://kroxylicious.slack.com) or [GitHub](https://github.com/kroxylicious/kroxylicious-junit5-extension/issues), if you find the extension interesting or helpful.
