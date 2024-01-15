@@ -5,7 +5,7 @@
 layout: index
 ---
 *Kroxylicious* is a project aiming to provide an open source pluggable framework for
-writing network proxies that understand the Apache Kafka® protocol.
+writing network proxies that understand the Apache Kafka&#174; protocol.
 
 <br />
 
