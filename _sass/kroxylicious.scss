@@ -106,12 +106,14 @@ $light: $kroxy-light;
 
   .redhat-logo {
     align-self: center;
+    padding-left: 2rem;
     
     img { width: 14rem; }
 
     @media screen and (max-width: 600px) {
     padding-top: .75rem;
     padding-bottom: 1rem;
+    padding-left: 0;
     }
   }
 }
