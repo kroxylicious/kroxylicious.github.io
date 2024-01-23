@@ -12,6 +12,24 @@ Kroxylicious is an Apache Kafka&#174; protocol-aware proxy.  It can be used to l
 Kafka based system in areas such as data-governance, security, policy enforcement and audit without needing to
 change either the applications or the Kafka Cluster.
 
+Kroxylicious is a stand-alone component which is deployed between the applications that use Kafka and
+the Kafka Cluster.  Instead of applications connecting straight to the Kafka Cluster, the applications connect to
+Kroxylious which connects to the cluster on the application's behalf. In all other respects, introducing 
+Kroxylicious into a Kafka system is transparant.
+
+To adopt Kroxylicious, there are zero code changes required to the applications. There are no additional libraries to
+install.  Kroxylicious supports applications written in any language supported by Kafka (Java, Golang, Python, Rust...).
+
+On the Kafka Cluster side, there are no changes required either.  That is, no additional libraries to deploy or special
+configurations to apply.  Kroxylicious works with both on-premise Kafka Clusters or cloud Kafka services.
+
+A key concept in Kroxylicious is the Filter.  It is these that layer additional behaviours into the Kafka system.  These
+are talked about next.
+
+| ![image](../assets/overview.png){:width="100%"} |
+|:-----------------------------------------------:|
+|                   *Overview*                    |
+
 ##### Filters
 
 The Filter is at the heart of Kroxylicious. Filters intercept [Kafka RPCs](https://kafka.apache.org/protocol.html)
@@ -38,18 +56,5 @@ audit filter to suit the requirements of your use-case.
 | ![image](../assets/filter-chain.png){:width="100%"} |
 |:----------------------------------------------------:|
 |                   *Filter Chains*                    |
-
-##### Deployment
-
-Kroxylicious is deployed interposed between the applications and the Kafka Cluster.
-
-To introduce Kroxylicious, it is necessary to change the application's `bootstrap.servers` property
-to point at a bootstrap endpoint exposed by Kroxylicious.  Kroxylicious's configuration points it at
-the Kafka Cluster being proxied.
-
-Kroxylicious automatically adapts to the topology of the Kafka Cluster being proxied and exposes
-proxied broker endpoints for each individual broker of the Kafka Cluster.
-
-The precise way in which Kroxylicious present itself on the network is configurable.
 
 
