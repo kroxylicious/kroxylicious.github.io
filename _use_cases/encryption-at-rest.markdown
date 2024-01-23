@@ -66,21 +66,23 @@ at the scale required for most enterprises.
 
 # Kroxylicious Topic Encryption
 
-The Kroxylicious Topic Encryption feature offers a solution to the problem.  It does this by offering a solution
-that encrypts the Kafka records without requiring changes to either applications or the Kafka Cluster.
+The Kroxylicious Topic Encryption feature offers a solution to the problem.  The proxy takes the responsibility
+to encrypt and decrypt the messages. In this way, the Kafka Brokers never see the plain text content of
+the message thus ensuring confidentiality.  Encryption is introduced into the system without requiring changes to
+either applications or the Kafka Cluster.
 
-It does this by leveraging a Kroxylicious Filter.  The filter intercepts produce requests from producing applications
-and encrypts the content, before the produce request is forwarded to the brokers.  For consuming, the filter intercepts
-fetch responses and decrypted the contents before the fetch response is forwarded to the applications.  
+Within Kroxylicious, the job of encryption and decryption is delegated to a Kroxylicious Filter. The filter intercepts
+produce requests from producing applications and encrypts the content, before the produce request is forwarded to the
+brokers.  For consuming, the filter intercepts fetch responses and decrypts the contents before the
+fetch response is forwarded to the applications.
 
-No changes are required by either the Kafka Cluster or applications (beyond changing the boostrap URL).  The solution
-works regards of whatever language the applications is written in.
+As the solution is proxy-based, it works regardless of the language the applications is written in.
 
 The solution's foundations rest on industry-standard encryption techniques.
 
 * Envelope Encryption[^1] is employed to efficiently encrypt/decrypt records.
 * Integrates with Key Management Services for safe and secure storage of key encryption keys.
-  * Plugin for [HashiCorp Vault](https://www.hashicorp.com/)&#174;
+  * Plugin for [HashiCorp Vault](https://www.hashicorp.com/)&#174; 
   * Additional KMS implementations are planned.
   * API available to plugin alternatives
 * Uses AES-GCM symmetric keys.
