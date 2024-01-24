@@ -5,8 +5,8 @@ name: Encryption At Rest
 ## Why
 
 Apache Kafka&#174; does not directly support any form of encryption for data stored within a broker. This means that the contents
-of records sent to Apache Kafka are stored in the clear on the broker's disks. Anyone with sufficient privileges, such as a Kafka Administrator
-with file system access, is able to read the contents of the records.
+of records sent to Apache Kafka are stored in the clear on the broker's disks. Anyone with sufficient access, such as a Kafka Administrator
+with file system permissions, is able to read the contents of the records.
 
 This presents a challenge for an enterprise using Kafka to distribute confidential data or PII (Personally Identifiable
 Information).  Enterprises are often subject to confidentiality requirements coming from governmental bodies such as
