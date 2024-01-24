@@ -81,7 +81,7 @@ As the solution is proxy-based, it works regardless of the language the applicat
 The solution's foundations rest on industry-standard encryption techniques.
 
 * Envelope Encryption[^1] is employed to efficiently encrypt/decrypt records.
-* Integrates with Key Management Services for safe and secure storage of key encryption keys.
+* Integrates with common Key Management Services for safe and secure storage of key encryption keys.
   * Plugin for [HashiCorp Vault](https://www.hashicorp.com/)&#174; 
   * Additional KMS implementations are planned.
   * API available to plugin alternatives
