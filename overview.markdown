@@ -33,7 +33,7 @@ are talked about next.
 ##### Filters
 
 The Filter is at the heart of Kroxylicious. Filters intercept [Kafka RPCs](https://kafka.apache.org/protocol.html)
-as they travel through the proxy.  Filters can observe or transform the RPC, depending on the needs of the  use-case. 
+as they travel through the proxy.  Filters can observe or transform the RPC, depending on the needs of the use-case. 
 It is in this way that behaviours are introduced into the system.   Kroxylicious filters can act on the request RPCs, 
 their response counterparts, or both.
 
