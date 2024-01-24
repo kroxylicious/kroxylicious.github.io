@@ -8,7 +8,7 @@ Apache Kafka&#174; does not directly support any form of encryption for data sto
 of records sent to Apache Kafka are stored in the clear on the broker's disks. Anyone with sufficient privileges, such as a Kafka Administrator
 with file system access, is able to read the contents of the records.
 
-This present a challenge for an enterprise using Kafka to distribute confidential data or PII (Personally Identifiable
+This presents a challenge for an enterprise using Kafka to distribute confidential data or PII (Personally Identifiable
 Information).  Enterprises are often subject to confidential requirements coming from governmental bodies such as
 GDPR in the EU or LGPD in Brazil, industry standards such as HIPAA in the health domain or PCI/DSS in the payments domain,
 in addition to any in-house security and compliance requirements.
