@@ -80,16 +80,15 @@ As the solution is proxy-based, it works regardless of the language the applicat
 
 The solution's foundations rest on industry-standard encryption techniques.
 
-* Envelope Encryption[^1] is employed to efficiently encrypt/decrypt records.
+* Envelope Encryption is employed to efficiently encrypt/decrypt records. Envelope Encryption is specified by [NIST SP.-800-57 part 1 revision 5](https://csrc.nist.gov/Projects/Key-Management/Key-Management-Guidelines).
 * Integrates with common Key Management Services for safe and secure storage of key encryption keys.
   * Plugin for [HashiCorp Vault](https://www.hashicorp.com/)&#174; 
   * Additional KMS implementations are planned.
   * API available to plug in alternatives
-* Uses AES-GCM symmetric keys.
-* Supports key rotation (new version applied to newly produced records only).
+* Uses AES-GCM symmetric keys (in accordance with [NIST FIPS 197](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf)
+  and [NIST SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final)).
+* Supports key rotation[^1]
 * Records encrypted using previous key-versions remain decryptable.    
-
-[^1]: [NIST SP.-800-57 part 1 revision 5](https://csrc.nist.gov/Projects/Key-Management/Key-Management-Guidelines)
 
 Deployment time configuration at allows the administrator to choose which
 encryption keys are to be used to encrypt the records of which topics. Uses cases where some topics
@@ -100,6 +99,9 @@ are encrypted and some remain unencrypted are supported.
 |:------------------------------------------------------------------:|
 |           *Kroxylicious Topic Encryption Deployment[^2]*           |
 
+<br/>
+
+[^1]: Replacement key material applied to newly produced records only.
 [^2]: The Kafka logo is a trademark of The Apache Software Foundation.  The Vault mark included in the diagram is a trademark of [HashiCorp](https://www.hashicorp.com/).
 
 
