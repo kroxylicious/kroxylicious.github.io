@@ -38,7 +38,7 @@ It is in this way that behaviours are introduced into the system.   Kroxylicious
 their response counterparts, or both.
 
 Kroxylicious ships with some pre-built filters of its own (see [use-cases](../use-cases)). There is also the Filter API
-that lets you build your own filters, tailored to your use-case.
+that lets you build custom filters, to fit your own use-case.
 
 | ![image](../assets/filter.png){:width="100%"} |
 |:---------------------------------------------:|
