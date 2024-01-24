@@ -9,7 +9,7 @@ of records sent to Apache Kafka are stored in the clear on the broker's disks. A
 with file system access, is able to read the contents of the records.
 
 This presents a challenge for an enterprise using Kafka to distribute confidential data or PII (Personally Identifiable
-Information).  Enterprises are often subject to confidential requirements coming from governmental bodies such as
+Information).  Enterprises are often subject to confidentiality requirements coming from governmental bodies such as
 GDPR in the EU or LGPD in Brazil, industry standards such as HIPAA in the health domain or PCI/DSS in the payments domain,
 in addition to any in-house security and compliance requirements.
 
