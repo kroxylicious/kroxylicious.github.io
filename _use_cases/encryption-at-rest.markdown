@@ -11,7 +11,7 @@ with file system access, is able to read the contents of the records.
 This presents a challenge for an enterprise using Kafka to distribute confidential data or PII (Personally Identifiable
 Information).  Enterprises are often subject to confidentiality requirements coming from governmental bodies such as
 GDPR in the EU or LGPD in Brazil, industry standards such as HIPAA in the health domain or PCI/DSS in the payments domain,
-in addition to any in-house security and compliance requirements.
+in addition to any in-house compliance requirements.
 
 The problem is made more complex if the enterprise has opted to utilise a Cloud Kafka Service as the confidential
 data is now residing in the clear on the file systems of the service provider.
