@@ -52,10 +52,10 @@ So, this approach does offer a solution to the problem but there are disadvantag
 1. Kafka Client libraries don't support encryption themselves.
 1. Kafka Client ecosystem is polyglot - it is common to Kafka applications written in many languages (Java, Go, Rust...)
    deployed within a _single organisation_.  Any solution needs to work across all the target languages.
-1. There are some encryption libraries for some languages that can be used with the Kafka Clients but these available
+1. There are some encryption libraries for some languages that can be used with the Kafka Clients but these are not available
    across all languages.
 
-Organisations could write their own encryption code but this is a burden to the application teams. The need for
+Organisations could write their own encryption code but this is a burden to the application teams. There is a need for
 _interoperability_ between different language encryption implementations - this increases the overheads.  There is also
 the problem of key distribution to consider.  Some part of the system needs to push the correct encryption keys out to
 the applications and manage tasks such as key rotation.  Finally, cryptography is a specialist area and the consequences
