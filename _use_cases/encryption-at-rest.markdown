@@ -84,7 +84,7 @@ The solution's foundations rest on industry-standard encryption techniques.
 * Integrates with common Key Management Services for safe and secure storage of key encryption keys.
   * Plugin for [HashiCorp Vault](https://www.hashicorp.com/)&#174; 
   * Additional KMS implementations are planned.
-  * API available to plugin alternatives
+  * API available to plug in alternatives
 * Uses AES-GCM symmetric keys.
 * Supports key rotation (new version applied to newly produced records only).
 * Records encrypted using previous key-versions remain decryptable.    
