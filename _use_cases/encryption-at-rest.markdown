@@ -22,7 +22,7 @@ data is now residing in the clear on the file systems of the service provider.
 
 ### Isn't TLS sufficient?
 
-TLS encrypts the content _on the wire_.  It means that someone using a network sniffer cannot tap what is being
+TLS encrypts the content _in transit_.  It means that someone using a network sniffer cannot intercept what is being
 sent over the wire between the application and the Kafka Broker.  However, once the network packets arrive at the broker,
 the packets are decrypted and exist in the clear once again.  This means the confidential records are in the clear in the memory
 of the broker and in the clear when the data is written to the file system.
