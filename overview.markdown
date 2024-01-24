@@ -18,7 +18,8 @@ Kroxylious which connects to the cluster on the application's behalf. In all oth
 Kroxylicious into a Kafka system is transparant.
 
 To adopt Kroxylicious, there are zero code changes required to the applications. There are no additional libraries to
-install.  Kroxylicious supports applications written in any language supported by Kafka (Java, Golang, Python, Rust...).
+install.  Kroxylicious supports applications written in any language supported by Kafka ecosystem (Java, Golang, Python,
+Rust...).
 
 On the Kafka Cluster side, there are no changes required either.  That is, no additional libraries to deploy or special
 configurations to apply.  Kroxylicious works with both on-premise Kafka Clusters or cloud Kafka services.
