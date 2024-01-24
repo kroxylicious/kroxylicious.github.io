@@ -31,7 +31,7 @@ TLS does not change the problem.
 
 ### Isn't storage volume encryption an answer?
 
-With storage volume encryption, the contents of the device are encrypted with a key.  This approach provides some mitigations.
+With storage volume encryption, the contents of the volume are encrypted with a single key.  This approach provides some mitigations.
 If the storage device is stolen or the storage device hijacked and attached to an attacker's computer, the attacker won't have
 the encryption key so won't be able to read the data, including the Kafka records.
 
