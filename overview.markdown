@@ -58,4 +58,11 @@ audit filter to suit the requirements of your use-case.
 |:----------------------------------------------------:|
 |                   *Filter Chains*                    |
 
+##### Performance
+
+Kroxylicious is careful to decode only the Kafka RPCs that the filters actually need to process. If no filter is
+interested in a particular RPC, its bytes will pass straight through Kroxylicious.  This approach helps keep Kroxylicious
+fast.
+
+The actual performance overhead of using Kroxylicious depends on the particular use-case.
 
