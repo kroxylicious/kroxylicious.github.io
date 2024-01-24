@@ -22,7 +22,8 @@ install.  Kroxylicious supports applications written in any language supported b
 Rust...).
 
 On the Kafka Cluster side, there are no changes required either.  That is, no additional libraries to deploy or special
-configurations to apply.  Kroxylicious works with both on-premise Kafka Clusters or cloud Kafka services.
+configurations to apply.  Kroxylicious works with *any* Kafka Cluster from a self-managed Kafka Cluster through to
+a Kafka Service offered by a cloud provider.
 
 A key concept in Kroxylicious is the Filter.  It is these that layer additional behaviours into the Kafka system.  
 
