@@ -90,7 +90,7 @@ The solution's foundations rest on industry-standard encryption techniques.
 * Supports key rotation[^1]
 * Records encrypted using previous key-versions remain decryptable.    
 
-Deployment time configuration at allows the administrator to choose which
+Deployment time configuration allows the administrator to choose which
 encryption keys are to be used to encrypt the records of which topics. Uses cases where some topics
 are encrypted and some remain unencrypted are supported.
 
