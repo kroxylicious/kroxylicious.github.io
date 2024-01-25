@@ -66,11 +66,6 @@ $navbar-dark-disabled-color: rgba($white, 0.45);
   vertical-align: middle;
 }
 
-.krx-alert-content > p, .krx-alert-heading > p {
-  // this is to get around some icky behaviour from markdownify
-  margin-bottom: 0;
-}
-
 .redhat-footer {
   background-color: $black;
   color: $white;
