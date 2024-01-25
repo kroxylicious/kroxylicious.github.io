@@ -1,8 +1,6 @@
 @charset "utf-8";
 // Required
 @import "./bootstrap/scss/functions";
-@import "./bootstrap/scss/variables";
-@import "./bootstrap/scss/variables-dark";
 
 @import url('https://fonts.googleapis.com/css?family=Josefin+Sans:300,400,700&display=swap');
 
@@ -11,32 +9,26 @@ $font-family-sans-serif:
         "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
         "Segoe UI Symbol", "Noto Color Emoji";
 
-$custom-colors: (
-  "kroxy-dark-green": #216869,
-  "kroxy-light-green": #49a078,
-  "kroxy-dark": #1f2421,
-  "kroxy-light": #dce1de,
-);
+$kroxy-dark-green: #216869;
+$kroxy-mid-green: #358471;
+$kroxy-light-green: #49a078;
+$kroxy-dark: #1f2421;
+$kroxy-light: #dce1de;
 
-$theme-colors: map-merge($theme-colors, $custom-colors);
+$primary: $kroxy-dark-green;
+$secondary: $kroxy-dark-green;
+$dark: $kroxy-dark;
+$light: $kroxy-light;
+
+@import "./bootstrap/scss/variables";
+@import "./bootstrap/scss/variables-dark";
 
 $navbar-dark-color: rgba($white, 0.75);
 $navbar-dark-hover-color: rgba($white, 0.95);
 $navbar-dark-active-color: rgba($white, 1);
 $navbar-dark-disabled-color: rgba($white, 0.45);
 
-$kroxy-dark-green: #216869;
-$kroxy-mid-green: #358471;
-$kroxy-light-green: #49a078;
-$kroxy-dark: #1f2421;
-$kroxy-light: #dce1de;
-$kroxy-shadow-dark: rgba($kroxy-dark, 0.15);
-$kroxy-shadow-light: rgba($kroxy-light, 0.15);
-
-$primary: $kroxy-light-green;
-$secondary: $kroxy-dark-green;
-$dark: $kroxy-dark;
-$light: $kroxy-light;
+@import "./bootstrap/scss/maps";
 
 // Custom bootstrap variables must be set or imported *before* bootstrap.
 @import "./bootstrap/scss/bootstrap";
@@ -49,7 +41,7 @@ $light: $kroxy-light;
   padding: 0.75rem 0;
   background-color: transparent;
   background: linear-gradient(to bottom, rgba($kroxy-dark, 1), rgba($kroxy-dark, 0.95));
-  box-shadow: 0 0.5rem 1rem $kroxy-shadow-dark,inset 0 -1px 0 $kroxy-shadow-dark;
+  box-shadow: 0 0.5rem 1rem rgba($kroxy-dark, 0.15),inset 0 -1px 0 rgba($kroxy-light, 0.15);
 }
 
 .krx-gutter {
@@ -61,7 +53,7 @@ $light: $kroxy-light;
 }
 
 .krx-nav-link.active {
-  text-shadow: 0 0 1rem $kroxy-shadow-light;
+  text-shadow: 0 0 1rem rgba($kroxy-light, 0.15);
 }
 
 .krx-footer-license {
@@ -72,6 +64,11 @@ $light: $kroxy-light;
 .krx-icon {
   height: 1.7rem;
   vertical-align: middle;
+}
+
+.krx-alert-content > p, .krx-alert-heading > p {
+  // this is to get around some icky behaviour from markdownify
+  margin-bottom: 0;
 }
 
 .redhat-footer {
