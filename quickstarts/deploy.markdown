@@ -17,11 +17,22 @@ Some operating systems come with a JRE already installed. You can check what Jav
 java -version
 ```
 
+{% capture jre_note %}
 If you get an error or the command doesn't return anything, you may not have a JRE installed, or your JRE may not have been correctly added to your system's `PATH` variable.
+{% endcapture %}
 
-#### Kafka
+{% include bs-alert.html type="primary" icon="info-circle-fill" content=jre_note %}
 
-You will also need a running Kafka cluster to point Kroxylicious at. The Kafka cluster address used by Kroxylicious can be changed in the configuration YAML (see the [**Configure**](#configure) section below).
+#### Apache Kafka®
+
+You will also need a running Apache Kafka® cluster to point Kroxylicious at. The Strimzi project has an [easy-to-follow quickstart](https://strimzi.io/quickstarts/) for setting up a cluster on your local machine using Minikube, or alternatively you can follow the official Apache Kafka® [quickstart](https://kafka.apache.org/documentation/#quickstart) to set up a local bare metal cluster.
+
+{% capture kaf_note %}
+This quickstart makes use of [Kaf](https://github.com/birdayz/kaf), a command line client for Apache Kafka®, as a simple way to demonstrate using Kroxylicious with a client. However, Kroxylicious has [a known issue](https://github.com/kroxylicious/kroxylicious/issues/822) with unframed SASL authenticate packets when connecting to some cloud providers with older versions of Kaf (before 0.2.7), so for this quickstart we recommend setting up a basic self-hosted Apache Kafka® cluster in order to avoid this issue.
+{% endcapture %}
+{% include bs-alert.html type="warning" icon="exclamation-triangle-fill" content=kaf_note %}
+
+Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#configure) section below).
 
 <br />
 
@@ -29,7 +40,13 @@ You will also need a running Kafka cluster to point Kroxylicious at. The Kafka c
 
 Kroxylicious can be downloaded from the [releases](https://github.com/kroxylicious/kroxylicious/releases) page of the Kroxylicious GitHub repository, or from Maven Central.
 
-In GitHub, all releases since v0.4.0 have an attached `kroxylicious-app-*-bin.zip` file. Download this, and optionally verify the contents of the package with the attached `kroxylicious-app-*-bin.zip.asc` file.
+In GitHub, all releases since v0.4.0 have an attached `kroxylicious-app-*-bin.zip` file. Download the latest version of this zip, and optionally verify the contents of the package with the attached `kroxylicious-app-*-bin.zip.asc` file.
+
+{% capture os_archive_note %}
+If you're trying Kroxylicious out on Linux or MacOS, you may find the `.tar.gz` format easier to work with. We're using the `.zip` files in this quickstart for cross-platform compatibility, but we recommend you use whichever format you're most familiar with.
+{% endcapture %}
+
+{% include bs-alert.html type="primary" icon="info-circle-fill" content=os_archive_note %}
 
 <br />
 
@@ -44,7 +61,9 @@ Ensure the `kroxylicious-start.sh` and `run-java.sh` files in the `bin/` directo
 
 Kroxylicious is configured with YAML. An example configuration file can be found in the `config/` directory of the extracted Kroxylicious folder, which you can either modify or use as reference for creating your own configuration file.
 
-From the configuration file you can specify how Kroxylicious presents each Kafka broker to the Kafka clients, where Kroxylicious will locate the Kafka cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
+From the configuration file you can specify how Kroxylicious presents each Apache Kafka® broker to clients, where Kroxylicious will locate the Apache Kafka® cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
+
+More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/).
 
 <br />
 
@@ -57,3 +76,24 @@ From within the extracted Kroxylicious folder, run the following command:
 ```
 
 To use your own configuration file instead of the example, just replace the file path after `--config`.
+
+<br />
+
+# Use
+
+To use your Kroxylicious proxy, your Apache Kafka® client(s) will need to point to the proxy (using the configured Port-Per-Broker or SNI address) rather than directly at the Apache Kafka® cluster.
+Here's how you would use the proxy with a command line client like [Kaf](https://github.com/birdayz/kaf):
+
+```shell
+# In each command below, substitute $KROXYLICIOUS_BOOTSTRAP for the bootstrap address of your Kroxylicious instance.
+
+# create a topic "my_topic" via Kroxylicious
+kaf -b $KROXYLICIOUS_BOOTSTRAP topic create my_topic
+
+# produce the string "hello world" to your topic via Kroxylicious
+echo "hello world" | kaf -b $KROXYLICIOUS_BOOTSTRAP produce my_topic
+
+# Consume your string (and any other data) from your topic via Kroxylicious
+kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic
+```
+

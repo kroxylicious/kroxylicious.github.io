@@ -1,0 +1,15 @@
+<div class="alert {% if include.type %}alert-{{ include.type }}{% endif %} container" role="alert">
+    <div class="row">
+        {% if include.heading %}
+        <h4 class="alert-heading krx-alert-heading">{{ include.heading | markdownify }}</h4>
+        {% endif %}
+        <div class="col-12 {% if include.icon %}d-flex align-items-center{% endif %}">
+            {% if include.icon %}
+                <i class="bi bi-{{ include.icon }} ms-2 me-4 fs-5 d-flex"></i>
+            {% endif %}
+            <div class="krx-alert-content d-flex">
+                {{ include.content | markdownify }}
+            </div>
+        </div>
+    </div>
+</div>
