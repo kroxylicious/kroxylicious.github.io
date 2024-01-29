@@ -2,10 +2,10 @@
 // Required
 @import "./bootstrap/scss/functions";
 
-@import url('https://fonts.googleapis.com/css?family=Josefin+Sans:300,400,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Questrial&display=swap');
 
 $font-family-sans-serif:
-        "Josefin Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+        "Questrial", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
         "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
         "Segoe UI Symbol", "Noto Color Emoji";
 
@@ -118,3 +118,15 @@ $navbar-dark-disabled-color: rgba($white, 0.45);
 div.highlighter-rouge {
   padding: 0 10px;
 }
+
+// Hero Styles
+
+.krx-hero {
+  background: rgb(73,160,120);
+  background: linear-gradient(111deg, rgba(73,160,120,1) 0%, rgba(44,96,72,1) 30%, rgba(22,48,36,1) 100%);
+
+  h1, p {
+  color: $white !important;
+  }
+}
+
