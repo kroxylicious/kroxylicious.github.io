@@ -27,11 +27,6 @@ If you get an error or the command doesn't return anything, you may not have a J
 
 You will also need a running Apache Kafka® cluster to point Kroxylicious at. The Strimzi project has an [easy-to-follow quickstart](https://strimzi.io/quickstarts/) for setting up a cluster on your local machine using Minikube, or alternatively you can follow the official Apache Kafka® [quickstart](https://kafka.apache.org/documentation/#quickstart) to set up a local bare metal cluster.
 
-{% capture kaf_note %}
-This quickstart makes use of [Kaf](https://github.com/birdayz/kaf), a command line client for Apache Kafka®, as a simple way to demonstrate using Kroxylicious with a client. However, Kroxylicious has [a known issue](https://github.com/kroxylicious/kroxylicious/issues/822) with unframed SASL authenticate packets when connecting to some cloud providers with older versions of Kaf (before 0.2.7), so for this quickstart we recommend setting up a basic self-hosted Apache Kafka® cluster in order to avoid this issue.
-{% endcapture %}
-{% include bs-alert.html type="warning" icon="exclamation-triangle-fill" content=kaf_note %}
-
 Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#configure) section below).
 
 <br />
@@ -43,7 +38,7 @@ Kroxylicious can be downloaded from the [releases](https://github.com/kroxylicio
 In GitHub, all releases since v0.4.0 have an attached `kroxylicious-app-*-bin.zip` file. Download the latest version of this zip, and optionally verify the contents of the package with the attached `kroxylicious-app-*-bin.zip.asc` file.
 
 {% capture os_archive_note %}
-If you're trying Kroxylicious out on Linux or MacOS, you may find the `.tar.gz` format easier to work with. We're using the `.zip` files in this quickstart for cross-platform compatibility, but we recommend you use whichever format you're most familiar with.
+If you're trying Kroxylicious out on Linux or macOS, you may find the `.tar.gz` format easier to work with. We're using the `.zip` files in this quickstart for cross-platform compatibility, but we recommend you use whichever format you're most familiar with.
 {% endcapture %}
 
 {% include bs-alert.html type="primary" icon="info-circle-fill" content=os_archive_note %}
@@ -63,7 +58,7 @@ Kroxylicious is configured with YAML. An example configuration file can be found
 
 From the configuration file you can specify how Kroxylicious presents each Apache Kafka® broker to clients, where Kroxylicious will locate the Apache Kafka® cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
 
-More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/).
+More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/#_deploying_proxies).
 
 <br />
 
@@ -81,8 +76,24 @@ To use your own configuration file instead of the example, just replace the file
 
 # Use
 
-To use your Kroxylicious proxy, your Apache Kafka® client(s) will need to point to the proxy (using the configured Port-Per-Broker or SNI address) rather than directly at the Apache Kafka® cluster.
-Here's how you would use the proxy with a command line client like [Kaf](https://github.com/birdayz/kaf):
+To use your Kroxylicious proxy, your client(s) will need to point to the proxy (using the configured Port-Per-Broker or SNI address) rather than directly at the Apache Kafka® cluster.
+
+Here's how you would use Kroxylicious with the console producer and console consumer:
+
+```shell
+# In each command below, substitute $KROXYLICIOUS_BOOTSTRAP for the bootstrap address of your Kroxylicious instance.
+
+# create a topic "my_topic" via Kroxylicious
+bin/kafka-topics.sh --create --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
+
+# produce the string "hello world" to your topic via Kroxylicious
+echo "hello world" | bin/kafka-console-producer.sh --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
+
+# Consume your string from your topic via Kroxylicious
+bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
+```
+
+Here's how you would use Kroxylicious with a command line client like [Kaf](https://github.com/birdayz/kaf):
 
 ```shell
 # In each command below, substitute $KROXYLICIOUS_BOOTSTRAP for the bootstrap address of your Kroxylicious instance.
@@ -93,7 +104,7 @@ kaf -b $KROXYLICIOUS_BOOTSTRAP topic create my_topic
 # produce the string "hello world" to your topic via Kroxylicious
 echo "hello world" | kaf -b $KROXYLICIOUS_BOOTSTRAP produce my_topic
 
-# Consume your string (and any other data) from your topic via Kroxylicious
+# Consume your string from your topic via Kroxylicious
 kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic
 ```
 
