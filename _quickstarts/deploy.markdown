@@ -27,9 +27,9 @@ If you get an error or the command doesn't return anything, you may not have a J
 
 {% include bs-alert.html type="primary" icon="info-circle-fill" content=jre_note %}
 
-#### Apache Kafka®
+#### Apache Kafka&#174;
 
-You will also need a running Apache Kafka® cluster to point Kroxylicious at. The Strimzi project has an [easy-to-follow quickstart](https://strimzi.io/quickstarts/) for setting up a cluster on your local machine using Minikube, or alternatively you can follow the official Apache Kafka® [quickstart](https://kafka.apache.org/documentation/#quickstart) to set up a local bare metal cluster.
+You will also need a running Apache Kafka&#174; cluster for Kroxylicious to proxy. The official Apache Kafka&#174; [quickstart](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
 
 Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#configure) section below).
 
@@ -60,9 +60,15 @@ Ensure the `kroxylicious-start.sh` and `run-java.sh` files in the `bin/` directo
 
 Kroxylicious is configured with YAML. An example configuration file can be found in the `config/` directory of the extracted Kroxylicious folder, which you can either modify or use as reference for creating your own configuration file.
 
-From the configuration file you can specify how Kroxylicious presents each Apache Kafka® broker to clients, where Kroxylicious will locate the Apache Kafka® cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
+From the configuration file you can specify how Kroxylicious presents each Apache Kafka&#174; broker to clients, where Kroxylicious will locate the Apache Kafka&#174; cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
 
-More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/#_deploying_proxies).
+For this quickstart we will use Kroxylicious in Port-Per-Broker configuration, and assume that both your Apache Kafka&#174; cluster and clients are running on your local machine and using their default configuration. This means we can use the example proxy config file that comes with Kroxylicious.
+
+{% capture kroxylicious_config_note %}
+If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka&#174; cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/#_deploying_proxies).
+{% endcapture %}
+
+{% include bs-alert.html type="primary" icon="info-circle-fill" content=kroxylicious_config_note %}
 
 <br />
 
@@ -80,7 +86,7 @@ To use your own configuration file instead of the example, just replace the file
 
 # Use
 
-To use your Kroxylicious proxy, your client(s) will need to point to the proxy (using the configured Port-Per-Broker or SNI address) rather than directly at the Apache Kafka® cluster.
+To use your Kroxylicious proxy, your client(s) will need to point to the proxy (using the configured address) rather than directly at the Apache Kafka&#174; cluster.
 
 Here's how you would use Kroxylicious with the console producer and console consumer:
 
@@ -111,4 +117,3 @@ echo "hello world" | kaf -b $KROXYLICIOUS_BOOTSTRAP produce my_topic
 # Consume your string from your topic via Kroxylicious
 kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic
 ```
-
