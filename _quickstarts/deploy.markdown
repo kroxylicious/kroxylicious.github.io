@@ -88,7 +88,7 @@ To use your own configuration file instead of the example, just replace the file
 
 To use your Kroxylicious proxy, your client(s) will need to point to the proxy (using the configured address) rather than directly at the Apache Kafka&#174; cluster.
 
-Here's how you would use Kroxylicious with the console producer and console consumer:
+Here's how you would use Kroxylicious with the Apache Kafka&#174; command line clients:
 
 ```shell
 # In each command below, substitute $KROXYLICIOUS_BOOTSTRAP for the bootstrap address of your Kroxylicious instance.
