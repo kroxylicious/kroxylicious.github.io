@@ -1,0 +1,13 @@
+<div class="card shadow mb-4 mb-lg-5 mt-lg-4 mx-lg-5">
+    <div class="card-header">
+        {% if include.card_title %}
+            <div class="card-title display-6 mx-lg-2 mt-3 mb-4">{{ include.card_title }}</div>
+        {% endif %}
+        <ul class="nav nav-tabs nav-justified fs-6 card-header-tabs" id="{{ include.htmlid }}" role="tablist">
+            {{ include.tabs }}
+        </ul>
+    </div>
+    <div class="card-body tab-content">
+        {{ include.content }}
+    </div>
+</div>
