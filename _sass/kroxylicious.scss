@@ -123,11 +123,14 @@ body {
   }
 }
 
-// Rouge highlighter non-theme formatting
-// (AKA any formatting for Rouge that isn't part of the generated theme)
+// Rouge highlighter additional formatting
+// Main rouge formatting is in css/code.css
 
-.highlighter-rouge {
-  background-color: #f8f8f8!important;
+// ensure padding for code blocks
+.highlight {
+  text-wrap: wrap;
+  padding: 1.5em;
+  border-radius: 4px;
 }
 
 div.highlighter-rouge {
