@@ -28,6 +28,8 @@ github_username:  kroxylicious
 
 # Build settings
 plugins:
+  - asciidoctor-diagram
+  - jekyll-asciidoc
   - jekyll-feed
   - jekyll-sass-converter
   - jekyll-seo-tag
@@ -59,3 +61,15 @@ collections:
     output: false
   quickstarts:
     output: false
+
+keep_files:
+  - images
+
+asciidoc: {}
+asciidoctor:
+  base_dir: :docdir
+  safe: unsafe
+  attributes:
+    imagesdir: /images
+    page-layout: docs
+    toc: preamble

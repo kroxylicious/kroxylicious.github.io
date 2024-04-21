@@ -1,0 +1,32 @@
+---
+layout: default
+---
+<!-- _layouts/docs.html -->
+<div class="row justify-content-center gx-0">
+  <div class="col-lg-3">
+    <div class="card shadow my-lg-5 ms-lg-5 me-1">
+      <div class="card-body mx-2">
+          <h3 class="card-title">
+            {{ page.title }}
+          </h3>
+        <div class="card-text g-0">
+          <p><em>This documentation is for the most recent stable release of Kroxylicious. The latest documentation for the development version of Kroxylicious can be found <a href="{{ '/kroxylicious' | relative_url }}">here</a>.</small></em></p>
+          {{ page.document | tocify_asciidoc }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-9">
+    <div class="card shadow my-lg-5 me-lg-5 ms-1">
+      <div class="card-body mx-2">
+        <div class="row g-0">
+          <div class="col-auto">
+            <div class="card-text m-2">
+              {{ content }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
