@@ -43,10 +43,17 @@
           <li class="nav-item py-lg-1 col-lg-auto">
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
-          <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/docs/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/docs/' | relative_url }}">
-              Docs
-            </a>
+          <li class="nav-item dropdown col-6 col-lg-auto">
+            <a class="nav-link dropdown-toggle krx-nav-link py-2 px-0 px-lg-4" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">Docs</a>
+            <ul class="dropdown-menu">
+              {% for version in site.data.kroxylicious.versions %}
+              <li>
+                <a class="dropdown-item {% if page.url == version.url %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ version.url }}">
+                  {{ version.title }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
           </li>
           <li class="nav-item py-lg-1 col-lg-auto">
             <div class="vr d-none d-lg-flex h-100 text-white"></div>

@@ -10,7 +10,7 @@ layout: default
             {{ page.title }}
           </h3>
         <div class="card-text g-0">
-          <p><em>This documentation is for the most recent stable release of Kroxylicious. The latest documentation for the development version of Kroxylicious can be found <a href="{{ '/kroxylicious' | relative_url }}">here</a>.</small></em></p>
+          <p><em>This documentation is for a stable release version of Kroxylicious. For the documentation from the latest development version of Kroxylicious, <a href="{{ '/kroxylicious' | relative_url }}">click here</a>.</small></em></p>
           {{ page.document | tocify_asciidoc }}
         </div>
       </div>
@@ -22,6 +22,9 @@ layout: default
         <div class="row g-0">
           <div class="col-auto">
             <div class="card-text m-2">
+              {% if page.version_warning %}
+              {% include bs-alert.html type="warning" content=page.version_warning %}
+              {% endif %}
               {{ content }}
             </div>
           </div>
