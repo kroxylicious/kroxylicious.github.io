@@ -45,6 +45,7 @@ plugins:
 #
 exclude:
   - .idea
+  - docs/README.md
 #   - .sass-cache/
 #   - .jekyll-cache/
 #   - gemfiles/
