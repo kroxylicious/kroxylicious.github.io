@@ -65,7 +65,9 @@ collections:
 keep_files:
   - images
 
-asciidoc: {}
+asciidoc:
+  require_front_matter_header: true
+
 asciidoctor:
   base_dir: :docdir
   safe: unsafe
@@ -73,3 +75,4 @@ asciidoctor:
     imagesdir: /images
     page-layout: docs
     toc: preamble
+    source-highlighter: rouge
