@@ -76,3 +76,4 @@ asciidoctor:
     page-layout: docs
     toc: preamble
     source-highlighter: rouge
+    sectanchors: ''
