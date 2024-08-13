@@ -62,7 +62,7 @@ correctly.
 The Kroxylicious Record Validation Filter provides a solution to the problem. 
 
 The filter intercepts the produce requests sent from producing applications and subjects them to validation. If
-validation fail, the product request is rejected.  The producing application receives an error response.  The broker
+validation fail, the product request is rejected and the producing application receives an error response.  The broker
 does not receive the rejected records.  In this way, one can organize that a poison message never enters the system,
 even if producing applications are misconfigured.
 
@@ -73,13 +73,23 @@ The filter currently supports two modes of operation:
 2. SyntacticallyCorrectJson validation ensures the producer is producing messages that contain syntactically valid JSON.
    Use for topics which do not have registered schemas.
 
-The filter accepts configuration that allows you to assign validators on a per-topic basis.   There are also
-configuration options that allow you to define whether the filter rejects just the records that don't meet the
-requirements of the validator, or whether then whole batch should be returned.
+The following diagram illustrates the filter being used for _Schema Enforcement_.  The filter retrieves the expected
+schemas from the Schema Registry.  Then produce requests are intercepted, and the records subjected to schema 
+validation.
 
 | ![image]({{'/assets/pages/images/schema_validation_solution.png' | absolute_url}}){:width="100%"} |
 |:-----------------------------------------------------------------:|
 |    *Proxy configured for schema enforcement*     |
+
+The following sequence diagram shows how schema validation issues are reported back to the producer.
+
+| ![image]({{'/assets/pages/images/schema_validation_seq_diagram.png' | absolute_url}}){:width="100%"} |
+|:-----------------------------------------------------------------:|
+|    *Sequence diagram highlighting error handling*     |
+
+The filter accepts configuration that allows you to assign validators on a per-topic basis.   There are also
+configuration options that allow you to define whether the filter rejects just the records that don't meet the
+requirements of the validator, or whether then whole batch should be returned.
 
 
 [^1]: Currently, the feature supports only the JSON-Schema schema type.
