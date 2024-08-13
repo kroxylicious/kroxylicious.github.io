@@ -10,6 +10,9 @@ toc: true
             <div class="row g-0">
                 <div class="col-auto">
                   {% for use_case in site.use_cases %}
+                    <div class="card-text">{{ use_case.content | toc_only }}</div>
+                  {% endfor %}
+                  {% for use_case in site.use_cases %}
                     <div class="card-text">{{ use_case.content | markdownify | inject_anchors}}</div>
                   {% endfor %}
                 </div>
