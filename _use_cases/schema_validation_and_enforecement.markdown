@@ -9,7 +9,7 @@ name: Schema Validation and Enforcement
 In Kafka, producing applications transfer messages to consuming applications.  In order for messages to be transferred successfully
 producer and consumer need to agree on the format of the message being transferred. If there is a mismatch between the format sent
 by the producer and the expectations of the consumer, problems will result.  The consuming application could take the wrong business
-action or the consuming application may fail leading to complete failure of the system.  This problem is known as *poison message*
+action or the consuming application may fail leading to complete failure of the system.  This problem is known as a *poison message*
 scenario.
 
 | ![image]({{'/assets/pages/images/schema_validation_problem.png' | absolute_url}}){:width="100%"} |
