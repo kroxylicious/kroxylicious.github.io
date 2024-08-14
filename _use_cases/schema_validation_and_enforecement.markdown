@@ -18,7 +18,7 @@ scenario.
 
 If there is only a small number of applications, perhaps all managed by the same team, it is possible for the developers to use
 informal agreements about what message format will be used on which topic.  However, as the use of Kafka grows within the organization,
-the amount of effort required to keep all the formats in agreement grows.  Mistakes, and system downtime, become inevitably.
+the amount of effort required to keep all the formats in agreement grows.  Mistakes, and system downtime, become inevitable.
 
 ##### Schemas to the rescue
 
