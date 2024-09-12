@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export BOOTSTRAP_VERSION="5.3.2"
+export BOOTSTRAP_VERSION="5.3.3"
 
 # download the full Bootstrap 5 sources (including JS)
 echo "Downloading Bootstrap v$BOOTSTRAP_VERSION sources from GitHub..."
