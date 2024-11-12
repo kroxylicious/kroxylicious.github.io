@@ -62,7 +62,7 @@ correctly.
 The Kroxylicious Record Validation Filter provides a solution to the problem. 
 
 The filter intercepts the produce requests sent from producing applications and subjects them to validation. If
-validation fail, the product request is rejected and the producing application receives an error response.  The broker
+the validation fails, the produce request is rejected and the producing application receives an error response.  The broker
 does not receive the rejected records.  In this way, one can organize that a poison message never enters the system,
 even if producing applications are misconfigured.
 
