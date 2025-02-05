@@ -5,7 +5,7 @@
 layout: index
 ---
 
-#### Why Kroxylicious?
+## Why Kroxylicious?
 
 Proxies are a powerful architectural pattern which are widely used for other
 application-layer protocols, such as HTTP.
