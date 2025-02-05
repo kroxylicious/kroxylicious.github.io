@@ -2,9 +2,9 @@
 name: Encryption At Rest
 ---
 
-### Encryption At Rest
+## Encryption At Rest
 
-#### Why
+### Why do we need Encryption At Rest?
 
 Apache Kafka&#174; does not directly support any form of encryption for data stored within a broker. This means that the contents
 of records sent to Apache Kafka are stored in the clear on the broker's disks. Anyone with sufficient access, such as a Kafka Administrator
@@ -22,7 +22,7 @@ data is now residing in the clear on the file systems of the service provider.
 |:-----------------------------------------------------------------:|
 |    *Problem: Plain text records readable by the Kafka Admins*     |
 
-##### Isn't TLS sufficient?
+#### Isn't TLS sufficient?
 
 TLS encrypts the content _in transit_.  It means that someone using a network sniffer cannot intercept what is being
 sent over the wire between the application and the Kafka Broker.  However, once the network packets arrive at the broker,
@@ -31,7 +31,7 @@ of the broker and in the clear when the data is written to the file system.
 
 TLS does not change the problem.
 
-##### Isn't storage volume encryption an answer?
+#### Isn't storage volume encryption an answer?
 
 With storage volume encryption, the contents of the volume are encrypted with a single key.  This approach provides some mitigations.
 If the storage device is stolen or the storage device hijacked and attached to an attacker's computer, the attacker won't have
@@ -43,7 +43,7 @@ to be able to read the data, including the Kafka confidential records.
 
 Storage volume encryption doesn't really solve the problem.
 
-##### Can't the applications encrypt/decrypt the data?
+#### Can't the applications encrypt/decrypt the data?
 
 It is possible for producing applications to encrypt data before sending it to Kafka, and for consuming applications to decrypt it
 again.  With this approach the brokers never possess the records in the clear and as they don't have encryption keys, they cannot
@@ -66,7 +66,7 @@ of a design flaw or bug are significant (confidentiality breach).
 Having the applications encrypt/decrypt data themselves, whilst technically feasible, is not really a tenable solution
 at the scale required for most enterprises.
 
-#### Kroxylicious Record Encryption
+### Kroxylicious Record Encryption
 
 The Kroxylicious Record Encryption feature offers a solution to the problem.  The proxy takes the responsibility
 to encrypt and decrypt the messages. In this way, the Kafka Brokers never see the plain text content of

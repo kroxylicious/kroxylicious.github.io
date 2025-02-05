@@ -37,6 +37,10 @@ body {
   height: fit-content!important;
 }
 
+a {
+  color: $kroxy-dark-green;
+}
+
 .krx-content * {
   scroll-margin-top: 5rem!important;
 }

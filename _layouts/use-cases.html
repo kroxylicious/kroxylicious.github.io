@@ -6,15 +6,19 @@ toc: true
 <div class="row justify-content-center">
     <div class="col-11 col-lg-8 card shadow gx-5 gy-5 m-lg-5">
         <div class="card-body mx-2">
-            <div class="card-title display-6 mt-3 mb-4">Use Cases</div>
+            <div class="card-title display-6 mt-3 mb-4">
+              <h1>Use Cases</h1>
+            </div>
             <div class="row g-0">
                 <div class="col-auto">
-                  {% for use_case in site.use_cases %}
-                    <div class="card-text">{{ use_case.content | toc_only }}</div>
-                  {% endfor %}
-                  {% for use_case in site.use_cases %}
-                    <div class="card-text">{{ use_case.content | markdownify | inject_anchors}}</div>
-                  {% endfor %}
+                  <div class="card-text">
+                    {% for use_case in site.use_cases %}
+                      <div class="{{ use_case.name | slugify }}-toc">{{ use_case.content | toc_only }}</div>
+                    {% endfor %}
+                    {% for use_case in site.use_cases %}
+                      <div class="{{ use_case.name | slugify }}-content">{{ use_case.content | markdownify | inject_anchors}}</div>
+                    {% endfor %}
+                  </div>
                 </div>
             </div>
         </div>
