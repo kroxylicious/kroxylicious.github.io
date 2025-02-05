@@ -5,7 +5,7 @@ layout: default
     <div class="col-lg-3 mb-5">
         <div class="card px-2 mx-2">
             <div class="card-body">
-                <h3 class="card-title">{{ page.title }}</h3>
+                <h1 class="fs-3" class="card-title">{{ page.title }}</h1>
                 <div class="container g-0 mt-4">
                     <p class="card-text">
                         {{ content }}
@@ -35,13 +35,13 @@ layout: default
                             <div class="col-md align-self-center">
                         {% endif %}
                             <div class="card-body mx-3 my-2">
-                                <h4 class="card-title">
+                                <h2 class="card-title fs-4">
                                     <a class="page-link" href="{{ post.url | absolute_url }}">
                                         {{ post.title | escape }}
                                     </a>
-                                </h4>
+                                </h2>
                                 <p class="card-text">{{ post.excerpt | markdownify }}</p>
-                                <p class="card-text text-end"><small class="text-primary">{{ post.date | date: date_format }}</small></p>
+                                <p class="card-text text-end"><small class="text-secondary">{{ post.date | date: date_format }}</small></p>
                             </div>
                         </div>
                     </div>

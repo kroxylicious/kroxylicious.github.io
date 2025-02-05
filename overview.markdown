@@ -7,7 +7,7 @@ toc: true
 
 This page provides an overview of how Kroxylicious works.  For more details, please refer to the [documentation](https://kroxylicious.io/docs/v0.6.0/).
 
-#### What is Kroxylicious?
+# What is Kroxylicious?
 
 Kroxylicious is an Apache Kafka&#174; protocol-aware proxy.  It can be used to layer uniform behaviours onto a
 Kafka based system in areas such as data-governance, security, policy enforcement and audit without needing to
@@ -32,7 +32,7 @@ A key concept in Kroxylicious is the Filter.  It is these that layer additional 
 |:---------------------------------------------------:|
 |                     *Overview*                      |
 
-##### Filters
+## Filters
 
 The Filter is at the heart of Kroxylicious. Filters intercept [Kafka RPCs](https://kafka.apache.org/protocol.html)
 as they travel through the proxy.  Filters can observe or transform the RPC, depending on the needs of the use-case. 
@@ -47,7 +47,7 @@ that lets you build custom filters, to fit your own use-case.
 |             *Request/Response Filtering*             |
 
 
-##### Filter Chains
+## Filter Chains
 
 Filters are composable, meaning you can chain filters together to build complex behaviours from simpler units.
 
@@ -58,7 +58,7 @@ audit filter to suit the requirements of your use-case.
 |:----------------------------------------------------------:|
 |                      *Filter Chains*                       |
 
-##### Performance
+## Performance
 
 Kroxylicious is careful to decode only the Kafka RPCs that the filters actually need to process. If no filter is
 interested in a particular RPC, its bytes will pass straight through Kroxylicious.  This approach helps keep Kroxylicious
