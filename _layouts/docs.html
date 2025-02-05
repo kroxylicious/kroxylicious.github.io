@@ -21,7 +21,7 @@ layout: default
       <div class="card-body mx-2">
         <div class="row g-0">
           <div class="col-auto">
-            <div class="card-text m-2">
+            <div class="card-text ms-3 m-2">
               {% if page.version_warning %}
               {% include bs-alert.html type="warning" content=page.version_warning %}
               {% endif %}
@@ -33,3 +33,16 @@ layout: default
     </div>
   </div>
 </div>
+<!-- The following script fixes an accessibility issue with the sectanchors injected by AsciiDoc not containing any content. -->
+<!-- The script adds a span which the anchor CSS applies to, then moves the header text inside the anchor element. -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("a.anchor").forEach((anchorElem) => {
+      var anchorSpan = document.createElement('span');
+      anchorSpan.setAttribute("class", "anchor-icon");
+      anchorElem.appendChild(anchorSpan);
+      anchorElem.appendChild(anchorElem.nextSibling);
+      anchorElem.setAttribute("class", anchorElem.getAttribute("class") + " text-decoration-none text-reset")
+    })
+  })
+</script>
