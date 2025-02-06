@@ -4,14 +4,14 @@ layout: default
 
 <!-- Hero -->
 
-<div class="krx-hero">
+<div class="krx-hero" role="complementary" aria-labelledby="krx-hero-title">
     <div class="container col-xxl-8 px-4 py-5">
     <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
       <div class="col-10 col-sm-8 col-lg-6">
         <img src="{{ '/assets/theme/images/kroxylicious_logo_rgb_no_text.svg' | absolute_url}}" class="d-block mx-lg-auto img-fluid" alt="Kroxylicious Mascot" width="700" height="500" loading="lazy">
       </div>
       <div class="col-lg-6">
-        <h1 class="fw-bold text-body-emphasis lh-1 mb-3">Kroxylicious, the snappy open source proxy for Apache Kafka<sup>&#174;</sup></h1>
+        <h1 class="fw-bold text-body-emphasis lh-1 mb-3" id="krx-hero-title">Kroxylicious, the snappy open source proxy for Apache Kafka<sup>&#174;</sup></h1>
         <p class="lead">Topic encryption, policy-enforcement, multi-tenancy, audit and much more.</p>
         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
           <a href="{{site.baseurl}}/overview/" alt="What Kroxylicious is and how does it work?" type="button" class="btn btn-light btn-lg px-4 gap-3">What is it?</a>
@@ -24,7 +24,7 @@ layout: default
 
 <!-- Hero -->
 
-<div class="row justify-content-center">
+<div class="row justify-content-center" role="main">
   <div class="col-11 col-lg-8 gx-5 gy-5 m-lg-5">
     <div class="row g-0">
       <div class="col-auto">
