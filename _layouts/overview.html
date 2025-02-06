@@ -7,7 +7,7 @@ toc: true
     <div class="row g-0">
       <div class="col-auto">
         <div class="card-body">
-          <div class="card-text m-2">
+          <div class="card-text m-2" role="main" aria-label="Overview of Kroxylicious">
             {{ content | markdownify | inject_anchors }}
           </div>
         </div>
@@ -15,3 +15,11 @@ toc: true
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("a.anchor").forEach((anchorElem) => {
+      anchorElem.setAttribute("style", "display: none; visibility: hidden;");
+    })
+  })
+</script>
