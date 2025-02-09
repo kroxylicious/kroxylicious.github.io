@@ -2,9 +2,9 @@
 name: Schema Validation and Enforcement
 ---
 
-### Schema Validation and Enforcement
+## Schema Validation and Enforcement
 
-#### Why
+### Why do we need Schema Validation and Enforcement?
 
 In Apache Kafka, producing applications transfer messages to consuming applications.  In order for messages to be transferred successfully
 producers and consumers need to agree on the format of the message being transferred. If there is a mismatch between the format sent
@@ -20,7 +20,7 @@ If there is only a small number of applications, perhaps all managed by the same
 informal agreements about what message format will be used on which topic.  However, as the use of Kafka grows within the organization,
 the amount of effort required to keep all the formats in agreement grows.  Mistakes, and system downtime, become inevitable.
 
-##### Schemas to the rescue
+#### Schemas to the rescue
 
 To overcome the problem, the Kafka **client** ecosystem supports _schemas_.  Schemas provide a programmatic description
 of the message format.
@@ -33,7 +33,7 @@ inflexible as it means all applications need to be redeployed every time a schem
 as the number of applications in the system grows.  To counter this challenge organizations often choose to deploy a
 *Schema Registry*. 
 
-##### Schema Registry
+#### Schema Registry
 
 The role of the  **Schema Registry**  is to maintain a library of schemas that are in-use within an organisation.
 
@@ -46,7 +46,7 @@ the registry.  This allows the consumer to decode the message.
 |:-----------------------------------------------------------------:|
 |    *Kafka applications making use of a Schema Registry*     |
 
-#### So, what's the problem?
+### So, what's the problem?
 
 If schemas are used correctly across the entire producing and consuming application estate, the potential for a
 poison message to be introduced into the system is greatly diminished.  However, the issue is that there's significant
@@ -57,7 +57,7 @@ In Kafka, **brokers** have no knowledge of format of the messages (to the broker
 have no knowledge of the schema.  The brokers cannot help us enforce that producing applications use schemas and use them
 correctly.
 
-#### Kroxylicious Record Validation
+### Kroxylicious Record Validation
 
 The Kroxylicious Record Validation Filter provides a solution to the problem. 
 
@@ -68,7 +68,7 @@ even if producing applications are misconfigured.
 
 The filter currently supports two modes of operation:
 
-1. Schema validation[^1] validates the content of the record against a schema. Use this for topics which have an entry in
+1. Schema validation[^3] validates the content of the record against a schema. Use this for topics which have an entry in
    the Schema Registry.
 2. SyntacticallyCorrectJson validation ensures the producer is producing messages that contain syntactically valid JSON.
    Use for topics which do not have registered schemas.

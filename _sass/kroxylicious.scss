@@ -19,6 +19,7 @@ $primary: $kroxy-light-green;
 $secondary: $kroxy-dark-green;
 $dark: $kroxy-dark;
 $light: $kroxy-light;
+$code-color: #b1266b;
 
 @import "./bootstrap/scss/variables";
 @import "./bootstrap/scss/variables-dark";
@@ -35,6 +36,10 @@ $navbar-dark-disabled-color: rgba($white, 0.45);
 
 body {
   height: fit-content!important;
+}
+
+a {
+  color: $kroxy-dark-green;
 }
 
 .krx-content * {
@@ -62,6 +67,10 @@ body {
 
 .krx-nav-link.active {
   text-shadow: 0 0 1rem rgba($kroxy-light, 0.15);
+}
+
+.krx-card-nav-link {
+  color: $kroxy-dark-green;
 }
 
 .krx-footer-license {
@@ -150,7 +159,7 @@ div.highlighter-rouge {
 
 // Anchor Links
 
-h2>a.anchor, h3>a.anchor, h4>a.anchor, h5>a.anchor, h6>a.anchor {
+h2>a.anchor>span, h3>a.anchor>span, h4>a.anchor>span, h5>a.anchor>span, h6>a.anchor>span {
   font-family: bootstrap-icons!important;
   color: rgba($primary, 0);
   display: block;
@@ -164,15 +173,15 @@ h2>a.anchor, h3>a.anchor, h4>a.anchor, h5>a.anchor, h6>a.anchor {
           color 200ms ease-in-out;
 }
 
-h2>a.anchor::before, h3>a.anchor::before, h4>a.anchor::before, h5>a.anchor::before, h6>a.anchor::before {
+h2>a.anchor>span::before, h3>a.anchor>span::before, h4>a.anchor>span::before, h5>a.anchor>span::before, h6>a.anchor>span::before {
   content: "\f470";
 }
 
-h2:hover>a.anchor, h3:hover>a.anchor, h4:hover>a.anchor, h5:hover>a.anchor, h6:hover>a.anchor {
+h2:hover>a.anchor>span, h3:hover>a.anchor>span, h4:hover>a.anchor>span, h5:hover>a.anchor>span, h6:hover>a.anchor>span {
   visibility: visible;
   color: rgba($primary, 1);
 }
 
-h2:hover>a.anchor:hover, h3:hover>a.anchor:hover, h4:hover>a.anchor:hover, h5:hover>a.anchor:hover, h6:hover>a.anchor:hover {
+h2:hover>a.anchor>span:hover, h3:hover>a.anchor>span:hover, h4:hover>a.anchor>span:hover, h5:hover>a.anchor>span:hover, h6:hover>a.anchor>span:hover {
   color: rgba($secondary, 1);
 }

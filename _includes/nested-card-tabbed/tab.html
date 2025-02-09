@@ -2,7 +2,7 @@
     <button class="nav-link krx-card-nav-link {% if include.is_active_tab %}active{% endif %}"
             id="{{ include.htmlid }}" data-bs-toggle="tab"
             data-bs-target="#{{ include.htmlid }}-tab-pane" type="button"
-            role="tab" aria-controls="{{ include.htmlid }}-tab-pane"
+            aria-controls="{{ include.htmlid }}-tab-pane"
             {% if include.is_active_tab %}aria-current="true"{% endif %}
             aria-selected="{{ include.is_active_tab }}">
         {{ include.tab_title | markdownify }}
