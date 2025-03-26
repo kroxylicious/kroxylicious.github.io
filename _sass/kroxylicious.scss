@@ -42,6 +42,10 @@ a {
   color: $kroxy-dark-green;
 }
 
+.nav-item > .dropdown-menu {
+  min-width: 200px;
+}
+
 .krx-content * {
   scroll-margin-top: 5rem!important;
 }
