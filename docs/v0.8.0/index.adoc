@@ -1,5 +1,6 @@
 ---
 title: Kroxylicious Proxy v0.8.0
+version_warning: <em>This documentation is for an older release of Kroxylicious, and may not reflect current functionality.</em>
 ---
 
 include::_files/index.adoc[leveloffset=0]
