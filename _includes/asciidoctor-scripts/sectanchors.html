@@ -1,0 +1,13 @@
+<!-- The following script fixes an accessibility issue with the sectanchors injected by AsciiDoc not containing any content. -->
+<!-- The script adds a span which the anchor CSS applies to, then moves the header text inside the anchor element. -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("a.anchor").forEach((anchorElem) => {
+      var anchorSpan = document.createElement('span');
+      anchorSpan.setAttribute("class", "anchor-icon");
+      anchorElem.appendChild(anchorSpan);
+      anchorElem.appendChild(anchorElem.nextSibling);
+      anchorElem.setAttribute("class", anchorElem.getAttribute("class") + " text-decoration-none text-reset")
+    })
+  })
+</script>

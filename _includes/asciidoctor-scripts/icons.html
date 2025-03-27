@@ -1,0 +1,77 @@
+<!-- The following script adds bootstrap classes to Asciidoc "admonitionblock" elements i.e. text blocks labelled info, warning, etc. -->
+<!-- Without this script they just appear as weirdly-formatted paragraphs, however it does add a little bit to page load time. -->
+<!-- There's some styles at the bottom of _sass/kroxylicious.scss to make this all work nicely and look good. -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".admonitionblock.note").forEach((blockElem) => {
+            blockElem.classList.add("alert");
+            blockElem.setAttribute("role", "alert");
+            blockElem.classList.add("alert-info");
+            blockElem.querySelectorAll("i").forEach((iconElem) => {
+                var elemClassList = iconElem.classList;
+                // FontAwesome .fa -> Bootstrap Icons .bi
+                elemClassList.replace("fa", "bi");
+                // FontAwesome .icon-note -> Bootstrap Icons .bi-info-circle-fill
+                elemClassList.replace("icon-note", "bi-info-circle-fill");
+                // add layout and util classes
+                elemClassList.add("krx-docs-note", "ms-2", "me-4", "fs-5");
+            });
+        });
+        document.querySelectorAll(".admonitionblock.tip").forEach((blockElem) => {
+            blockElem.classList.add("alert");
+            blockElem.setAttribute("role", "alert");
+            blockElem.classList.add("alert-primary");
+            blockElem.querySelectorAll("i").forEach((iconElem) => {
+                var elemClassList = iconElem.classList;
+                // FontAwesome .fa -> Bootstrap Icons .bi
+                elemClassList.replace("fa", "bi");
+                // FontAwesome .icon-tip -> Bootstrap Icons .bi-lightbulb
+                elemClassList.replace("icon-tip", "bi-lightbulb");
+                // add layout and util classes
+                elemClassList.add("krx-docs-tip", "ms-2", "me-4", "fs-5");
+            });
+        })
+        document.querySelectorAll(".admonitionblock.warning").forEach((blockElem) => {
+            blockElem.classList.add("alert");
+            blockElem.setAttribute("role", "alert");
+            blockElem.classList.add("alert-warning");
+            blockElem.querySelectorAll("i").forEach((iconElem) => {
+                var elemClassList = iconElem.classList;
+                // FontAwesome .fa -> Bootstrap Icons .bi
+                elemClassList.replace("fa", "bi");
+                // FontAwesome .icon-warning -> Bootstrap Icons .bi-exclamation-triangle-fill
+                elemClassList.replace("icon-warning", "bi-exclamation-triangle-fill");
+                // add layout and util classes
+                elemClassList.add("krx-docs-warning", "ms-2", "me-4", "fs-5");
+            });
+        });
+        document.querySelectorAll(".admonitionblock.caution").forEach((blockElem) => {
+            blockElem.classList.add("alert");
+            blockElem.setAttribute("role", "alert");
+            blockElem.classList.add("alert-danger");
+            blockElem.querySelectorAll("i").forEach((iconElem) => {
+                var elemClassList = iconElem.classList;
+                // FontAwesome .fa -> Bootstrap Icons .bi
+                elemClassList.replace("fa", "bi");
+                // FontAwesome .icon-caution -> Bootstrap Icons .bi-dash-circle-fill
+                elemClassList.replace("icon-caution", "bi-dash-circle-fill");
+                // add layout and util classes
+                elemClassList.add("krx-docs-caution", "ms-2", "me-4", "fs-5");
+            });
+        });
+        document.querySelectorAll(".admonitionblock.important").forEach((blockElem) => {
+            blockElem.classList.add("alert");
+            blockElem.setAttribute("role", "alert");
+            blockElem.classList.add("alert-danger");
+            blockElem.querySelectorAll("i").forEach((iconElem) => {
+                var elemClassList = iconElem.classList;
+                // FontAwesome .fa -> Bootstrap Icons .bi
+                elemClassList.replace("fa", "bi");
+                // FontAwesome .icon-important -> Bootstrap Icons .bi-exclamation-circle-fill
+                elemClassList.replace("icon-important", "bi-exclamation-circle-fill");
+                // add layout and util classes
+                elemClassList.add("krx-docs-important", "ms-2", "me-4", "fs-5");
+            });
+        });
+    });
+</script>
