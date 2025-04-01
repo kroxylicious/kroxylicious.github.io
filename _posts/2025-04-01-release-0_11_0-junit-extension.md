@@ -8,7 +8,7 @@ categories:  releases junit5-extension kafka4.0
 ---
 
 The Kroxylicious project is very pleased to announce the [0.11.0](https://github.com/kroxylicious/kroxylicious-junit5-extension/releases/tag/v0.11.0) release of our Junit5 Extension. This release introduces support for Apache Kafka 4.0.
-Support for earlier versions of Kafka is maintained - including support for Zookeeper - just put the version of Kafka you want to use on the classpath - and everything else is automatic.
+Support for earlier versions of Kafka is maintained - including support for Kafka clusters with based Zookeeper controllers. Just put the version of Kafka you want to use on the classpath - and everything else is automatic.
 
 ### Feedback
 
