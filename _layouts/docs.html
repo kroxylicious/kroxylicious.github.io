@@ -10,8 +10,15 @@ layout: default
             {{ page.title }}
           </h1>
         <div class="card-text g-0">
+          {% if page.is_archive %}
+          {% capture blurb %}
+          {% include_relative blurb.markdown %}
+          {% endcapture %}
+          {{ blurb | markdownify }}
+          {% else %}
           <p><em>This documentation is for a stable release version of Kroxylicious. For the documentation from the latest development version of Kroxylicious, <a href="{{ '/kroxylicious' | relative_url }}">click here</a>.</small></em></p>
           {{ page.document | tocify_asciidoc }}
+          {% endif %}
         </div>
       </div>
     </div>
@@ -23,7 +30,7 @@ layout: default
           <div class="col-auto">
             <div class="card-text ms-3 m-2">
               {% if page.version_warning %}
-              {% include bs-alert.html type="warning" content=page.version_warning %}
+              {% include bs-alert.html type="warning" icon="exclamation-triangle-fill" content=page.version_warning %}
               {% endif %}
               {{ content }}
             </div>

@@ -47,9 +47,17 @@
             <a class="nav-link dropdown-toggle krx-nav-link py-2 px-0 px-lg-4" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">Docs</a>
             <ul class="dropdown-menu">
               {% for version in site.data.kroxylicious.versions %}
-              {% if version.subsections %}
+              {% if version.subsections or version.archive %}
               <li><hr class="dropdown-divider"></li>
-              <li><h6 class="dropdown-header">{{ version.title }}</h6></li>
+              <li>
+                <h6 class="dropdown-header">
+                  {% if version.subsections %}
+                  {{ version.title }}
+                  {% else %}
+                  For all older versions:
+                  {% endif %}
+                </h6>
+              </li>
               {% endif %}
               <li>
                 <a class="dropdown-item {% if page.url == version.url %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ version.url }}">
@@ -68,7 +76,9 @@
                 </a>
               </li>
               {% endfor %}
+              {% unless version.archive %}
               <li><hr class="dropdown-divider"></li>
+              {% endunless %}
               {% endif %}
               {% endfor %}
             </ul>
