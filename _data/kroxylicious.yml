@@ -1,6 +1,7 @@
 versions:
   - title: 'Development'
     url: '/kroxylicious'
+    development: true
   - title: 'v0.11.0'
     url: '/docs/v0.11.0/'
     subsections:
@@ -10,6 +11,10 @@ versions:
     url: '/docs/v0.10.0/'
   - title: 'v0.9.0'
     url: '/docs/v0.9.0/'
+  - title: 'Archive'
+    url: '/docs/archive/'
+    archive: true
+older_versions:
   - title: 'v0.8.0'
     url: '/docs/v0.8.0/'
   - title: 'v0.7.0'
