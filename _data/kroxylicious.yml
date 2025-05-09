@@ -3,6 +3,9 @@ versions:
     url: '/kroxylicious'
   - title: 'v0.12.0'
     url: '/docs/v0.12.0/'
+    subsections:
+      - title: 'Proxy Guide'
+        url: '/docs/v0.12.0/kroxylicious-proxy/'
   - title: 'v0.11.0'
     url: '/docs/v0.11.0/'
     subsections:
