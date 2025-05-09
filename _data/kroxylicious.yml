@@ -1,6 +1,8 @@
 versions:
   - title: 'Development'
     url: '/kroxylicious'
+  - title: 'v0.12.0'
+    url: '/docs/v0.12.0/'
   - title: 'v0.11.0'
     url: '/docs/v0.11.0/'
     subsections:
