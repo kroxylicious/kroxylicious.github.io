@@ -14,7 +14,7 @@
 :icons: font
 
 //Latest version
-:KroxyliciousVersion: 0.9
+:KroxyliciousVersion: 0.12
 :gitRef: releases/tag/v0.12.0
 :ApicurioVersion: 2.6.x
 
