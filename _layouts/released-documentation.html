@@ -1,0 +1,36 @@
+---
+layout: default
+---
+{% if page.version == 'latest' %}
+{% assign version = site.data.release.latest %}
+{% else %}
+{% assign version = page.url | split: "/" | slice: -1 | first %}
+{% endif %}
+<div class="row align-items-start justify-content-center my-5">
+  <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
+    <div class="card shadow px-2 mx-2">
+      <div class="card-body">
+        <h1 id="page-title" class="fs-3">{{ version }} Documentation</h1>
+<p>The documentation linked here covers version {{ version }}{%if version == site.data.release.latest %}, which is the latest release.
+{% else %}. <strong>The latest release is version {{ site.data.release.latest }}. Please consider upgrading.</strong>{% endif %}
+</p>
+<p>See the <a href="/release-archives/">release archives</a> for the documentation of older releases.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6" role="main">
+{% for release in site.data.release.list %}
+{% if release.version == version %}
+ {% for doc in release.docs %}
+    <div class="card shadow mb-4">
+      <div class="card-body mx-3 my-2">
+        <h2 class="card-title fs-4"><a href="{{ release.docsBaseUrl | replace: "$(VERSION)", release.version }}{{ doc.path }}">{{ doc.name }}</a></h2>
+{{ doc.description }}
+      </div>
+    </div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+  </div>
+</div>
+

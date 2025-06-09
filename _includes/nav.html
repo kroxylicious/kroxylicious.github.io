@@ -28,50 +28,17 @@
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/use-cases/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/use-cases/' | absolute_url }}">
-              Use Cases
+            <a class="nav-link {% if page.url == '/use-cases/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/download/' | absolute_url }}">
+              Download
             </a>
           </li>
           <li class="nav-item py-lg-1 col-lg-auto">
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/quickstarts/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/quickstarts/' | absolute_url }}">
-              Get Started
+            <a class="nav-link {% if page.url == '/quickstarts/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/documentation/' | absolute_url }}">
+              Documentation
             </a>
-          </li>
-          <li class="nav-item py-lg-1 col-lg-auto">
-            <div class="vr d-none d-lg-flex h-100 text-white"></div>
-          </li>
-          <li class="nav-item dropdown col-6 col-lg-auto">
-            <a class="nav-link dropdown-toggle krx-nav-link py-2 px-0 px-lg-4" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">Docs</a>
-            <ul class="dropdown-menu">
-              {% for version in site.data.kroxylicious.versions %}
-              {% if version.subsections %}
-              <li><hr class="dropdown-divider"></li>
-              <li><h6 class="dropdown-header">{{ version.title }}</h6></li>
-              {% endif %}
-              <li>
-                <a class="dropdown-item {% if page.url == version.url %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ version.url }}">
-                  {% if version.subsections %}
-                  Index
-                  {% else %}
-                  {{ version.title }}
-                  {% endif %}
-                </a>
-              </li>
-              {% if version.subsections %}
-              {% for subsection in version.subsections %}
-              <li>
-                <a class="dropdown-item {% if page.url == subsection.url %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ subsection.url }}">
-                  {{ subsection.title }}
-                </a>
-              </li>
-              {% endfor %}
-              <li><hr class="dropdown-divider"></li>
-              {% endif %}
-              {% endfor %}
-            </ul>
           </li>
           <li class="nav-item py-lg-1 col-lg-auto">
             <div class="vr d-none d-lg-flex h-100 text-white"></div>

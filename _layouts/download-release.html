@@ -1,0 +1,41 @@
+---
+layout: default
+---
+{% if page.version == 'latest' %}
+{% assign version = site.data.release.latest %}
+{% else %}
+{% assign version = page.url | split: "/" | slice: -1 | first %}
+{% endif %}
+
+<div class="row align-items-start justify-content-center my-5">
+  <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
+    <div class="card shadow px-2 mx-2">
+      <div class="card-body">
+        <h1 id="page-title" class="fs-3">{{ version }} Download</h1>
+<p>The downloads linked here are for version {{ version }}{%if version == site.data.release.latest %}, which is the latest release.
+{% else %}. <strong>The latest release is version {{ site.data.release.latest }}. Please consider upgrading.</strong>{% endif %}
+</p>
+<p>See the <a href="/release-archives/">release archives</a> for older releases.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6" role="main">
+    <div class="card shadow mb-4">
+      <div class="card-body mx-3 my-2">
+        <h2 class="card-title fs-4"></h2>
+{% for release in site.data.release.list %}
+{% if release.version == version %}
+      <a href="{{ release.releaseNotesUrl | replace: "$(VERSION)", release.version }}">Release notes</a>: what's been added, deprecated and/or removed<br/>
+      <a href="/documentation/{{ release.version }}/">Documentation and quick starts</a><br/>
+{% for asset in release.assets %}
+       <a href="{{ release.assetBaseUrl | replace: "$(VERSION)", release.version }}{{ asset.path | replace: "$(VERSION)", release.version }}">{{ asset.name }}</a>:
+       {{ asset.description }}<br/>
+{% endfor %}
+      <p>Container images are published to <a href="https://quay.io/repository/kroxylicious/kroxylicious?tab=tags">our quay.io repository</a>.</p>
+{% endif %}
+{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
