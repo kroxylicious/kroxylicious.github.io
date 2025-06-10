@@ -1,6 +1,7 @@
 ---
 layout: default
 ---
+<!-- _layouts/download-release.html -->
 {% if page.version == 'latest' %}
 {% assign version = site.data.release.latest %}
 {% else %}
@@ -22,7 +23,6 @@ layout: default
   <div class="col-lg-6" role="main">
     <div class="card shadow mb-4">
       <div class="card-body mx-3 my-2">
-        <h2 class="card-title fs-4"></h2>
 {% for release in site.data.release.list %}
 {% if release.version == version %}
       <a href="{{ release.releaseNotesUrl | replace: "$(VERSION)", release.version }}">Release notes</a>: what's been added, deprecated and/or removed<br/>
