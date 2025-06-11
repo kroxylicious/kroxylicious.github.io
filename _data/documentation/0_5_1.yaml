@@ -1,9 +1,7 @@
-version: 0.5.1
-docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
 docs:
   - name: Quick start
     description: Start here if you're just getting started with Kroxylicious.
     path: /quickstarts
   - name: Proxy Guide
-    description: Describes how to deploy and operator the proxy on "bare metal".
-    path: html/proxy/
+    description: Describes how to deploy and operate the proxy on "bare metal".
+    path: /docs/v0.5.1/

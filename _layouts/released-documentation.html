@@ -21,9 +21,10 @@ layout: default
   </div>
   <div class="col-lg-6" role="main">
     <div class="row row-cols-1 row-cols-md-2 g-4">
-{%- for release in site.data.documentation -%}
-{%- if release[1].version == version -%}
-{%- for doc in release[1].docs -%}
+{%- for docSet in site.data.documentation -%}
+{%- assign docSetVersion = docSet[0] | replace: '_', '.' -%}
+{%- if docSetVersion == version -%}
+{%- for doc in docSet[1].docs -%}
 {%- assign first1 = doc.path | slice: 0, 1 -%}
 {%- assign first7 = doc.path | slice: 0, 7 -%}
 {%- assign first8 = doc.path | slice: 0, 8 -%}

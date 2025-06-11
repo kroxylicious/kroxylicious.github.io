@@ -1,14 +1,12 @@
-version: 0.11.0
-docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
 docs:
   - name: Quick start
     description: Start here if you're just getting started with Kroxylicious.
     path: /quickstarts
   - name: Proxy Guide
-    description: Describes how to deploy and operator the proxy on "bare metal".
+    description: Describes how to deploy and operate the proxy on "bare metal".
     path: html/proxy/
   - name: Operator Guide
-    description: Describes how to deploy and operator the proxy on Kubernetes.
+    description: Describes how to deploy and operate the proxy on Kubernetes.
     path: html/operator/
   - name: Developer Guide
     description: Describes how to write Kroxylicious plugins using the Java programming language.
