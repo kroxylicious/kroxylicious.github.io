@@ -1,0 +1,22 @@
+version: 0.12.0
+docsBaseUrl: /documentation/$(VERSION)/
+docs:
+  - name: Proxy quick start
+    description: Start here if you're experimenting with the proxy for the first time.
+    path: /quickstarts
+  - name: Developer quick start
+    description: Start here if you're developing a filter for the first time.
+    path: /quickstarts
+  - name: Proxy Guide
+    description: Describes how to deploy and operator the proxy on "bare metal".
+    path: html/proxy/
+  - name: Operator Guide
+    description: Describes how to deploy and operator the proxy on Kubernetes.
+    path: html/operator/
+  - name: Developer Guide
+    description: Describes how to write Kroxylicious plugins using the Java programming language.
+    path: html/developer/
+  - name: Javadoc
+    description: The Java API documentation.
+    path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/latest/index.html
+    
