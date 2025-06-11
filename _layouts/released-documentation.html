@@ -20,18 +20,32 @@ layout: default
     </div>
   </div>
   <div class="col-lg-6" role="main">
-{% for release in site.data.release.list %}
-{% if release.version == version %}
- {% for doc in release.docs %}
-    <div class="card shadow mb-4">
-      <div class="card-body mx-3 my-2">
-        <h2 class="card-title fs-4"><a href="{{ release.docsBaseUrl | replace: "$(VERSION)", release.version }}{{ doc.path }}">{{ doc.name }}</a></h2>
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+{%- for release in site.data.documentation -%}
+{%- if release[1].version == version -%}
+{%- for doc in release[1].docs -%}
+{%- assign first1 = doc.path | slice: 0, 1 -%}
+{%- assign first7 = doc.path | slice: 0, 7 -%}
+{%- assign first8 = doc.path | slice: 0, 8 -%}
+{%- if first7 == 'http://' or first8 == 'https://' or first1 == '/' -%}
+{%- assign pathPrefix = "" -%}
+{%- else -%} 
+{%- assign pathPrefix = "/documentation/" | append: {{version}} | append: "/" -%}
+{%- endif -%}
+      <div class="col">
+        <div class="card shadow mb-2 h-100 mx-2">
+          <div class="card-header">
+            <h2 class="card-title fs-4"><a href="{{ pathPrefix }}{{ doc.path }}">{{ doc.name }}</a></h2>
+          </div>
+          <div class="card-body mx-3 my-2">
 {{ doc.description }}
+          </div>
+        </div>
       </div>
-    </div>
 {% endfor %}
 {% endif %}
 {% endfor %}
+    </div>
   </div>
 </div>
 

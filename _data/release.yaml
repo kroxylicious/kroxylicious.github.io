@@ -20,207 +20,82 @@ list:
       - name: Operator (tar.gz)
         description: The Kubernetes operator
         path: kroxylicious-app-$(VERSION)-bin.tar.gz
-    docsBaseUrl: /documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
-      - name: Operator Guide
-        description: Describes how to deploy and operator the proxy on Kubernetes.
-        path: html/operator/
-      - name: Developer Guide
-        description: Describes how to write Kroxylicious plugins using the Java programming language.
-        path: html/developer/
   - version: 0.11.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
-      - name: Operator Guide
-        description: Describes how to deploy and operator the proxy on Kubernetes.
-        path: html/operator/
-      - name: Developer Guide
-        description: Describes how to write Kroxylicious plugins using the Java programming language.
-        path: html/developer/
   - version: 0.10.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.9.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.8.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.7.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.6.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.5.1
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.5.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.4.1
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.4.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.3.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy (zip)
-        description: The proxy application
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.2.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
   - version: 0.1.0
     assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
     assets:
       - name: Proxy (zip)
         description: The proxy application
         path: kroxylicious-app-$(VERSION)-bin.zip
-    docsBaseUrl: https://kroxylicious.io/documentation/$(VERSION)/
-    docs:
-      - name: Quick start
-        description: Start here if you're just getting started with Kroxylicious.
-        path: html/proxy-quick-start/
-      - name: Proxy Guide
-        description: Describes how to deploy and operator the proxy on "bare metal".
-        path: html/proxy/
 
