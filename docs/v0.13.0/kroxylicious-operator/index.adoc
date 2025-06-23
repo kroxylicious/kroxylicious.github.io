@@ -1,0 +1,6 @@
+---
+title: Kroxylicious Operator v0.13.0
+---
+
+include::../_files/kroxylicious-operator/index.adoc[leveloffset=0]
+
