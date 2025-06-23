@@ -1,0 +1,6 @@
+---
+title: Kroxylicious Proxy v0.13.0
+---
+
+include::../_files/kroxylicious-proxy/index.adoc[leveloffset=0]
+
