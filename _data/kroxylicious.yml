@@ -3,6 +3,15 @@ versions:
     url: '/kroxylicious'
   - title: 'v0.13.0'
     url: '/docs/v0.13.0/'
+    subsections:
+      - title: 'Proxy Guide'
+        url: '/docs/v0.13.0/kroxylicious-proxy/'
+      - title: 'Operator Guide'
+        url: '/docs/v0.13.0/kroxylicious-operator/'
+      - title: 'Developer Guide'
+        url: '/docs/v0.13.0/developer-guide/'
+      - title: 'Record Encryption Guide'
+        url: '/docs/v0.13.0/record-encryption-guide/'
   - title: 'v0.12.0'
     url: '/docs/v0.12.0/'
     subsections:
