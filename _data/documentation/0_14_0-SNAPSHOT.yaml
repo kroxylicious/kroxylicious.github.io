@@ -12,7 +12,8 @@ docs:
     path: /quickstarts
   - name: Proxy guide
     description: "Covers using the proxy, including configuration, security and operation."
-    tags: proxy
+    tags:
+      - proxy
     path: html/kroxylicious-proxy
   - name: Kroxylicious Developer guide
     description: Covers writing plugins for the proxy in the Java programming language

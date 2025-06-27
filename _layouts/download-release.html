@@ -21,21 +21,54 @@ layout: default
     </div>
   </div>
   <div class="col-lg-6" role="main">
-    <div class="card shadow mb-4">
-      <div class="card-body mx-3 my-2">
+      <div class="row row-cols-1 row-cols-md-2 g-4">
 {% for release in site.data.release.list %}
 {% if release.version == version %}
-      <a href="{{ release.releaseNotesUrl | replace: "$(VERSION)", release.version }}">Release notes</a>: what's been added, deprecated and/or removed<br/>
-      <a href="/documentation/{{ release.version }}/">Documentation and quick starts</a><br/>
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4"><a href='{{ release.releaseNotesUrl | replace: "$(VERSION)", release.version }}'>Release notes</a></h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      What's been added, deprecated and/or removed
+                  </div>
+              </div>
+          </div>
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4"><a href="/documentation/{{ release.version }}/">Documentation and quick starts</a></h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      {{ asset.description }}
+                  </div>
+              </div>
+          </div>
 {% for asset in release.assets %}
-       <a href="{{ release.assetBaseUrl | replace: "$(VERSION)", release.version }}{{ asset.path | replace: "$(VERSION)", release.version }}">{{ asset.name }}</a>:
-       {{ asset.description }}<br/>
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4"><a href='{{ release.assetBaseUrl | replace: "$(VERSION)", release.version }}{{ asset.path | replace: "$(VERSION)", release.version }}'>{{ asset.name }}</a></h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      {{ asset.description }}
+                  </div>
+              </div>
+          </div>
 {% endfor %}
-      <p>Container images are published to <a href="https://quay.io/repository/kroxylicious/kroxylicious?tab=tags">our quay.io repository</a>.</p>
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4">Container images</h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      Container images are published to <a href="https://quay.io/repository/kroxylicious/kroxylicious?tab=tags">our quay.io repository</a>.
+                  </div>
+              </div>
+          </div>
 {% endif %}
 {% endfor %}
       </div>
-    </div>
   </div>
 </div>
 
