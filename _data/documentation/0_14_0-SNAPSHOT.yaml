@@ -1,0 +1,37 @@
+docs:
+  - name: Record Encryption Guide
+    description: "Covers using the record encryption filter, including configuration,\
+      \ security and operation."
+    tags:
+      - filter
+    path: html/record-encryption-guide
+  - name: Proxy quickstart
+    description: Start here if you're experimenting with the proxy for the first time.
+    tags:
+      - proxy
+    path: /quickstarts
+  - name: Proxy guide
+    description: "Covers using the proxy, including configuration, security and operation."
+    tags: proxy
+    path: html/kroxylicious-proxy
+  - name: Kroxylicious Developer guide
+    description: Covers writing plugins for the proxy in the Java programming language
+    tags:
+      - developer
+    path: html/developer-guide
+  - name: Developer quickstart
+    description: Start here if you're developing a filter for the first time.
+    tags:
+      - developer
+    path: /quickstarts
+  - name: Kroxylicious Operator for Kubernetes
+    description: "Covers using the Kubernetes operator for the proxy, including configuration,\
+      \ security and operation."
+    tags:
+      - kubernetes
+    path: html/kroxylicious-operator
+  - name: Kroxylicious Javadocs
+    description: The Java API documentation.
+    tags:
+      - developer
+    path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/0.14.0-SNAPSHOT/index.html
