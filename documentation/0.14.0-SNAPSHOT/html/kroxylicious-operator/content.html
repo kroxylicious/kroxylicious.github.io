@@ -88,7 +88,7 @@
      </div>
      <div class="imageblock">
       <div class="content">
-       <img src="./_assets/operator-input-resource-topology.svg" alt="Diagram showing the input resources, KafkaProxy, VirtualKafkaCluster, etc, as boxes, connected by arrows representing the references between the resources.">
+       <img src="../images/operator-input-resource-topology.svg" alt="Diagram showing the input resources, KafkaProxy, VirtualKafkaCluster, etc, as boxes, connected by arrows representing the references between the resources.">
       </div>
       <div class="title">Figure 1. Example input resources, and the references between them.</div>
      </div>
@@ -125,7 +125,7 @@
      </div>
      <div class="imageblock">
       <div class="content">
-       <img src="./_assets/operator-output-resource-topology.svg" alt="Diagram showing the output resources, Deployment, Pod, ConfigMap, Service, with arrows showing the Deployment managing the Pod, the Pod mounting the ConfigMap, and the Service selecting the Pod.">
+       <img src="../images/operator-output-resource-topology.svg" alt="Diagram showing the output resources, Deployment, Pod, ConfigMap, Service, with arrows showing the Deployment managing the Pod, the Pod mounting the ConfigMap, and the Service selecting the Pod.">
       </div>
       <div class="title">Figure 2. The generated Kubernetes resources, and the relationships between them</div>
      </div>
@@ -145,10 +145,123 @@
    </div>
   </div>
   <div class="sect1">
-   <h2 id="con-installing-operator">3. Installing the operator</h2>
+   <h2 id="assembly-installing-operator">3. Installing the operator</h2>
    <div class="sectionbody">
     <div class="paragraph">
-     <p><strong>TO DO</strong></p>
+     <p>This section provides instructions for installing the Kroxylicious Operator.</p>
+    </div>
+    <div class="paragraph">
+     <p>Installation options and procedures are demonstrated using the example files included with Kroxylicious.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="install-prereqs-operator">3.1. Install prerequisites</h3>
+     <div class="paragraph">
+      <p>To install Kroxylicious, you will need the following:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>A Kubernetes 1.31 or later cluster.</p>
+       </li>
+       <li>
+        <p>The <code>kubectl</code> command-line tool to be installed and configured to connect to the running cluster.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>For more information on the tools available for running Kubernetes, see <a href="https://kubernetes.io/docs/tasks/tools/" target="_blank" rel="noopener">Install Tools</a> in the Kubernetes documentation.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="downloads-operator">3.2. Kroxylicious release artifacts</h3>
+     <div class="paragraph _abstract">
+      <p>To use YAML manifest files to install Kroxylicious, download kroxylicious-operator-0.13.zip or kroxylicious-operator-0.13.tar.gz file from the <a href="https://github.com/kroxylicious/kroxylicious/releases" target="_blank" rel="noopener">GitHub releases page</a>, and extract the files as appropriate (for example using <code>unzip</code> or <code>tar -xzf</code>).</p>
+     </div>
+     <div class="paragraph">
+      <p>Each of these archives contains:</p>
+     </div>
+     <div class="dlist">
+      <dl>
+       <dt class="hdlist1">Installation Files</dt>
+       <dd>
+        <p>In the <code>install</code> directory are the YAML manifests needed to install the operator.</p>
+       </dd>
+       <dt class="hdlist1">Examples</dt>
+       <dd>
+        <p>In the <code>examples</code> directory are examples of the custom resources which can be used to deploy a proxy once the operator has been installed.</p>
+       </dd>
+      </dl>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="install-cluster-operator-operator">3.3. Installing the Kroxylicious Operator</h3>
+     <div class="paragraph _abstract">
+      <p>This procedure shows how to install the Kroxylicious Operator in your Kubernetes cluster.</p>
+     </div>
+     <div class="ulist">
+      <div class="title">Prerequisites</div>
+      <ul>
+       <li>
+        <p>You need an account with permission to create and manage <code>CustomResourceDefinition</code> and RBAC (<code>ClusterRole</code>) resources.</p>
+       </li>
+       <li>
+        <p>You have downloaded one of kroxylicious-operator-0.13.zip or kroxylicious-operator-0.13.tar.gz and extracted the contents into the current directory.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="olist arabic">
+      <div class="title">Procedure</div>
+      <ol class="arabic">
+       <li>
+        <p>Edit the Kroxylicious installation files to use the namespace the operator is going to be installed into.</p>
+        <div class="paragraph">
+         <p>For example, in this procedure the operator is installed into the namespace <code>my-kroxylicious-operator-namespace</code>.</p>
+        </div>
+        <div class="paragraph">
+         <p>On Linux, use:</p>
+        </div>
+        <div class="listingblock">
+         <div class="content">
+          <pre class="CodeRay highlight"><code>sed -i 's/namespace: .*/namespace: my-kroxylicious-operator-namespace/' install/*.yaml</code></pre>
+         </div>
+        </div>
+        <div class="paragraph">
+         <p>On MacOS, use:</p>
+        </div>
+        <div class="listingblock">
+         <div class="content">
+          <pre class="CodeRay highlight"><code>sed -i '' 's/namespace: .*/namespace: my-kroxylicious-operator-namespace/' install/*.yaml</code></pre>
+         </div>
+        </div>
+       </li>
+       <li>
+        <p>Deploy the Kroxylicious operator:</p>
+        <div class="listingblock">
+         <div class="content">
+          <pre class="CodeRay highlight"><code data-lang="shell">kubectl create -f install</code></pre>
+         </div>
+        </div>
+       </li>
+       <li>
+        <p>Check the status of the deployment:</p>
+        <div class="listingblock">
+         <div class="content">
+          <pre class="CodeRay highlight"><code data-lang="shell">kubectl get deployments -n my-kroxylicious-operator-namespace</code></pre>
+         </div>
+        </div>
+        <div class="listingblock">
+         <div class="title">Output shows the deployment name and readiness</div>
+         <div class="content">
+          <pre class="CodeRay highlight"><code data-lang="shell">NAME                      READY  UP-TO-DATE  AVAILABLE
+kroxylicious-operator     1/1    1           1</code></pre>
+         </div>
+        </div>
+        <div class="paragraph">
+         <p><code>READY</code> shows the number of replicas that are ready/expected. The deployment is successful when the <code>AVAILABLE</code> output shows <code>1</code>.</p>
+        </div>
+       </li>
+      </ol>
+     </div>
     </div>
    </div>
   </div>
@@ -396,13 +509,61 @@
    </div>
   </div>
   <div class="sect1">
-   <h2 id="assembly-operator-secure-proxy-securing">5. Securing a proxy</h2>
+   <h2 id="assembly-operator-operate-proxy-operator">5. Operating a proxy</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>Operate a deployed proxy by configuring its resource allocations.</p>
+    </div>
+    <div class="paragraph">
+     <p>This section assumes you have a running Kroxylicious proxy instance.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="con-kafkaproxy-cpu-memory-allocation-operator">5.1. Configuring Proxy container CPU and memory resource limits and requests</h3>
+     <div class="paragraph">
+      <p>When you define a <code>KafkaProxy</code> resource, a number of Kubernetes <code>Pods</code> are created, each with a proxy container. Each of these containers runs a single Kroxylicious Proxy process.</p>
+     </div>
+     <div class="paragraph">
+      <p>By default, these proxy containers are defined without resource limits.</p>
+     </div>
+     <div class="paragraph">
+      <p>You can learn more about Kubernetes resource management <a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">here</a>.</p>
+     </div>
+     <div class="paragraph">
+      <p>To manage CPU and memory consumption in your environment, modify the <code>proxyContainer</code> section within your <code>KafkaProxy</code> specification.</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>KafkaProxy</code> configuration with proxy container resource specification
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kind</span>: <span class="string"><span class="content">KafkaProxy</span></span>
+<span class="key">apiVersion</span>: <span class="string"><span class="content">kroxylicious.io/v1alpha1</span></span>
+<span class="key">metadata</span>:
+  <span class="key">namespace</span>: <span class="string"><span class="content">my-proxy</span></span>
+  <span class="key">name</span>: <span class="string"><span class="content">simple</span></span>
+<span class="key">spec</span>:
+  <span class="key">infrastructure</span>:
+    <span class="key">proxyContainer</span>:
+      <span class="key">resources</span>:
+        <span class="key">requests</span>:
+          <span class="key">cpu</span>: <span class="string"><span class="content">'400m'</span></span>
+          <span class="key">memory</span>: <span class="string"><span class="content">'656Mi'</span></span>
+        <span class="key">limits</span>:
+          <span class="key">cpu</span>: <span class="string"><span class="content">'500m'</span></span>
+          <span class="key">memory</span>: <span class="string"><span class="content">'756Mi'</span></span></code></pre>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-operator-secure-proxy-securing">6. Securing a proxy</h2>
    <div class="sectionbody">
     <div class="paragraph _abstract">
      <p>Secure proxies by using TLS and storing sensitive values in external resources.</p>
     </div>
     <div class="sect2">
-     <h3 id="prerequisites_2">5.1. Prerequisites</h3>
+     <h3 id="prerequisites_2">6.1. Prerequisites</h3>
      <div class="ulist">
       <ul>
        <li>
@@ -412,12 +573,12 @@
      </div>
     </div>
     <div class="sect2">
-     <h3 id="assembly-operator-secure-client-proxy-connection-securing">5.2. Securing the client-to-proxy connection</h3>
+     <h3 id="assembly-operator-secure-client-proxy-connection-securing">6.2. Securing the client-to-proxy connection</h3>
      <div class="paragraph _abstract">
       <p>Secure client-to-proxy communications using TLS.</p>
      </div>
      <div class="sect3">
-      <h4 id="con-configuring-virtualkafkacluster-securing">5.2.1. TLS configuration for client-to-proxy connections</h4>
+      <h4 id="con-configuring-virtualkafkacluster-securing">6.2.1. TLS configuration for client-to-proxy connections</h4>
       <div class="paragraph">
        <p>This example shows a <code>VirtualKafkaCluster</code>, exposing it to Kafka clients running on the same Kubernetes cluster. It uses TLS as the transport protocol so that communication between Kafka clients and the proxy is encrypted.</p>
       </div>
@@ -507,7 +668,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-kafka-client-mtls-securing">5.2.2. Mutual TLS configuration for client-to-proxy connections</h4>
+      <h4 id="con-kafka-client-mtls-securing">6.2.2. Mutual TLS configuration for client-to-proxy connections</h4>
       <div class="paragraph">
        <p>You can configure a virtual cluster ingress to request or require Kafka clients to authenticate to the proxy using TLS. This configuration is known as mutual TLS (mTLS), because both the client and the proxy authenticate each other using TLS.</p>
       </div>
@@ -562,7 +723,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-kafka-client-tls-protocol-securing">5.2.3. TLS version configuration for client-to-proxy connections</h4>
+      <h4 id="con-kafka-client-tls-protocol-securing">6.2.3. TLS version configuration for client-to-proxy connections</h4>
       <div class="paragraph">
        <p>Some older versions of TLS (and SSL before it) are now considered insecure. These versions remain enabled by default in order to maximize interoperability between TLS clients and servers that only support older versions.</p>
       </div>
@@ -625,7 +786,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-kafka-client-tls-cipher-securing">5.2.4. TLS cipher suite configuration for client-to-proxy connections</h4>
+      <h4 id="con-kafka-client-tls-cipher-securing">6.2.4. TLS cipher suite configuration for client-to-proxy connections</h4>
       <div class="paragraph">
        <p>A cipher suite is a set of cryptographic algorithms that together provide the security guarantees offered by TLS. During TLS negotiation, a server and client agree on a common cipher suite that they both support.</p>
       </div>
@@ -696,12 +857,12 @@
      </div>
     </div>
     <div class="sect2">
-     <h3 id="assembly-operator-secure-proxy-broker-connection-securing">5.3. Securing the proxy-to-broker connection</h3>
+     <h3 id="assembly-operator-secure-proxy-broker-connection-securing">6.3. Securing the proxy-to-broker connection</h3>
      <div class="paragraph _abstract">
       <p>Secure proxy-to-broker communication using TLS.</p>
      </div>
      <div class="sect3">
-      <h4 id="con-configuring-kafkaservice-trust-securing">5.3.1. TLS trust configuration for proxy-to-cluster connections</h4>
+      <h4 id="con-configuring-kafkaservice-trust-securing">6.3.1. TLS trust configuration for proxy-to-cluster connections</h4>
       <div class="paragraph">
        <p>By default, the proxy uses the platform’s default trust store when connecting to the proxied cluster over TLS. This works if the cluster’s TLS certificates are signed by a well-known public Certificate Authority (CA), but fails if they’re signed by a private CA instead.</p>
       </div>
@@ -760,7 +921,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-tls-auth-to-kafka-cluster-securing">5.3.2. TLS authentication to proxied Kafka clusters</h4>
+      <h4 id="con-tls-auth-to-kafka-cluster-securing">6.3.2. TLS authentication to proxied Kafka clusters</h4>
       <div class="paragraph">
        <p>Some Kafka clusters require mutual TLS (mTLS) authentication. You can configure the proxy to present a TLS client certificate using the <code>KafkaService</code> resource.</p>
       </div>
@@ -811,7 +972,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-configuring-kafkaservice-protocol-securing">5.3.3. TLS version configuration for proxy-to-cluster connections</h4>
+      <h4 id="con-configuring-kafkaservice-protocol-securing">6.3.3. TLS version configuration for proxy-to-cluster connections</h4>
       <div class="paragraph">
        <p>Some older versions of TLS (and SSL before it) are now considered insecure. These versions remain enabled by default in order to maximize interoperability between TLS clients and servers that only support older versions.</p>
       </div>
@@ -870,7 +1031,7 @@
       </div>
      </div>
      <div class="sect3">
-      <h4 id="con-configuring-kafkaservice-cipher-securing">5.3.4. TLS cipher suite configuration for proxy-to-cluster connections</h4>
+      <h4 id="con-configuring-kafkaservice-cipher-securing">6.3.4. TLS cipher suite configuration for proxy-to-cluster connections</h4>
       <div class="paragraph">
        <p>A cipher suite is a set of cryptographic algorithms that together provide the security guarantees offered by TLS. During TLS negotiation, a server and client agree on a common cipher suite that they both support.</p>
       </div>
@@ -934,12 +1095,12 @@
      </div>
     </div>
     <div class="sect2">
-     <h3 id="assembly-operator-secure-filter-securing">5.4. Securing filters</h3>
+     <h3 id="assembly-operator-secure-filter-securing">6.4. Securing filters</h3>
      <div class="paragraph _abstract">
       <p>Secure filters by using the security features provided by each filter and storing sensitive values in external resources such as a Kubernetes <code>Secret</code>.</p>
      </div>
      <div class="sect3">
-      <h4 id="security_sensitive_values_in_filter_resources">5.4.1. Security-sensitive values in filter resources</h4>
+      <h4 id="security_sensitive_values_in_filter_resources">6.4.1. Security-sensitive values in filter resources</h4>
       <div class="sect4">
        <h5 id="template_use_and_value_interpolation">Template use and value interpolation</h5>
        <div class="paragraph">
@@ -1032,7 +1193,656 @@
    </div>
   </div>
   <div class="sect1">
-   <h2 id="glossary">6. Glossary</h2>
+   <h2 id="assembly-operator-monitoring-operator">7. Monitoring</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>Kroxylicious supports key observability features to help you understand the performance and health of your proxy instances.</p>
+    </div>
+    <div class="paragraph">
+     <p>The Kroxylicious Proxy and Kroxylicious Operator generate metrics for real-time monitoring and alerting, as well as logs that capture their actions and behavior. You can integrate these metrics with a monitoring system like Prometheus for ingestion and analysis, while configuring log levels to control the granularity of logged information.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="con-prometheus-metrics-proxy-operator">7.1. Overview of proxy metrics</h3>
+     <div class="paragraph _abstract">
+      <p>The proxy provides metrics for both connections and messages. These metrics are categorized into downstream (client-side) and upstream (broker-side) groups They allow users to assess the impact of the proxy and its filters on their Kafka system.</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>Connection metrics count the connections made from the downstream (incoming connections from the clients) and the connection made by the proxy to upstream (outgoing connections to the Kafka brokers).</p>
+       </li>
+       <li>
+        <p>Message metrics count the number of <a href="https://kafka.apache.org/protocol.html#protocol_messages">Kafka protocol request and response messages</a> that flow through the proxy.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="sect3">
+      <h4 id="connection_metrics">7.1.1. Connection metrics</h4>
+      <div class="paragraph">
+       <p>Connection metrics count the TCP connections made from the client to the proxy (<code>kroxylicious_client_to_proxy_request_total</code>) and from the proxy to the broker (<code>kroxylicious_proxy_to_server_connections_total</code>). These metrics count connection <em>attempts</em>, so the connection count is incremented even if the connection attempt ultimately fails.</p>
+      </div>
+      <div class="paragraph">
+       <p>In addition to the count metrics, there are error metrics. * If an error occurs whilst the proxy is accepting a connection from the client the <code>kroxylicious_client_to_proxy_errors_total</code> metric is incremented by one. * If an error occurs whilst the proxy is attempting a connection to a broker the <code>kroxylicious_proxy_to_server_errors_total</code> metric is incremented by one.</p>
+      </div>
+      <div class="paragraph">
+       <p>Connection and connection error metrics include the following labels: <code>virtual_cluster</code> (the virtual cluster’s name) and <code>node_id</code> (the broker’s node ID). When the client connects to the boostrap endpoint of the virtual cluster, a node ID value of <code>bootstrap</code> is recorded.</p>
+      </div>
+      <div class="paragraph">
+       <p>The <code>kroxylicious_client_to_proxy_errors_total</code> metric also counts connection errors that occur before a virtual cluster has been identified. For these specific errors, the <code>virtual_cluster</code> and <code>node_id</code> labels are set to an empty string ("").</p>
+      </div>
+      <div class="admonitionblock note">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+          <td class="content">Error conditions signaled <em>within</em> the Kafka protocol response (such as <code>RESOURCE_NOT_FOUND</code> or <code>UNKNOWN_TOPIC_ID</code>) are not classed as errors by these metrics.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+      <table class="tableblock frame-all grid-all stretch">
+       <caption class="title">Table 1. Connection metrics for client and broker interactions</caption>
+       <colgroup>
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+       </colgroup>
+       <thead>
+        <tr>
+         <th class="tableblock halign-left valign-top">Metric Name</th>
+         <th class="tableblock halign-left valign-top">Type</th>
+         <th class="tableblock halign-left valign-top">Labels</th>
+         <th class="tableblock halign-left valign-top">Description</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_client_to_proxy_connection_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a connection is accepted from a client by the proxy.
+           <br>
+           This metric counts all connection attempts that reach the proxy, even those that end in error.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_client_to_proxy_errors_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a connection is closed due to any downstream error.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_server_connections_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a connection is made to the server from the proxy.
+           <br>
+           This metric counts all connections attempted to the broker, even those that end in error.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_server_errors_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a connection is closed due to any upstream error.</p>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="sect3">
+      <h4 id="message_metrics">7.1.2. Message metrics</h4>
+      <div class="paragraph">
+       <p>Message metrics count, and record the sizes of, the Kafka protocol requests and responses that flow through the proxy.</p>
+      </div>
+      <div class="paragraph">
+       <p>Use these metrics to help understand: * the number of messages flowing through the proxy. * the overall volume of data through the proxy. * the effect the filters are having on the messages.</p>
+      </div>
+      <div class="ulist">
+       <ul>
+        <li>
+         <p>Downstream metrics</p>
+         <div class="ulist">
+          <ul>
+           <li>
+            <p><code>kroxylicious_client_to_proxy_request_total</code> counts requests as they arrive from the client.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_proxy_to_client_response_total</code> counts responses as they are returned to the client.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_client_to_proxy_request_size_bytes</code> is incremented by the size of each request as it arrives from the client.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_proxy_to_client_response_size_bytes</code> is incremented by the size of each response as it is returned to the client.</p>
+           </li>
+          </ul>
+         </div>
+        </li>
+        <li>
+         <p>Upstream metrics</p>
+         <div class="ulist">
+          <ul>
+           <li>
+            <p><code>kroxylicious_proxy_to_server_request_total</code> counts requests as they go to the broker.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_proxy_to_server_response_total</code> counts responses as they are returned by the broker.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_proxy_to_server_request_size_bytes</code> is incremented by the size of each request as it goes to the broker.</p>
+           </li>
+           <li>
+            <p><code>kroxylicious_proxy_to_server_response_size_bytes</code> is incremented by the size of each response as it is returned by the broker.</p>
+           </li>
+          </ul>
+         </div>
+        </li>
+       </ul>
+      </div>
+      <div class="paragraph">
+       <p>The size recorded is the encoded size of the protocol message. It includes the 4 byte <a href="https://kafka.apache.org/protocol.html#protocol_common">message size</a>.</p>
+      </div>
+      <div class="paragraph">
+       <p>Filters can alter the flow of messages through the proxy or the content of the message. This is apparent through the metrics. * If a filter sends a short-circuit, or closes a connection the downstream message counters will exceed the upstream counters. * If a filter changes the size of the message, the downstream size metrics will be different to the upstream size metrics.</p>
+      </div>
+      <div class="imageblock">
+       <div class="content">
+        <img src="../images/monitoring-message-counters.svg" alt="Conceptual diagram showing the downstream and upstream message metrics within the proxy, illustrating how they respond to message transit through it.">
+       </div>
+       <div class="title">Figure 3. Downstream and upstream message metrics in the proxy</div>
+      </div>
+      <div class="paragraph">
+       <p>Message metrics include the following labels: <code>virtual_cluster</code> (the virtual cluster’s name), <code>node_id</code> (the broker’s node ID), <code>api_key</code> (the message type), <code>api_version</code>, and <code>decoded</code> (a flag indicating if the message was decoded by the proxy).</p>
+      </div>
+      <div class="paragraph">
+       <p>When the client connects to the boostrap endpoint of the virtual cluster, metrics are recorded with a node ID value of <code>bootstrap</code>.</p>
+      </div>
+      <table class="tableblock frame-all grid-all stretch">
+       <caption class="title">Table 2. Kafka message metrics for proxy request and response flow</caption>
+       <colgroup>
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+       </colgroup>
+       <thead>
+        <tr>
+         <th class="tableblock halign-left valign-top">Metric Name</th>
+         <th class="tableblock halign-left valign-top">Type</th>
+         <th class="tableblock halign-left valign-top">Labels</th>
+         <th class="tableblock halign-left valign-top">Description</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_client_to_proxy_request_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a request arrives at the proxy from a client.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_server_request_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a request goes from the proxy to a server.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_server_to_proxy_response_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a response arrives at the proxy from a server.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_client_response_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by one every time a response goes from the proxy to a client.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_client_to_proxy_request_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Distribution</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by the size of the message each time a request arrives at the proxy from a client.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_server_request_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Distribution</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by the size of the message each time a request goes from the proxy to a server.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_server_to_proxy_response_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Distribution</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by the size of the message each time a response arrives at the proxy from a server.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_proxy_to_client_response_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Distribution</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>virtual_cluster</code>, <code>node_id</code>, <code>api_key</code>, <code>api_version</code>, <code>decoded</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Incremented by the size of the message each time a response goes from the proxy to a client.</p>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-prometheus-metrics-operator-operator">7.2. Overview of operator metrics</h3>
+     <div class="paragraph _abstract">
+      <p>The Kroxylicious Operator is implemented using the <a href="https://javaoperatorsdk.io/">Java Operator SDK</a>. The Java Operator SDK exposes metrics that allow its behavior to be understood. These metrics are enabled by default in the Kroxylicious Operator.</p>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="https://github.com/operator-framework/java-operator-sdk/blob/v5.0.4/docs/content/en/docs/features/_index.md#operator-sdk-metrics">Java Operator SDK metric documentation</a> to learn more about metrics.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-operator-ingesting-metrics-operator">7.3. Ingesting metrics</h3>
+     <div class="paragraph _abstract">
+      <p>Metrics from the Kroxylicious Proxy and Kroxylicious Operator can be ingested into your Prometheus instance. The proxy and the operator each expose an HTTP endpoint for Prometheus metrics at the <code>/metrics</code> address. The endpoint does not require authentication.</p>
+     </div>
+     <div class="paragraph">
+      <p>For the Proxy, the port that exposes the scrape endpoint is named <code>management</code>. For the Operator, the port is named <code>http</code>.</p>
+     </div>
+     <div class="paragraph">
+      <p>Prometheus can be configured to ingest the metrics from the scrape endpoints.</p>
+     </div>
+     <div class="paragraph">
+      <p>This guide assumes you are using the <a href="https://prometheus-operator.dev/">Prometheus Operator</a> to configure Prometheus.</p>
+     </div>
+     <div class="sect3">
+      <h4 id="proc-operator-ingesting-metrics-operatoroperator">7.3.1. Ingesting operator metrics</h4>
+      <div class="paragraph _abstract">
+       <p>This procedure describes how to ingest metrics from the Kroxylicious Operator into Prometheus.</p>
+      </div>
+      <div class="ulist">
+       <div class="title">Prerequisites</div>
+       <ul>
+        <li>
+         <p>Kroxylicious Operator is installed.</p>
+        </li>
+        <li>
+         <p><a href="https://prometheus-operator.dev/">Prometheus Operator</a> is installed, and a Prometheus instance has been created using the <a href="https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.Prometheus"><code>Prometheus</code> custom resource</a>.</p>
+        </li>
+       </ul>
+      </div>
+      <div class="olist arabic">
+       <div class="title">Procedure</div>
+       <ol class="arabic">
+        <li>
+         <p>Apply the PodMonitor configuration:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">apiVersion</span>: <span class="string"><span class="content">monitoring.coreos.com/v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">PodMonitor</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">proxy</span></span>
+<span class="key">spec</span>:
+  <span class="key">selector</span>:
+    <span class="key">matchLabels</span>:
+      <span class="key">app.kubernetes.io/name</span>: <span class="string"><span class="content">kroxylicious</span></span>
+      <span class="key">app.kubernetes.io/component</span>: <span class="string"><span class="content">operator</span></span>
+  <span class="key">podMetricsEndpoints</span>:
+  - <span class="string"><span class="content">path: /metrics</span></span>
+    <span class="key">port</span>: <span class="string"><span class="content">http</span></span></code></pre>
+          </div>
+         </div>
+         <div class="paragraph">
+          <p>The Prometheus Operator reconfigures Prometheus automatically. Prometheus begins to regularly to scrape the Kroxylicious Operator’s metric.</p>
+         </div>
+        </li>
+        <li>
+         <p>Check the metrics are being ingested using a PromQL query such as:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code>operator_sdk_reconciliations_queue_size_kafkaproxyreconciler{kind="KafkaProxy", group="kroxylicious.io"}</code></pre>
+          </div>
+         </div>
+        </li>
+       </ol>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="proc-operator-ingesting-metrics-proxyoperator">7.3.2. Ingesting proxy metrics</h4>
+      <div class="paragraph _abstract">
+       <p>This procedure describes how to ingest metrics from the Kroxylicious Proxy into Prometheus.</p>
+      </div>
+      <div class="ulist">
+       <div class="title">Prerequisites</div>
+       <ul>
+        <li>
+         <p>Kroxylicious Operator is installed.</p>
+        </li>
+        <li>
+         <p><a href="https://prometheus-operator.dev/">Prometheus Operator</a> is installed, and a Prometheus instance has been created using the <a href="https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.Prometheus"><code>Prometheus</code> custom resource</a>.</p>
+        </li>
+        <li>
+         <p>An instance of Kroxylicious deployed by the operator.</p>
+        </li>
+       </ul>
+      </div>
+      <div class="olist arabic">
+       <div class="title">Procedure</div>
+       <ol class="arabic">
+        <li>
+         <p>Apply the PodMonitor configuration:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">apiVersion</span>: <span class="string"><span class="content">monitoring.coreos.com/v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">PodMonitor</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">proxy</span></span>
+<span class="key">spec</span>:
+  <span class="key">selector</span>:
+    <span class="key">matchLabels</span>:
+      <span class="key">app.kubernetes.io/application</span>: <span class="string"><span class="content">kroxylicious</span></span>
+      <span class="key">app.kubernetes.io/component</span>: <span class="string"><span class="content">proxy</span></span>
+  <span class="key">podMetricsEndpoints</span>:
+  - <span class="string"><span class="content">path: /metrics</span></span>
+    <span class="key">port</span>: <span class="string"><span class="content">management</span></span></code></pre>
+          </div>
+         </div>
+         <div class="paragraph">
+          <p>The Prometheus Operator reconfigures Prometheus automatically. Prometheus begins to regularly to scrape the proxy’s metric.</p>
+         </div>
+        </li>
+        <li>
+         <p>Check the metrics are being ingested using a PromQL query such as:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code>kroxylicious_build_info</code></pre>
+          </div>
+         </div>
+        </li>
+       </ol>
+      </div>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-operator-setting-log-levels-operator">7.4. Setting log levels</h3>
+     <div class="paragraph _abstract">
+      <p>You can independently control the logging level of both the Kroxylicious Operator and the Kroxylicious Proxy.</p>
+     </div>
+     <div class="paragraph">
+      <p>In both cases, logging levels are controlled using two environment variables:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>KROXYLICIOUS_APP_LOG_LEVEL</code> controls the logging of the application (<code>io.kroxylicious</code> loggers). It defaults to <code>INFO</code>.</p>
+       </li>
+       <li>
+        <p><code>KROXYLICIOUS_ROOT_LOG_LEVEL</code> controls the logging level at the root. It defaults to <code>WARN</code>.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>When trying to diagnose a problem, start first by raising the logging level of <code>KROXYLICIOUS_APP_LOG_LEVEL</code>. If more detailed diagnostics are required, try raising the <code>KROXYLICIOUS_ROOT_LOG_LEVEL</code>. Both the proxy and operator use Apache Log4J2 and use logging levels understood by it: <code>TRACE</code>, <code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, and <code>ERROR</code>.</p>
+     </div>
+     <div class="admonitionblock warning">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-warning" title="Warning"></i></td>
+         <td class="content">WARNING: Running the operator or the proxy at elevated logging levels, such as <code>DEBUG</code> or <code>TRACE</code>, can generate a large volume of logs, which may consume significant storage and affect performance. Run at these levels only as long as necessary.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="sect3">
+      <h4 id="proc-operator-setting-log-levels-proxyoperator">7.4.1. Overriding proxy logging levels</h4>
+      <div class="paragraph _abstract">
+       <p>This procedure describes how to override the logging level of the Kroxylicious Proxy.</p>
+      </div>
+      <div class="ulist">
+       <div class="title">Prerequisites</div>
+       <ul>
+        <li>
+         <p>An instance of Kroxylicious deployed by the Kroxylicious Operator.</p>
+        </li>
+       </ul>
+      </div>
+      <div class="olist arabic">
+       <div class="title">Procedure</div>
+       <ol class="arabic">
+        <li>
+         <p>Apply the <code>KROXYLICIOUS_APP_LOG_LEVEL</code> or <code>KROXYLICIOUS_ROOT_LOG_LEVEL</code> environment variable to the proxy’s Kubernetes <code>Deployment</code> resource:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="bash">kubectl set env -n &lt;namespace&gt; deployment &lt;deployment_name&gt; KROXYLICIOUS_APP_LOG_LEVEL=DEBUG</code></pre>
+          </div>
+         </div>
+         <div class="paragraph">
+          <p>The <code>Deployment</code> resource has the same name as the <code>KafkaProxy</code>.</p>
+         </div>
+         <div class="paragraph">
+          <p>Kubernetes recreates the proxy pod automatically.</p>
+         </div>
+        </li>
+        <li>
+         <p>Verify that the new logging level has taken affect:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="bash">kubectl logs -f -n &lt;namespace&gt; deployment/&lt;deployment_name&gt;</code></pre>
+          </div>
+         </div>
+        </li>
+       </ol>
+      </div>
+      <div class="sect4">
+       <h5 id="reverting_proxy_logging_levels">Reverting proxy logging levels</h5>
+       <div class="paragraph">
+        <p>This procedure describes how to revert the logging level of the Kroxylicious Proxy back to its defaults.</p>
+       </div>
+       <div class="ulist">
+        <div class="title">Prerequisites</div>
+        <ul>
+         <li>
+          <p>An instance of Kroxylicious deployed by the Kroxylicious Operator.</p>
+         </li>
+        </ul>
+       </div>
+       <div class="olist arabic">
+        <div class="title">Procedure</div>
+        <ol class="arabic">
+         <li>
+          <p>Remove the <code>KROXYLICIOUS_APP_LOG_LEVEL</code> or <code>KROXYLICIOUS_ROOT_LOG_LEVEL</code> environment variable from the proxy’s Kubernetes Deployment:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="bash">kubectl set env -n &lt;namespace&gt; deployment &lt;deployment_name&gt; KROXYLICIOUS_APP_LOG_LEVEL-</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>Kubernetes recreates the proxy pod automatically.</p>
+          </div>
+         </li>
+         <li>
+          <p>Verify that the logging level has reverted to its default:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="bash">kubectl logs -f -n &lt;namespace&gt; deployment/&lt;deployment_name&gt;</code></pre>
+           </div>
+          </div>
+         </li>
+        </ol>
+       </div>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="proc-operator-setting-log-levels-operator-bundle-operator">7.4.2. Overriding the operator logging level (operator installed by bundle)</h4>
+      <div class="paragraph _abstract">
+       <p>This procedure describes how to override the logging level of the Kroxylicious Operator. It applies when the operator was installed from the YAML bundle.</p>
+      </div>
+      <div class="ulist">
+       <div class="title">Prerequisites</div>
+       <ul>
+        <li>
+         <p>Kroxylicious Operator installed from the YAML bundle.</p>
+        </li>
+       </ul>
+      </div>
+      <div class="olist arabic">
+       <div class="title">Procedure</div>
+       <ol class="arabic">
+        <li>
+         <p>Apply the <code>KROXYLICIOUS_APP_LOG_LEVEL</code> or <code>KROXYLICIOUS_ROOT_LOG_LEVEL</code> environment variable to the operator’s Kubernetes Deployment:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="bash">kubectl set env -n kroxylicious-operator deployment kroxylicious-operator KROXYLICIOUS_APP_LOG_LEVEL=DEBUG</code></pre>
+          </div>
+         </div>
+         <div class="paragraph">
+          <p>Kubernetes recreates the operator pod automatically.</p>
+         </div>
+        </li>
+        <li>
+         <p>Verify that the new logging level has taken affect:</p>
+         <div class="listingblock">
+          <div class="content">
+           <pre class="CodeRay highlight"><code data-lang="bash">kubectl logs -f -n kroxylicious-operator deployment/kroxylicious-operator</code></pre>
+          </div>
+         </div>
+        </li>
+       </ol>
+      </div>
+      <div class="sect4">
+       <h5 id="reverting_operator_logging_levels">Reverting operator logging levels</h5>
+       <div class="paragraph">
+        <p>This procedure describes how to revert the logging level of the Kroxylicious Operator back to its defaults.</p>
+       </div>
+       <div class="ulist">
+        <div class="title">Prerequisites</div>
+        <ul>
+         <li>
+          <p>Kroxylicious Operator installed from the YAML bundle.</p>
+         </li>
+        </ul>
+       </div>
+       <div class="olist arabic">
+        <div class="title">Procedure</div>
+        <ol class="arabic">
+         <li>
+          <p>Remove the <code>KROXYLICIOUS_APP_LOG_LEVEL</code> or <code>KROXYLICIOUS_ROOT_LOG_LEVEL</code> environment variable from the proxy’s Kubernetes Deployment:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="bash">kubectl set env -n kroxylicious-operator deployment kroxylicious-operator KROXYLICIOUS_APP_LOG_LEVEL-</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>Kubernetes recreates the operator pod automatically</p>
+          </div>
+         </li>
+         <li>
+          <p>Verify that the logging level has reverted to its default:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="bash">kubectl logs -f -n kroxylicious-operator deployment/kroxylicious-operator</code></pre>
+           </div>
+          </div>
+         </li>
+        </ol>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="glossary">8. Glossary</h2>
    <div class="sectionbody">
     <div class="dlist">
      <dl>
@@ -1073,7 +1883,7 @@
    </div>
   </div>
   <div class="sect1">
-   <h2 id="trademark_notice">7. Trademark notice</h2>
+   <h2 id="trademark_notice">9. Trademark notice</h2>
    <div class="sectionbody">
     <div class="ulist">
      <ul>
@@ -1082,6 +1892,9 @@
       </li>
       <li>
        <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
       </li>
       <li>
        <p>Strimzi is a trademark of The Linux Foundation.</p>

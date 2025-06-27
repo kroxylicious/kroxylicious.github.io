@@ -1,0 +1,1732 @@
+{% raw %}
+<html>
+ <head></head>
+ <body>
+  <div id="preamble">
+   <div class="sectionbody">
+    <h2 id="about_this_guide" class="discrete">About this guide</h2>
+    <div class="paragraph">
+     <p>This guide covers using the <strong>Kroxylicious Record Encryption Filter</strong> to provide encryption-at-rest for Apache Kafka. Refer to other Kroxylicious guides for information on running the proxy or for advanced topics such as plugin development.</p>
+    </div>
+    <div class="paragraph _abstract">
+     <p>The Kroxylicious Record Encryption filter enhances the security of Kafka messages. The filter uses industry-standard cryptographic techniques to apply encryption to Kafka messages, ensuring the confidentiality of data stored in the Kafka Cluster. By centralizing topic-level encryption, Kroxylicious provides streamlined protection across Kafka clusters.</p>
+    </div>
+    <div class="paragraph">
+     <p>To use the filter, follow these steps:</p>
+    </div>
+    <div class="olist arabic">
+     <ol class="arabic">
+      <li>
+       <p>Set up a Key Management System (KMS)</p>
+      </li>
+      <li>
+       <p>Establish encryption keys within the KMS for securing the topics</p>
+      </li>
+      <li>
+       <p>Configure the filter within Kroxylicious</p>
+      </li>
+     </ol>
+    </div>
+    <div class="paragraph">
+     <p>The filter integrates with a Key Management Service (KMS), which is responsible for the safe storage of sensitive key material. Kroxylicious supports the following KMS providers:</p>
+    </div>
+    <div class="ulist">
+     <ul>
+      <li>
+       <p>HashiCorp Vault</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service.</p>
+      </li>
+      <li>
+       <p>Fortanix DSM</p>
+      </li>
+     </ul>
+    </div>
+    <div class="paragraph">
+     <p>You can provide implementations for your specific KMS systems. Additional KMS support may be added based on demand.</p>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="con-topic-encryption-overview-record-encryption">1. How encryption works</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>The Record Encryption filter uses envelope encryption to encrypt records with symmetric encryption keys. The filter encrypts records from produce requests and decrypts records from fetch responses.</p>
+    </div>
+    <div class="dlist">
+     <dl>
+      <dt class="hdlist1">Envelope encryption</dt>
+      <dd>
+       <p>Envelope encryption is an industry-standard technique suited for encrypting large volumes of data in an efficient manner. Data is encrypted with a Data Encryption Key (DEK). The DEK is encrypted using a Key Encryption Key (KEK). The KEK is stored securely in a Key Management System (KMS).</p>
+      </dd>
+      <dt class="hdlist1">Symmetric encryption keys</dt>
+      <dd>
+       <p>AES(GCM) 256 bit encryption symmetric encryption keys are used to encrypt and decrypt record data.</p>
+      </dd>
+     </dl>
+    </div>
+    <div class="paragraph">
+     <p>The process is as follows:</p>
+    </div>
+    <div class="olist arabic">
+     <ol class="arabic">
+      <li>
+       <p>The filter intercepts produce requests from producing applications and transforms them by encrypting the records.</p>
+      </li>
+      <li>
+       <p>The produce request is forwarded to the broker.</p>
+      </li>
+      <li>
+       <p>The filter intercepts fetch responses from the broker and transforms them by decrypting the records.</p>
+      </li>
+      <li>
+       <p>The fetch response is forwarded to the consuming application.</p>
+      </li>
+     </ol>
+    </div>
+    <div class="paragraph">
+     <p>The filter encrypts the record value only. Record keys, headers, and timestamps are not encrypted.</p>
+    </div>
+    <div class="paragraph">
+     <p>The entire process is transparent from the point of view of Kafka clients and Kafka brokers. Neither are aware that the records are being encrypted, nor do they have any access to the encryption keys or have any influence on the ciphering process to secure the records.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="how_the_filter_encrypts_records">1.1. How the filter encrypts records</h3>
+     <div class="paragraph">
+      <p>The filter encrypts records from produce requests as follows:</p>
+     </div>
+     <div class="olist arabic">
+      <ol class="arabic">
+       <li>
+        <p>Filter selects a KEK to apply.</p>
+       </li>
+       <li>
+        <p>Requests the KMS to generate a DEK for the KEK.</p>
+       </li>
+       <li>
+        <p>Uses an encrypted DEK (DEK encrypted with the KEK) to encrypt the record.</p>
+       </li>
+       <li>
+        <p>Replaces the original record with a ciphertext record (encrypted record, encrypted DEK, and metadata).</p>
+       </li>
+      </ol>
+     </div>
+     <div class="paragraph">
+      <p>The filter uses a DEK reuse strategy. Encrypted records are sent to the same topic using the same DEK until a time-out or an encryption limit is reached.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="how_the_filter_decrypts_records">1.2. How the filter decrypts records</h3>
+     <div class="paragraph">
+      <p>The filter decrypts records from fetch responses as follows:</p>
+     </div>
+     <div class="olist arabic">
+      <ol class="arabic">
+       <li>
+        <p>Filter receives a cipher record from the Kafka broker.</p>
+       </li>
+       <li>
+        <p>Reverses the process that constructed the cipher record.</p>
+       </li>
+       <li>
+        <p>Uses KMS to decrypt the DEK.</p>
+       </li>
+       <li>
+        <p>Uses the decrypted DEK to decrypt the encrypted record.</p>
+       </li>
+       <li>
+        <p>Replaces the cipher record with a decrypted record.</p>
+       </li>
+      </ol>
+     </div>
+     <div class="paragraph">
+      <p>The filter uses an LRU (least recently used) strategy for caching decrypted DEKs. Decrypted DEKs are kept in memory to reduce interactions with the KMS.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="how_the_filter_uses_the_kms">1.3. How the filter uses the KMS</h3>
+     <div class="paragraph">
+      <p>To support the filter, the KMS provides the following:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>A secure repository for storing Key Encryption Keys (KEKs)</p>
+       </li>
+       <li>
+        <p>A service for generating and decrypting Data Encryption Keys (DEKs)</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>KEKs stay within the KMS. The KMS generates a DEK (which is securely generated random data) for a given KEK, then returns the DEK and an encrypted DEK. The encrypted DEK has the same data but encrypted with the KEK. The KMS doesn’t store encrypted DEKs; they are stored as part of the cipher record in the broker.</p>
+     </div>
+     <div class="admonitionblock warning">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-warning" title="Warning"></i></td>
+         <td class="content">The KMS must be available during runtime. If the KMS is unavailable, the filter will not be able to obtain new encrypted DEKs on the produce path or decrypt encrypted DEKs on the consume path. The filter will continue to use previously obtained DEKs, but eventually, production and consumption will become impossible. It is recommended to use the KMS in a high availability (HA) configuration.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="practicing_key_rotation">1.4. Practicing key rotation</h3>
+     <div class="paragraph">
+      <p>Key rotation involves periodically replacing cryptographic keys with new ones and is considered a best practice in cryptography.</p>
+     </div>
+     <div class="paragraph">
+      <p>The filter allows the rotation of Key Encryption Keys (KEKs) within the Key Management System (KMS). When a KEK is rotated, the new key material is eventually used for newly produced records. Existing records, encrypted with older KEK versions, remain decryptable as long as the previous KEK versions are still available in the KMS.</p>
+     </div>
+     <div class="admonitionblock important">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-important" title="Important"></i></td>
+         <td class="content">If your encrypted topic is receiving regular traffic, the Data Encryption Key (DEK) will be refreshed as new records flow through. However, if messages are infrequent, the DEK might be used for up to 2 hours (by default) after its creation.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>When the KEK is rotated in the external KMS, it will take up to 1 hour (by default) before all records produced by the filter contain a DEK encrypted with the new key material. This is because existing encrypted DEKs are used for a configurable amount of time after creation, the Filter caches the encrypted DEK, one hour after creation they are eligible to be refreshed.</p>
+     </div>
+     <div class="paragraph">
+      <p>If you need to rotate key material immediately, execute a rolling restart of your cluster of Kroxylicious instances.</p>
+     </div>
+     <div class="admonitionblock warning">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-warning" title="Warning"></i></td>
+         <td class="content">If an old KEK version is removed from the KMS, records encrypted with that key will become unreadable, causing fetch operations to fail. In such cases, the consumer offset must be advanced beyond those records.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="what_part_of_a_record_is_encrypted">1.5. What part of a record is encrypted?</h3>
+     <div class="paragraph">
+      <p>The record encryption filter encrypts only the values of records, leaving record keys, headers, and timestamps untouched. Null record values, which might represent deletions in compacted topics, are transmitted to the broker unencrypted. This approach ensures that compacted topics function correctly.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="unencrypted_topics">1.6. Unencrypted topics</h3>
+     <div class="paragraph">
+      <p>You may configure the system so that some topics are encrypted and others are not. This supports scenarios where topics with confidential information are encrypted and Kafka topics with non-sensitive information can be left unencrypted.</p>
+     </div>
+     <div class="ulist _additional-resources">
+      <div class="title">Additional resources</div>
+      <ul>
+       <li>
+        <p>For more information on envelope encryption, see the <a href="https://www.nist.gov/publications/recommendation-key-management-part-1-general-1">NIST Recommendation for Key Management</a>.</p>
+       </li>
+      </ul>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="preparing_your_kms">2. Preparing your KMS</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This section assumes that you already have a supported KMS instance up and running. It describes how to prepare the KMS for use with the filter.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="assembly-hashicorp-vault-record-encryption">2.1. Preparing HashiCorp Vault</h3>
+     <div class="paragraph _abstract">
+      <p>To use HashiCorp Vault with the Record Encryption filter, use the following setup:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>Enable the Transit Engine as the Record Encryption filter relies on its APIs.</p>
+       </li>
+       <li>
+        <p>Create a Vault policy specifically for the filter with permissions for generating and decrypting Data Encryption Keys (DEKs) for envelope encryption.</p>
+       </li>
+       <li>
+        <p>Obtain a Vault token that includes the filter policy.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="sect3">
+      <h4 id="con-vault-setup-record-encryption">2.1.1. Enable the Transit Engine</h4>
+      <div class="paragraph">
+       <p>The filter integrates with the <a href="https://developer.hashicorp.com/vault/docs/secrets/transit">HashiCorp Vault <strong>Transit Engine</strong></a>. Vault does not enable the Transit Engine by default. It must be <a href="https://developer.hashicorp.com/vault/docs/secrets/transit#setup">enabled</a> before it can be used by the filter.</p>
+      </div>
+      <div class="sect4">
+       <h5 id="vault_transit_engine_url">Vault Transit Engine URL</h5>
+       <div class="paragraph">
+        <p>The Vault Transit Engine URL is required so the filter knows the location of the Transit Engine within the Vault instance.</p>
+       </div>
+       <div class="paragraph">
+        <p>The URL is formed from the concatenation of the <code>Api Address</code> (reported by Vault reported by during <a href="https://developer.hashicorp.com/vault/tutorials/getting-started/getting-started-dev-server#starting-the-dev-server">starts up</a>) with the complete path to Transit Engine, including the name of the engine itself. If <a href="https://developer.hashicorp.com/vault/docs/enterprise/namespaces">Namespacing</a> is used on the Vault instance, the path needs to include the namespace(s). The URL will end with <code>/transit</code> unless the <code>-path</code> parameter was used when <a href="https://developer.hashicorp.com/vault/docs/secrets/transit#setup">enabling the engine</a>.</p>
+       </div>
+       <div class="paragraph">
+        <p>If namespacing is not in use, the URL will look like this:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">https://myvaultinstance:8200/v1/transit</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>If namespacing is in use, the path must include the namespaces. For example, if there is a parent namespace is <code>a</code> and a child namespace is <code>b</code>, the URL will look like this:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">https://myvaultinstance:8200/v1/a/b/transit</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>If the name of the Transit engine was changed (using the <code>-path</code> argument to the <code>vault secrets enable transit</code> command) the URL will look like this:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">https://myvaultinstance:8200/v1/mytransit</code></pre>
+        </div>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="establish_the_naming_convention_for_keys_within_vault_hierarchy">Establish the naming convention for keys within Vault hierarchy</h5>
+       <div class="paragraph">
+        <p>Establish a naming convention for keys to keep the filter’s keys separate from those used by other systems. Here, we use a prefix of KEK_ for filter key name. Adjust the instructions if a different naming convention is used.</p>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="role_of_the_administrator">Role of the administrator</h5>
+       <div class="paragraph">
+        <p>To use the filter, an administrator or an administrative process must create the encryption keys within Vault, which are used by the <a href="#con-topic-encryption-overview-record-encryption">envelope encryption</a> process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The organization deploying the Record Encryption filter is responsible for managing this administrator or process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The administrator must have permissions to create keys beneath <code>transit/keys/KEK_*</code> in the Vault hierarchy.</p>
+       </div>
+       <div class="paragraph">
+        <p>As a guideline, the minimal Vault policy required by the administrator is as follows:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">path "transit/keys/KEK_*" {
+  capabilities = ["read", "write"]
+}</code></pre>
+        </div>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="establish_an_application_identity_for_the_filter">Establish an application identity for the filter</h5>
+       <div class="paragraph">
+        <p>The filter must authenticate to Vault in order to perform envelope encryption operations, such as generating and decrypting DEKs Therefore, a Vault identity with sufficient permissions must be created for the filter.</p>
+       </div>
+       <div class="paragraph">
+        <p>Create a Vault policy for the filter:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">vault policy write kroxylicious_encryption_filter_policy - &lt;&lt; EOF
+path "transit/keys/KEK_*" {
+  capabilities = ["read"]
+}
+path "/transit/datakey/plaintext/KEK_*" {
+  capabilities = ["update"]
+}
+path "transit/decrypt/KEK_*" {
+  capabilities = ["update"]
+}
+EOF</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>Create a <a href="https://developer.hashicorp.com/vault/docs/concepts/tokens#periodic-tokens">Periodic</a> (long-lived) Vault Token for the filter:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">vault token create -display-name "kroxylicious record encryption" \
+                   -policy=kroxylicious_encryption_filter_policy \
+                   -period=768h \ <i class="conum" data-value="1"></i><b>(1)</b>
+                   -no-default-policy \ <i class="conum" data-value="2"></i><b>(2)</b>
+                   -orphan <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+        </div>
+       </div>
+       <div class="colist arabic">
+        <table>
+         <tbody>
+          <tr>
+           <td><i class="conum" data-value="1"></i><b>1</b></td>
+           <td>Causes the token to be periodic (with every renewal using the given period).</td>
+          </tr>
+          <tr>
+           <td><i class="conum" data-value="2"></i><b>2</b></td>
+           <td>Detach the "default" policy from the policy set for this token. This is done so the token has least-privilege.</td>
+          </tr>
+          <tr>
+           <td><i class="conum" data-value="3"></i><b>3</b></td>
+           <td>Create the token with no parent. This is done so that expiration of a parent won’t expire the token used by the filter.</td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+       <div class="admonitionblock note">
+        <table>
+         <tbody>
+          <tr>
+           <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+           <td class="content">The example token create command illustrates the use of <code>-no-default-policy</code> and <code>-orphan</code>. The use of these flags is not functionally important. You may adapt the configuration of the token to suit the standards required by your organization.</td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+       <div class="paragraph">
+        <p>The <code>token create</code> command yields the <code>token</code>. The <code>token</code> value is required later when configuring the vault within the filter.</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code>token              hvs.CAESIFJ_HHo0VnnW6DSbioJ80NqmuYm2WlON-QxAPmiJScZUGh4KHGh2cy5KdkdFZUJMZmhDY0JCSVhnY2JrbUNEWnE
+token_accessor     4uQZJbEnxW4YtbDBaW6yVzwP
+token_policies     [kroxylicious_encryption_filter_policy]</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>The token must be <a href="https://developer.hashicorp.com/vault/docs/concepts/tokens#token-time-to-live-periodic-tokens-and-explicit-max-ttls">renewed</a> before expiration. It is the responsibility of the administrator to do this.</p>
+       </div>
+       <div class="paragraph">
+        <p>This can be done with a command like the following:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">vault token renew --accessor &lt;token_accessor&gt;</code></pre>
+        </div>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="testing_the_application_identity_for_the_filter_using_the_cli">Testing the application identity for the filter using the CLI</h5>
+       <div class="paragraph">
+        <p>To test whether the application identity and the policy are working correctly, a <a href="https://raw.githubusercontent.com/kroxylicious/kroxylicious/main/scripts/validate_vault_token.sh">script</a> can be used.</p>
+       </div>
+       <div class="paragraph">
+        <p>First, as the administrator, create a KEK in the hierarchy at this path <code>transit/keys/KEK_testkey</code>.</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">VAULT_TOKEN=&lt;kroxylicious encryption filter token&gt; validate_vault_token.sh &lt;kek path&gt;</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>The script should respond <code>Ok</code>. If errors are reported check the policy/token configuration.</p>
+       </div>
+       <div class="paragraph">
+        <p><code>transit/keys/KEK_testkey</code> can now be removed.</p>
+       </div>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="con-vault-key-creation-record-encryption">2.1.2. Creating HashiCorp Vault keys</h4>
+      <div class="paragraph">
+       <p>As the administrator, use either the HashiCorp UI or CLI to create AES-256 symmetric keys following your key naming convention. The key type must be <code>aes256-gcm96</code>, which is Vault’s default key type.</p>
+      </div>
+      <div class="admonitionblock tip">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-tip" title="Tip"></i></td>
+          <td class="content">It is recommended to use a key rotation policy.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+      <div class="paragraph">
+       <p>If using the Vault CLI, the command will look like:</p>
+      </div>
+      <div class="listingblock">
+       <div class="content">
+        <pre class="CodeRay highlight"><code data-lang="shell">vault write -f transit/keys/KEK_trades type=aes256-gcm96 auto_rotate_period=90d</code></pre>
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="assembly-aws-kms-record-encryption">2.2. Preparing AWS KMS</h3>
+     <div class="paragraph _abstract">
+      <p>To prepare <a href="https://docs.aws.amazon.com//kms/latest/developerguide/overview.html">AWS Key Management Service</a> for use with the Record Encryption filter, use the following setup:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>Establish an AWS KMS aliasing convention for keys</p>
+       </li>
+       <li>
+        <p>Create AWS KMS keys</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>You’ll need a privileged AWS user that is capable of creating users and policies to perform the set-up.</p>
+     </div>
+     <div class="sect3">
+      <h4 id="con-aws-kms-setup-record-encryption">2.2.1. Establish an aliasing convention for keys within AWS KMS</h4>
+      <div class="paragraph">
+       <p>The filter references KEKs within AWS via an <a href="https://docs.aws.amazon.com//kms/latest/developerguide/alias-about.html">AWS key alias</a>.</p>
+      </div>
+      <div class="paragraph">
+       <p>Establish a naming convention for key aliases to keep the filter’s keys separate from those used by other systems. Here, we use a prefix of KEK_ for filter aliases. Adjust the instructions if a different naming convention is used.</p>
+      </div>
+      <div class="sect4">
+       <h5 id="role_of_the_administrator_2">Role of the administrator</h5>
+       <div class="paragraph">
+        <p>To use the filter, an administrator or an administrative process must create the encryption keys within AWS KMS, which are used by the <a href="#con-topic-encryption-overview-record-encryption">envelope encryption</a> process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The organization deploying the Record Encryption filter is responsible for managing this administrator or process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The administrator must have permissions to create keys in AWS KMS. As a starting point, the built-in AWS policy <code>AWSKeyManagementServicePowerUser</code> confers sufficient key management privileges.</p>
+       </div>
+       <div class="paragraph">
+        <p>To get started, use the following commands to set up an administrator with permissions suitable for managing encryption keys in KMS through an AWS Cloud Shell. This example illustrates using the user name <code>kroxylicious-admin</code>, but you can choose a different name if preferred. Adjust the instructions accordingly if you use a different user name.</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">ADMIN=kroxylicious-admin
+INITIAL_PASSWORD=$(aws secretsmanager get-random-password  --output text)
+CONSOLE_URL=https://$(aws sts get-caller-identity --query Account --output text).signin.aws.amazon.com/console
+aws iam create-user --user-name ${ADMIN}
+aws iam attach-user-policy --user-name ${ADMIN} --policy-arn arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser
+aws iam attach-user-policy --user-name ${ADMIN} --policy-arn arn:aws:iam::aws:policy/IAMUserChangePassword
+aws iam attach-user-policy --user-name ${ADMIN} --policy-arn arn:aws:iam::aws:policy/AWSCloudShellFullAccess
+aws iam create-login-profile --user-name ${ADMIN} --password "${INITIAL_PASSWORD}" --password-reset-required
+echo Now log in at ${CONSOLE_URL}  with user name ${ADMIN} password "${INITIAL_PASSWORD}" and change the password.</code></pre>
+        </div>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="con-aws-kms-setup-policy-record-encryption">Create an alias-based policy for KEK aliases</h5>
+       <div class="paragraph">
+        <p>Create an alias-based policy granting permissions to use keys aliased by the established alias naming convention.</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+cat &gt; /tmp/policy &lt;&lt; EOF
+{
+        "Version": "2012-10-17",
+        "Statement": [
+                {
+                        "Sid": "AliasBasedIAMPolicy",
+                        "Effect": "Allow",
+                        "Action": [
+                                "kms:Encrypt",
+                                "kms:Decrypt",
+                                "kms:GenerateDataKey*",
+                                "kms:DescribeKey"
+                        ],
+                        "Resource": [
+                "arn:aws:kms:*:${AWS_ACCOUNT_ID}:key/*"
+                        ],
+                        "Condition": {
+                                "ForAnyValue:StringLike": {
+                                        "kms:ResourceAliases": "alias/KEK_*"
+                                }
+                        }
+                }
+        ]
+}
+EOF
+aws iam create-policy --policy-name KroxyliciousRecordEncryption --policy-document file:///tmp/policy</code></pre>
+        </div>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="establish_an_authentication_mechanism_for_the_filter">Establish an authentication mechanism for the filter</h5>
+       <div class="paragraph">
+        <p>The filter must authenticate to AWS in order to perform envelope encryption operations, such as generating and decrypting DEKs.</p>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="proc-aws-kms-setup-application-identity-long-term-record-encryption">Authenticating using long-term IAM identity</h5>
+       <div class="paragraph _abstract">
+        <p>This procedure describes how to create a long-term IAM identity for the Record Encryption filter to authenticate to AWS KMS. The process involves creating an IAM user and access key, and attaching an alias-based policy that grants permissions to perform KMS operations on specific KEKs.</p>
+       </div>
+       <div class="admonitionblock note">
+        <table>
+         <tbody>
+          <tr>
+           <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+           <td class="content">Do not enable console access for this user. The filter requires only API access, and console access would unnecessarily increase the security risk.</td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+       <div class="ulist">
+        <div class="title">Prerequisites</div>
+        <ul>
+         <li>
+          <p>Access to the AWS CLI with sufficient permissions to create and manage IAM users.</p>
+         </li>
+         <li>
+          <p><a href="#con-aws-kms-setup-policy-record-encryption">An alias-based policy created for the Record Encryption filter</a>.</p>
+         </li>
+        </ul>
+       </div>
+       <div class="olist arabic">
+        <div class="title">Procedure</div>
+        <ol class="arabic">
+         <li>
+          <p>Create the IAM user and access key:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws iam create-user --user-name kroxylicious
+aws iam create-access-key --user-name kroxylicious</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>This example uses <code>kroxylicious</code> as the user name, but you can substitute a different name if necessary.</p>
+          </div>
+         </li>
+         <li>
+          <p>Attach the alias-based policy to the IAM identity:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+aws iam attach-user-policy --user-name kroxylicious --policy-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:policy/KroxyliciousRecordEncryption"</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>This step grants the user permission to perform KMS operations on KEKs that use the alias naming convention defined in the <code>KroxyliciousRecordEncryption</code> policy.</p>
+          </div>
+         </li>
+         <li>
+          <p>Verify that the policy has been successfully attached:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws iam list-attached-user-policies --user-name kroxylicious</code></pre>
+           </div>
+          </div>
+         </li>
+        </ol>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="proc-aws-kms-setup-application-ec2-metadata-record-encryption">Authenticating using AWS EC2 metadata</h5>
+       <div class="paragraph _abstract">
+        <p>This procedure describes how to use AWS EC2 metadata for the Record Encryption filter to authenticate to AWS KMS. The process involves creating a trust policy, creating an IAM role, and attaching an alias-based policy that grants permissions to perform KMS operations on specific KEKs.</p>
+       </div>
+       <div class="paragraph">
+        <p>The filter authenticates using the temporary credentials retrieved from <a href="https://docs.aws.amazon.com//AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#instance-metadata-security-credentials">EC2 instance metadata</a>.</p>
+       </div>
+       <div class="ulist">
+        <div class="title">Prerequisites</div>
+        <ul>
+         <li>
+          <p>Access to the AWS CLI with sufficient permissions to create and manage IAM users.</p>
+         </li>
+         <li>
+          <p><a href="#con-aws-kms-setup-policy-record-encryption">An alias-based policy created for the Record Encryption filter</a>.</p>
+         </li>
+        </ul>
+       </div>
+       <div class="olist arabic">
+        <div class="title">Procedure</div>
+        <ol class="arabic">
+         <li>
+          <p>Create a trust policy:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">cat &gt; trustpolicy &lt;&lt; EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Principal": {
+                "Service": [
+                    "ec2.amazonaws.com"
+                ]
+            }
+        }
+    ]
+}
+EOF</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>The trust policy specifies that the EC2 instance can assume the role, enabling it to retrieve and use temporary credentials for authentication.</p>
+          </div>
+         </li>
+         <li>
+          <p>Create the IAM role using the trust policy:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws iam create-role --role-name KroxyliciousInstance --assume-role-policy-document file://trustpolicy</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>This example uses <code>KroxyliciousInstance</code> as the role name, but you can substitute a different name if necessary.</p>
+          </div>
+         </li>
+         <li>
+          <p>Attach the alias-based policy to the role:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+aws iam attach-role-policy --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/KroxyliciousRecordEncryption --role-name KroxyliciousInstance</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>This step grants the role permission to perform KMS operations on KEKs that use the alias naming convention defined in the <code>KroxyliciousRecordEncryption</code> policy.</p>
+          </div>
+         </li>
+         <li>
+          <p>Verify that the policy has been successfully attached:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws iam list-attached-role-policies --role-name KroxyliciousInstance</code></pre>
+           </div>
+          </div>
+         </li>
+         <li>
+          <p>Associate the role with the EC2 instance:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws ec2 associate-iam-instance-profile --instance-id &lt;EC2_instance_id&gt; --iam-instance-profile Name="KroxyliciousInstance"</code></pre>
+           </div>
+          </div>
+          <div class="paragraph">
+           <p>Replace <code>&lt;EC2_instance_id&gt;</code> with the instance ID of each AWS EC2 instance hosting a Kroxylicious instance.</p>
+          </div>
+         </li>
+         <li>
+          <p>Verify that the role has been associated with the EC2 instance:</p>
+          <div class="listingblock">
+           <div class="content">
+            <pre class="CodeRay highlight"><code data-lang="shell">aws ec2 describe-iam-instance-profile-associations --filters Name=instance-id,Values=&lt;EC2_instance_id&gt;</code></pre>
+           </div>
+          </div>
+         </li>
+        </ol>
+       </div>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="con-aws-kms-key-creation-record-encryption">2.2.2. Creating AWS KMS keys</h4>
+      <div class="paragraph">
+       <p>As the administrator, use either the AWS Console or CLI to <a href="https://docs.aws.amazon.com//kms/latest/developerguide/create-keys.html#create-symmetric-cmk">create</a> a <strong>Symmetric key</strong> with <strong>Encrypt and decrypt</strong> usage. Multi-region keys are supported.</p>
+      </div>
+      <div class="admonitionblock note">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+          <td class="content">It is not possible to make use of keys from other AWS accounts. For more information on this limitation, see the issue for <a href="https://github.com/kroxylicious/kroxylicious/issues/1217" target="_blank" rel="noopener">AWS KMS serde improvements</a>.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+      <div class="paragraph">
+       <p>Give the key an alias as described in <a href="#con-aws-kms-setup-record-encryption">Establish an aliasing convention for keys within AWS KMS</a>.</p>
+      </div>
+      <div class="paragraph">
+       <p>If using the CLI, this can be done with commands like this:</p>
+      </div>
+      <div class="listingblock">
+       <div class="content">
+        <pre class="CodeRay highlight"><code data-lang="shell">KEY_ALIAS="KEK_&lt;name&gt;"
+KEY_ID=$(aws kms create-key | jq -r '.KeyMetadata.KeyId')
+# the create key command will produce JSON output including the KeyId
+aws kms create-alias --alias-name alias/${KEY_ALIAS} --target-key-id ${KEY_ID}</code></pre>
+       </div>
+      </div>
+      <div class="paragraph">
+       <p>Once the key is created, it is recommended to use a key rotation policy.</p>
+      </div>
+      <div class="listingblock">
+       <div class="content">
+        <pre class="CodeRay highlight"><code data-lang="shell">aws kms enable-key-rotation --key-id ${KEY_ID} --rotation-period-in-days 180</code></pre>
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="assembly-fortanix-dsm-record-encryption">2.3. Preparing Fortanix Data Security Manager (DSM)</h3>
+     <div class="paragraph _abstract">
+      <p>To prepare Fortanix Data Security Manager (DSM) for use with the Record Encryption filter, use the following setup:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p>Establish a naming convention for keys and choose a Fortanix group where the keys will reside.</p>
+       </li>
+       <li>
+        <p>Create an application identity, with an API key, for the Record Encryption filter.</p>
+       </li>
+       <li>
+        <p>Create Fortanix DSM keys.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="sect3">
+      <h4 id="con-fortanix-dsm-setup-record-encryption">2.3.1. Integrate with Fortanix DSM</h4>
+      <div class="paragraph">
+       <p>The filter integrates with the <a href="https://www.fortanix.com/platform/data-security-manager">Fortanix Data Security Manager (DSM)</a>. Both Fortanix DSM software-as-a service (SaaS) or an on-premise installation are supported.</p>
+      </div>
+      <div class="paragraph">
+       <p>These instructions assume that you are using the <a href="https://support.fortanix.com//docs/clients-command-line-interface-cli-for-fortanix-data-security-manager">Fortanix DSM CLI</a>, but you can use the Fortanix DSM user interface if preferred.</p>
+      </div>
+      <div class="admonitionblock note">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+          <td class="content">The Fortanix KMS plugin for Record Encryption doesn’t yet support keys in the <a href="https://support.fortanix.com/docs/users-guide-key-undo-policy#50-deactivate-and-compromise-key-with-key-undo-policy">Deactivated state</a>. For more information, see the <a href="https://github.com/kroxylicious/kroxylicious/issues/1767" target="_blank" rel="noopener">related issue</a>.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+      <div class="sect4">
+       <h5 id="fortanix_dsm_cluster_url">Fortanix DSM Cluster URL</h5>
+       <div class="paragraph">
+        <p>The Record Encryption filter requires the URL of the Fortanix DSM cluster.</p>
+       </div>
+       <div class="paragraph">
+        <p>If you are using SaaS, the URL looks like <a href="https://smartkey.io/"><code>https://&lt;region&gt;.smartkey.io</code></a> where <code>region</code> is an identifier such as <code>amer</code>. For more information, see the link: <a href="https://support.fortanix.com//docs/configure-api-client">Fortanix documentation</a>.</p>
+       </div>
+       <div class="paragraph">
+        <p>If using an on-premises instance, talk to the group responsible for it within your organization to find out the URL you should use.</p>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="establish_a_naming_convention_for_keys_within_fortanix_dsm">Establish a naming convention for keys within Fortanix DSM</h5>
+       <div class="paragraph">
+        <p>Establish a naming convention for keys to keep the filter’s keys separate from those used by other systems. Here, we use a prefix of <code>KEK_</code> for filter key name.</p>
+       </div>
+       <div class="paragraph">
+        <p>Choose the Fortanix DSM groups to keep the keys. Here, we assume a group name of <code>topic-keks</code>.</p>
+       </div>
+       <div class="paragraph">
+        <p>Adjust the instructions if a different naming convention is used.</p>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="role_of_the_administrator_3">Role of the administrator</h5>
+       <div class="paragraph">
+        <p>To use the filter, an administrator or an administrative process must create the encryption keys within Fortanix DSM, which are used by the <a href="#con-topic-encryption-overview-record-encryption">envelope encryption</a> process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The organization deploying the Record Encryption filter is responsible for managing this administrator or process.</p>
+       </div>
+       <div class="paragraph">
+        <p>The administrator must have permissions to create keys with Fortanix DSM.</p>
+       </div>
+      </div>
+      <div class="sect4">
+       <h5 id="establish_an_application_identity_for_the_filter_2">Establish an application identity for the filter</h5>
+       <div class="paragraph">
+        <p>The filter must authenticate to Fortanix DSM in order to perform the encryption and decryption operations.</p>
+       </div>
+       <div class="paragraph">
+        <p>Create a Fortanix DSM App with sufficient permissions for the filter:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">sdkms-cli --api-endpoint https://&lt;region&gt;.smartkey.io create-app --name kroxylicious --default-group topic-keks --groups topic-keks</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>Retrieve the API key for the app:</p>
+       </div>
+       <div class="listingblock">
+        <div class="content">
+         <pre class="CodeRay highlight"><code data-lang="shell">sdkms-cli --api-endpoint https://&lt;region&gt;.smartkey.io get-app-api-key --name kroxylicious</code></pre>
+        </div>
+       </div>
+       <div class="paragraph">
+        <p>The Record Encryption filter uses the API Key in its KMS configuration to authenticate to Fortanix DSM.</p>
+       </div>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="con-fortanix-dsm-key-creation-record-encryption">2.3.2. Creating Fortanix DSM keys</h4>
+      <div class="paragraph">
+       <p>As the administrator, create AES-256 symmetric keys following your key naming convention and belonging to the required group. When creating keys specify the key operations as <code>ENCRYPT,DECRYPT,APPMANAGEABLE</code>. These are the minimal permissions required for record encryption to function.</p>
+      </div>
+      <div class="paragraph">
+       <p>Identify the ID of the group to contain the keys:</p>
+      </div>
+      <div class="listingblock">
+       <div class="content">
+        <pre class="CodeRay highlight"><code data-lang="shell">GROUP_ID=$(sdkms-cli  --api-endpoint https://&lt;region&gt;.smartkey.io list-groups | grep topic-keks | awk '{print $1}')</code></pre>
+       </div>
+      </div>
+      <div class="paragraph">
+       <p>For example, here we extract the ID of the group named <code>topic-keks</code>.</p>
+      </div>
+      <div class="paragraph">
+       <p>Create a key and associate it with the group:</p>
+      </div>
+      <div class="listingblock">
+       <div class="content">
+        <pre class="CodeRay highlight"><code data-lang="shell">KEY_NAME="KEK_&lt;name&gt;"
+sdkms-cli  --api-endpoint https://&lt;region&gt;.smartkey.io create-key --obj-type AES --key-size 256 --group-id ${GROUP_ID} --name ${KEY_NAME} --key-ops ENCRYPT,DECRYPT,APPMANAGEABLE</code></pre>
+       </div>
+      </div>
+      <div class="admonitionblock tip">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-tip" title="Tip"></i></td>
+          <td class="content">It is recommended to use a key rotation policy.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="proc-configuring-record-encryption-filter-record-encryption">3. Configuring the Record Encryption filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This section describes at a high level how to configure the Record Encryption filter using a previously prepared KMS. Subsections provide in-depth details.</p>
+    </div>
+    <div class="ulist">
+     <div class="title">Prerequisites</div>
+     <ul>
+      <li>
+       <p>An instance of Kroxylicious.
+        <br>
+        For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+      </li>
+      <li>
+       <p>A KMS has been prepared for use by the filter, with KEKs to encrypt records set up for topics.</p>
+      </li>
+     </ul>
+    </div>
+    <div class="olist arabic">
+     <div class="title">Procedure</div>
+     <ol class="arabic">
+      <li>
+       <p>Configure the plugin for your supported KMS, as required.</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p><a href="#con-vault-plugin-configuration-record-encryption">HashiCorp Vault plugin configuration</a></p>
+         </li>
+         <li>
+          <p><a href="#con-aws-kms-plugin-configuration-record-encryption">AWS KMS plugin configuration</a></p>
+         </li>
+         <li>
+          <p><a href="#con-fortanix-dsm-plugin-configuration-record-encryption">Fortanix DSM plugin configuration</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+      <li>
+       <p>Create a filter configuration that references the configured KMS plugins.</p>
+       <div class="paragraph">
+        <p>See <a href="#con-record-encryption-filter-config-record-encryption">Filter configuration</a></p>
+       </div>
+      </li>
+      <li>
+       <p>Apply the filter configuration:</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p>In a standalone proxy deployment. See <a href="#con-example-proxy-config-record-encryption">Example proxy configuration file</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+     </ol>
+    </div>
+    <div class="sect2">
+     <h3 id="con-vault-plugin-configuration-record-encryption">3.1. HashiCorp Vault plugin configuration</h3>
+     <div class="paragraph">
+      <p>For HashiCorp Vault, the KMS configuration used by the filter looks like this. Use the Vault Token and Vault Transit Engine URL values from the KMS setup.</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kms</span>: <span class="string"><span class="content">VaultKmsService                                          </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">kmsConfig</span>:
+  <span class="key">vaultTransitEngineUrl</span>: <span class="string"><span class="content">&lt;vault transit engine service url&gt;   </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">tls</span>:                                                        <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="comment"># ...</span>
+  <span class="key">vaultToken</span>:                                                 <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/vault/token</span></span></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Specifies the name of the KMS provider. Use <code>VaultKmsService</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><a href="#con-vault-setup-record-encryption">Vault Transit Engine URL</a> including the protocol part, such as <code>https:</code> or <code>http:</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>(Optional) TLS trust configuration.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>File containing the Vault Token.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>A TLS client certificate can be specified using a PKCS#12 or JKS key store file.</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Example TLS client certificate configuration using a PKCS#12 key store file</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">key</span>:
+  <span class="key">storeFile</span>: <span class="string"><span class="content">/opt/cert/server.p12 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="key">storeType</span>: <span class="string"><span class="content">PKCS12 </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">storePassword</span>: <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/store.password</span></span>
+  <span class="key">keyPassword</span>: <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/key.password</span></span></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td><code>storeFile</code> specifies PKCS#12 file</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><code>storeType</code> speficies what the keystore file type is. Supported values include <code>PKCS12</code> and <code>JKS</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Optionally, a keystore file password may be specified.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>Optionally, a password may be specified for the key entry within the file.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>A set of trust anchors for the TLS client can be specified using a PKCS#12 or JKS key store file.</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Example TLS client trust change configuration using a PKCS#12 key store file</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">trust</span>:
+  <span class="key">storeFile</span>: <span class="string"><span class="content">/opt/cert/server.p12 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="key">storeType</span>: <span class="string"><span class="content">PKCS12 </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">storePassword</span>: <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/store.password</span></span></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td><code>storeFile</code> specifies PKCS#12 file</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><code>storeType</code> specifies what the keystore file type is. Supported values include <code>PKCS12</code> and <code>JKS</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Optionally, a keystore file password may be specified.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-aws-kms-plugin-configuration-record-encryption">3.2. AWS KMS plugin configuration</h3>
+     <div class="paragraph">
+      <p>For AWS KMS the configuration for authenticating with AWS KMS services looks like this:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Configuration for authenticating with a long-term IAM identity</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kms</span>: <span class="string"><span class="content">AwsKmsService                                            </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">kmsConfig</span>:
+  <span class="key">endpointUrl</span>: <span class="string"><span class="content">https://kms.&lt;region&gt;.amazonaws.com             </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">tls</span>:                                                        <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="comment"># ...</span>
+  <span class="key">longTermCredentials</span>:
+    <span class="key">accessKeyId</span>:
+      <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/aws/accessKey                        </span></span><i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="key">secretAccessKey</span>:
+      <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/aws/secretKey                        </span></span><i class="conum" data-value="5"></i><b>(5)</b>
+  <span class="key">region</span>: <span class="string"><span class="content">&lt;region&gt;                                            </span></span><i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Specifies the name of the KMS provider. Use <code>AwsKmsService</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td>AWS KMS endpoint URL, which must include the <code>https://</code> scheme.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>(Optional) TLS trust configuration.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>File containing the AWS access key ID.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="5"></i><b>5</b></td>
+         <td>File containing the AWS secret access key.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="6"></i><b>6</b></td>
+         <td>The AWS region identifier, such as <code>us-east-1</code>, specifying where your KMS resources are located. This must match the region of the KMS endpoint you’re using.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>Alternatively, the configuration for authenticating with EC2 metadata looks like this:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Configuration for authenticating with EC2 metadata</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kms</span>: <span class="string"><span class="content">AwsKmsService                                            </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">kmsConfig</span>:
+  <span class="key">endpointUrl</span>: <span class="string"><span class="content">https://kms.&lt;region&gt;.amazonaws.com             </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">ec2MetadataCredentials</span>:
+    <span class="key">iamRole</span>: <span class="string"><span class="content">&lt;name_of_IAM_role&gt;                               </span></span><i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">metadataEndpoint</span>: <span class="string"><span class="content">&lt;EC2_metadata_endpoint&gt;                 </span></span><i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="key">credentialLifetimeFactor</span>: <span class="string"><span class="content">0.8                             </span></span><i class="conum" data-value="5"></i><b>(5)</b>
+  <span class="key">region</span>: <span class="string"><span class="content">&lt;region&gt;                                            </span></span><i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Specifies the name of the KMS provider. Use <code>AwsKmsService</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td>AWS KMS endpoint URL, which must include the <code>https://</code> scheme.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Name of the IAM role associated with the EC2 instance(s) hosting Kroxylicious.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>(Optional) Metadata endpoint used to obtain EC2 metadata. Defaults to <code>http://169.254.169.254/</code>. If using IPv6, use <code>http://[fd00:ec2::254]</code> instead.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="5"></i><b>5</b></td>
+         <td>(Optional) Factor used to determine when to refresh a credential before it expires. Defaults to <code>0.8</code>, which means the credential is refreshed once it reaches 80% of its lifetime.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="6"></i><b>6</b></td>
+         <td>The AWS region identifier, such as <code>us-east-1</code>, specifying where your KMS resources are located. This must match the region of the KMS endpoint you’re using.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>A TLS client certificate can be specified using a PKCS#12 or JKS key store file.</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Example TLS client certificate configuration using a PKCS#12 key store file</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">key</span>:
+  <span class="key">storeFile</span>: <span class="string"><span class="content">/opt/cert/server.p12 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="key">storeType</span>: <span class="string"><span class="content">PKCS12 </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">storePassword</span>: <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/store.password</span></span>
+  <span class="key">keyPassword</span>: <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/key.password</span></span></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td><code>storeFile</code> specifies PKCS#12 file</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><code>storeType</code> speficies what the keystore file type is. Supported values include <code>PKCS12</code> and <code>JKS</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Optionally, a keystore file password may be specified.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>Optionally, a password may be specified for the key entry within the file.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>A set of trust anchors for the TLS client can be specified using a PKCS#12 or JKS key store file.</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">Example TLS client trust change configuration using a PKCS#12 key store file</div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">trust</span>:
+  <span class="key">storeFile</span>: <span class="string"><span class="content">/opt/cert/server.p12 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="key">storeType</span>: <span class="string"><span class="content">PKCS12 </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">storePassword</span>: <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/cert/store.password</span></span></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td><code>storeFile</code> specifies PKCS#12 file</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><code>storeType</code> specifies what the keystore file type is. Supported values include <code>PKCS12</code> and <code>JKS</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Optionally, a keystore file password may be specified.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-fortanix-dsm-plugin-configuration-record-encryption">3.3. Fortanix DSM plugin configuration</h3>
+     <div class="paragraph">
+      <p>For Fortanix DSM, the KMS configuration looks like this. Use the API key and Fortanix DSM Cluster URL values from the KMS setup.</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kms</span>: <span class="string"><span class="content">FortanixDsmKmsService                                    </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">kmsConfig</span>:
+  <span class="key">endpointUrl</span>: <span class="string"><span class="content">&lt;Fortanix DSM Cluster URL&gt;                     </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="key">apiKeySessionProvider</span>:
+    <span class="key">apiKey</span>:
+      <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/fortanix-dsm/api-key                 </span></span><i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Specifies the name of the KMS provider. Use <code>FortanixDsmKmsService</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td><a href="#con-fortanix-dsm-setup-record-encryption">Fortanix DSM Cluster URL</a> including the protocol part, such as <code>https:</code> or <code>http:</code>.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>File containing the API key.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-record-encryption-filter-config-record-encryption">3.4. Filter configuration</h3>
+     <div class="paragraph _abstract">
+      <p>This procedure describes how to configure the Record Encryption filter. Provide the filter configuration and the Key Encryption Key (KEK) selector to use. The KEK selector maps topic name to key names. The filter looks up the resulting key name in the KMS.</p>
+     </div>
+     <div class="ulist">
+      <div class="title">Prerequisites</div>
+      <ul>
+       <li>
+        <p>An instance of Kroxylicious. For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+       </li>
+       <li>
+        <p>A KMS is installed and set up for the filter with KEKs to encrypt records set up for topics.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="olist arabic">
+      <div class="title">Procedure</div>
+      <ol class="arabic">
+       <li>
+        <p>Configure a <code>RecordEncryption</code> type filter.</p>
+        <div class="listingblock">
+         <div class="title">Example Record Encryption filter configuration</div>
+         <div class="content">
+          <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kms</span>: <span class="string"><span class="content">&lt;kms_service_name&gt; </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">kmsConfig</span>:
+  <span class="error">&lt;kms_specific_config&gt; </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="comment"># ...</span>
+<span class="key">selector</span>: <span class="string"><span class="content">&lt;KEK_selector_service_name&gt; </span></span><i class="conum" data-value="3"></i><b>(3)</b>
+<span class="key">selectorConfig</span>:
+  <span class="key">template</span>: <span class="string"><span class="delimiter">"</span><span class="content">KEK_$(topicName)</span><span class="delimiter">"</span></span> <i class="conum" data-value="4"></i><b>(4)</b>
+<span class="key">unresolvedKeyPolicy</span>: <span class="string"><span class="content">PASSTHROUGH_UNENCRYPTED </span></span><i class="conum" data-value="5"></i><b>(5)</b>
+<span class="key">experimental</span>:
+  <span class="key">encryptionDekRefreshAfterWriteSeconds</span>: <span class="string"><span class="content">3600 </span></span><i class="conum" data-value="6"></i><b>(6)</b>
+  <span class="key">encryptionDekExpireAfterWriteSeconds</span>: <span class="string"><span class="content">7200 </span></span><i class="conum" data-value="7"></i><b>(7)</b>
+  <span class="key">maxEncryptionsPerDek</span>: <span class="string"><span class="content">5000000 </span></span><i class="conum" data-value="8"></i><b>(8)</b></code></pre>
+         </div>
+        </div>
+        <div class="colist arabic">
+         <table>
+          <tbody>
+           <tr>
+            <td><i class="conum" data-value="1"></i><b>1</b></td>
+            <td>The KMS service name.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="2"></i><b>2</b></td>
+            <td>Configuration specific to the KMS provider.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="3"></i><b>3</b></td>
+            <td>The Key Encryption Key (KEK) selector to use. The <code>$(topicName)</code> is a literal understood by the proxy. For example, if using the <code>TemplateKekSelector</code> with the template <code>KEK_$(topicName)</code>, create a key for every topic that is to be encrypted with the key name matching the topic name, prefixed by the string <code>KEK_</code>.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="4"></i><b>4</b></td>
+            <td>The template for deriving the KEK, based on a specific topic name.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="5"></i><b>5</b></td>
+            <td>Optional policy governing the behaviour when the KMS does not contain a key. The default is <code>PASSTHROUGH_UNENCRYPTED</code> which causes the record to be forwarded, unencrypted, to the target cluster. Users can alternatively specify <code>REJECT</code> which will cause the entire produce request to be rejected. This is a safer alternative if you know that all traffic sent to the Virtual Cluster should be encrypted because unencrypted data will never be forwarded.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="6"></i><b>6</b></td>
+            <td>How long after creation of a DEK before it becomes eligible for rotation. On the <strong>next</strong> encryption request, the cache will asynchronously create a new DEK. Encryption requests will continue to use the old DEK until the new DEK is ready.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="7"></i><b>7</b></td>
+            <td>How long after creation of a DEK until it is removed from the cache. This setting puts an upper bound on how long a DEK can remain cached.</td>
+           </tr>
+           <tr>
+            <td><i class="conum" data-value="8"></i><b>8</b></td>
+            <td>The maximum number of records any DEK should be used to encrypt. After this limit is hit, that DEK will be destroyed and a new one created.
+             <div class="paragraph">
+              <p><code>encryptionDekRefreshAfterWriteSeconds</code> and <code>encryptionDekExpireAfterWriteSeconds</code> properties govern the <em>originator usage period</em> of the DEK, which is the amount of time the DEK remains valid for encrypting records. Shortening this period helps limit the impact if the DEK key material is leaked. However, shorter periods increase the number of KMS API calls, which might affect produce and consume latency and raise KMS provider costs.</p>
+             </div>
+             <div class="paragraph">
+              <p><code>maxEncryptionsPerDek</code> helps prevent key exhaustion by placing an upper limit of the amount of times that a DEK may be used to encrypt records.</p>
+             </div></td>
+           </tr>
+          </tbody>
+         </table>
+        </div>
+       </li>
+       <li>
+        <p>Verify that the encryption has been applied to the specified topics by producing messages through the proxy and then consuming directly and indirectly from the Kafka cluster.</p>
+       </li>
+      </ol>
+     </div>
+     <div class="admonitionblock note">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+         <td class="content">If the filter is unable to find the key in the KMS, the filter passes through the records belonging to that topic in the produce request without encrypting them.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-proxy-config-record-encryption">3.5. Example proxy configuration file</h3>
+     <div class="paragraph">
+      <p>If your instance of the Kroxylicious proxy runs directly on an operating system, provide the filter configuration in the <code>filterDefinitions</code> list of your proxy configuration. Here’s a complete example of a <code>filterDefinitions</code> entry configured for record encryption with Vault KMS:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>filterDefinitions</code> configuration
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">filterDefinitions</span>:
+  - <span class="string"><span class="content">name: my-encryption-filter</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">RecordEncryption</span></span>
+    <span class="key">config</span>:
+      <span class="key">kms</span>: <span class="string"><span class="content">VaultKmsService</span></span>
+      <span class="key">kmsConfig</span>:
+        <span class="key">vaultTransitEngineUrl</span>: <span class="comment"># ...</span>
+        <span class="key">tls</span>: <span class="comment"># ...</span>
+        <span class="key">vaultToken</span>:
+          <span class="key">passwordFile</span>: <span class="string"><span class="content">/opt/vault/token</span></span>
+      <span class="key">selector</span>: <span class="string"><span class="content">TemplateKekSelector</span></span>
+      <span class="key">selectorConfig</span>:
+        <span class="key">template</span>: <span class="string"><span class="delimiter">"</span><span class="content">KEK_$(topicName)</span><span class="delimiter">"</span></span>
+      <span class="key">unresolvedKeyPolicy</span>: <span class="string"><span class="content">PASSTHROUGH_UNENCRYPTED</span></span>
+      <span class="key">experimental</span>:
+        <span class="key">encryptionDekRefreshAfterWriteSeconds</span>: <span class="string"><span class="content">3600</span></span>
+        <span class="key">encryptionDekExpireAfterWriteSeconds</span>: <span class="string"><span class="content">7200</span></span>
+        <span class="key">maxEncryptionsPerDek</span>: <span class="string"><span class="content">5000000</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> for more information about configuring the proxy.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-monitoring-record-encryption-filter-record-encryption">4. Monitoring the Record Encryption filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This section describes how to monitor the Record Encryption filter.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="con-monitoring-record-encryption-filter-record-encryption">4.1. Record Encryption filter metrics</h3>
+     <div class="paragraph _abstract">
+      <p>The filter emits metrics that provide insights into its interactions with the configured KMS. They indicate the load the filter places on the KMS infrastructure and how often its interactions with the KMS fail.</p>
+     </div>
+     <div class="paragraph">
+      <p>The filter emits metrics that count the number of records that are being encrypted. This can help you verify that the filter is configured properly and encrypting specific topics as intended.</p>
+     </div>
+     <div class="paragraph">
+      <p>These metrics are made available automatically once metrics are enabled in the proxy.</p>
+     </div>
+     <div class="sect3">
+      <h4 id="kms_metrics">4.1.1. KMS metrics</h4>
+      <div class="paragraph">
+       <p>KMS metrics track and count the following types of interactions:</p>
+      </div>
+      <div class="ulist">
+       <ul>
+        <li>
+         <p>Generating DEK pairs</p>
+        </li>
+        <li>
+         <p>Decrypting EDEKs</p>
+        </li>
+        <li>
+         <p>Resolving KEK aliases</p>
+        </li>
+       </ul>
+      </div>
+      <table class="tableblock frame-all grid-all stretch">
+       <caption class="title">Table 1. KMS metrics</caption>
+       <colgroup>
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+       </colgroup>
+       <thead>
+        <tr>
+         <th class="tableblock halign-left valign-top">Metric Name</th>
+         <th class="tableblock halign-left valign-top">Type</th>
+         <th class="tableblock halign-left valign-top">Labels</th>
+         <th class="tableblock halign-left valign-top">Description</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_kms_operation_attempt_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>operation</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Count of the number of KMS operations attempted.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_kms_operation_outcome_total</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>operation</code>, <code>outcome</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Count of the number of KMS operations grouped by outcome.</p>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+      <table class="tableblock frame-all grid-all stretch">
+       <caption class="title">Table 2. Labels used on the KMS metrics</caption>
+       <colgroup>
+        <col style="width: 33.3333%;">
+        <col style="width: 33.3333%;">
+        <col style="width: 33.3334%;">
+       </colgroup>
+       <thead>
+        <tr>
+         <th class="tableblock halign-left valign-top">Label</th>
+         <th class="tableblock halign-left valign-top">Domain</th>
+         <th class="tableblock halign-left valign-top">Description</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>operation</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>generate_dek_pair</code>, <code>decrypt_edek</code>, <code>resolve_alias</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Type of operation performed.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>outcome</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>SUCCESS</code>, <code>EXCEPTION</code>, <code>NOT_FOUND</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Result of the operation.</p>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="sect3">
+      <h4 id="encryption_accounting_metrics">4.1.2. Encryption accounting metrics</h4>
+      <div class="paragraph">
+       <p>Encryption accounting metrics count the number of records sent to topics that are encrypted and the number of records sent to topics that are not configured for encryption. These metrics are discriminated by topic name. Use these metrics to confirm you configuration is having the effect you desired.</p>
+      </div>
+      <table class="tableblock frame-all grid-all stretch">
+       <caption class="title">Table 3. Encryption accounting metrics</caption>
+       <colgroup>
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+        <col style="width: 25%;">
+       </colgroup>
+       <thead>
+        <tr>
+         <th class="tableblock halign-left valign-top">Metric Name</th>
+         <th class="tableblock halign-left valign-top">Type</th>
+         <th class="tableblock halign-left valign-top">Labels</th>
+         <th class="tableblock halign-left valign-top">Description</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_filter_record_encryption_encrypted_records</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>topic_name</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Count of the number of records encrypted by the filter.</p>
+         </td>
+        </tr>
+        <tr>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>kroxylicious_filter_record_encryption_plain_records</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Counter</p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock"><code>topic_name</code></p>
+         </td>
+         <td class="tableblock halign-left valign-top">
+          <p class="tableblock">Count of the number of records <em>not</em> encrypted by the filter.</p>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-operations-record-encryption-filter-record-encryption">5. Operations</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This section documents the operational aspects of using the record encryption filter.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="con-lost-kek-record-encryption">5.1. Dealing with a lost KEK</h3>
+     <div class="paragraph">
+      <p>This section discusses what to do if you lose a KEK that is still required to decrypt records. For the purposes of this section, 'lost' means that the KMS is available to the filter but is not able to perform encryption operations using the KEK.</p>
+     </div>
+     <div class="admonitionblock warning">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-warning" title="Warning"></i></td>
+         <td class="content">Deleting KEKs from the KMS is not recommended. Figuring out which KEKs are no longer used by any records in a Kafka cluster is non-trivial. Any remaining records encrypted using a deleted KEK will become <strong>unrecoverable</strong>. In addition, consumers will be unable to read beyond those unrecoverable records without specific intervention, meaning business processing will stop. We recommend never deleting KEKs. As such, this procedure is provided for emergency use only.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>When consumers try to fetch an undecryptable record they will receive an error response from the proxy. The precise details of the failure will vary depending on the Kafka Client library being used by the application. The error message may look like one of these:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>Unexpected error code 91 while fetching at offset n from topic-partition &lt;topic&gt;-&lt;partition&gt;</code> (Apache Kafka client).</p>
+       </li>
+       <li>
+        <p><code>Fetch from broker 0 failed at offset n (leader epoch 0): Broker: Request illegally referred to resource that does not exist</code> (<code>Librdkafka</code> based client)</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Other clients may refer to the error code 91.</p>
+     </div>
+     <div class="paragraph">
+      <p>Error code 91 (Resource not found) is the error number used by the Record Encryption filter to indicate that the required encryption key (KEK) is not available on the KMS.</p>
+     </div>
+     <div class="paragraph">
+      <p>Once you have identified the issue on the client side, confirm that you indeed have a lost KEK situation, by checking the proxy logs. There will be messages like this:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code>Failed to decrypt record in topic-partition &lt;topic&gt;-&lt;partition&gt; owing to key not found condition.
+This will be reported to the client as a RESOURCE_NOT_FOUND(91).
+Client may see a message like 'Unexpected error code 91 while fetching at offset' (java) or or 'Request illegally referred to resource that does not exist' (librdkafka).
+Cause message: key 'd691a642-d8b4-4445-b668-d390df7000bb' is not found (AWS error: ErrorResponse{type='KMSInvalidStateException', message='arn:aws:kms:us-east-1:000000000000:key/d691a642-d8b4-4445-b668-d390df7000bb is pending deletion.'}).
+Raise log level to DEBUG to see the stack.</code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>In this situation, there are three recovery strategies that may be used. These are discussed, in order of preference, in the next sections.</p>
+     </div>
+     <div class="sect3">
+      <h4 id="unschedule_keys_deletion">5.1.1. Unschedule key’s deletion</h4>
+      <div class="paragraph">
+       <p>Some KMS providers don’t actually immediately delete encryption keys. Instead, a key is <em>scheduled</em> for deletion at some time in the future. When the key is in this state, the key behaves as if it were gone already.</p>
+      </div>
+      <div class="paragraph">
+       <p>This gives you a grace period where you can change your mind.</p>
+      </div>
+      <div class="paragraph">
+       <p>Use the Console of the KMS to determine if the missing key is scheduled for deletion. If this is the case, use the features of the KMS to undelete the key.</p>
+      </div>
+      <div class="paragraph">
+       <p>Refer to documentation of the KMS for more details.</p>
+      </div>
+      <div class="paragraph">
+       <p>After the key has been undeleted, restart the proxy instances. Consuming applications should resume as normal.</p>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="recover_the_key_from_backup">5.1.2. Recover the key from backup</h4>
+      <div class="paragraph">
+       <p>If you have a backup of the keys in your KMS, you will be able to recover the key from the backup.</p>
+      </div>
+      <div class="paragraph">
+       <p>The precise details of how to do this will depend on which KMS you use. Refer to documentation of the KMS for more details.</p>
+      </div>
+      <div class="paragraph">
+       <p>After the KEK has been recovered from backup and restored to the KMS, restart the proxy instances. Applications should begin consuming again as normal.</p>
+      </div>
+      <div class="admonitionblock note">
+       <table>
+        <tbody>
+         <tr>
+          <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+          <td class="content">When restoring the key to your KMS, it is important to restore the associated metadata, such as its identifiers, in addition to the key material itself. The Record Encryption filter stores references to the key identifier in the cipher text record. Restoring the key material alone is not sufficient.</td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+     </div>
+     <div class="sect3">
+      <h4 id="delete_the_records_encrypted_by_the_lost_kek_or_advance_the_consumer_groups_past_them">5.1.3. Delete the records encrypted by the lost KEK or advance the consumer groups past them</h4>
+      <div class="paragraph">
+       <p>The final two options are:</p>
+      </div>
+      <div class="ulist">
+       <ul>
+        <li>
+         <p>delete the records encrypted with the lost KEK from Kafka, or</p>
+        </li>
+        <li>
+         <p>advance the consumer group offsets used by your applications so that they skip the records that can’t be decrypted.</p>
+        </li>
+       </ul>
+      </div>
+      <div class="paragraph">
+       <p>The first challenge is to identify the offsets in the topics after which use of the deleted KEK has ceased. Proxy instances won’t necessarily respond to a key rotation at the same moment. This means there will be periods where some proxy instances will be using older encryption keys whilst others use newer ones. The overall effect of this is that there may not be a single point in the transaction log where encryption switches from one KEK to the next.</p>
+      </div>
+      <div class="paragraph">
+       <p>You can use a tool such as Apache Kafka’s <code>kafka-console-consumer.sh</code> with binary search approach to discover the oldest offset that is followed exclusively by records that decrypt successfully. Repeat this process for every partition for every affected topic. You may be able to use domain specific knowledge to help you narrow the search space.</p>
+      </div>
+      <div class="paragraph">
+       <p>Once you have identified the new starting offset for every affected topic partition, you can use either <code>kafka-delete-records.sh</code> to delete the undecryptable records or use <code>kafka-consumer-groups</code> to reset the consumer group offsets.</p>
+      </div>
+      <div class="paragraph">
+       <p><code>kafka-delete-records.sh</code> only allows deleting records from the tail of the log. This means any readable records prior to the undecryptable ones will also be deleted. However, deleting records is an action that need only be done once. Whereas resetting consumer offsets needs to be done for each consumer or consumer group which ever needs to read beyond the undecryptable records.</p>
+      </div>
+      <div class="paragraph">
+       <p>After this has been done, applications should be able to begin consuming again, albeit without the lost data.</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="trademark_notice">6. Trademark notice</h2>
+   <div class="sectionbody">
+    <div class="ulist">
+     <ul>
+      <li>
+       <p>Apache Kafka is a registered trademark of The Apache Software Foundation.</p>
+      </li>
+      <li>
+       <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Strimzi is a trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Hashicorp Vault is a registered trademark of HashiCorp, Inc.</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service is a trademark of Amazon.com, Inc. or its affiliates.</p>
+      </li>
+      <li>
+       <p>Fortanix and Data Security Manager are trademarks of Fortanix, Inc.</p>
+      </li>
+     </ul>
+    </div>
+   </div>
+  </div>
+ </body>
+</html>
+{% endraw %}
