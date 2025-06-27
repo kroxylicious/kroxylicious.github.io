@@ -2,6 +2,12 @@
 layout: default
 ---
 <!-- _layouts/guide.html -->
+{% if page.release != site.data.release.latest %}
+<div class="admonitionblock note alert alert-info mb-0" role="alert">
+    <i class="bi bi-info-circle-fill krx-docs-note ms-2 me-4 fs-5" title="Note"></i>
+    This documentation covers a non-current version of Kroxylicious. The latest version is {{ site.data.release.latest }}.
+</div>
+{% endif %}
 <div class="row justify-content-center gx-0">
   <div class="col-lg-3">
     <div class="card shadow my-lg-5 ms-lg-5 me-1">
