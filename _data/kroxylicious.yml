@@ -1,4 +1,4 @@
-# The versions property is use for the old-style /docs paths
+# The versions property is used for the old-style /docs paths
 versions:
   - title: 'Development'
     url: '/kroxylicious'

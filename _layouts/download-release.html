@@ -14,8 +14,17 @@ layout: default
       <div class="card-body">
         <h1 id="page-title" class="fs-3">{{ version }} Download</h1>
 <p>The downloads linked here are for version {{ version }}{%if version == site.data.release.latest %}, which is the latest release.
-{% else if version contains "SNAPSHOT" %}, which is an <strong>unstable, unreleased version</strong>. Use at your own risk.
-{% else %}. <strong>The latest release is version {{ site.data.release.latest }}. Please consider upgrading.</strong>{% endif %}
+{% elsif version contains "SNAPSHOT" %}, which is an <strong>unstable, unreleased version</strong>.
+          <div class="admonitionblock important alert alert-danger" role="alert">
+              <i class="bi bi-exclamation-circle-fill krx-docs-important ms-2 me-4 fs-5" title="Important"></i>
+              Use at your own risk.
+          </div>
+{% else %}. <strong>The latest release is version {{ site.data.release.latest }}.</strong>
+          <div class="admonitionblock note alert alert-info" role="alert">
+              <i class="bi bi-info-circle-fill krx-docs-note ms-2 me-4 fs-5" title="Note"></i>
+              Please consider upgrading.
+          </div>
+{% endif %}
 </p>
 <p>See the <a href="/release-archives/">release archives</a> for other releases.</p>
       </div>
