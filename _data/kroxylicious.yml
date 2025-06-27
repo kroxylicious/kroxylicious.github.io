@@ -1,3 +1,4 @@
+# The versions property is used for the old-style /docs paths
 versions:
   - title: 'Development'
     url: '/kroxylicious'
