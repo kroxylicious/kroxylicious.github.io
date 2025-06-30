@@ -1,38 +1,45 @@
 docs:
-  - name: Record Encryption Guide
-    description: "Covers using the record encryption filter, including configuration,\
-      \ security and operation."
-    tags:
-      - filter
-    path: html/record-encryption-guide
   - name: Proxy quickstart
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
     path: /quickstarts
+    rank: '000'
   - name: Proxy guide
     description: "Covers using the proxy, including configuration, security and operation."
     tags:
       - proxy
+    rank: '010'
     path: html/kroxylicious-proxy
-  - name: Kroxylicious Developer guide
-    description: Covers writing plugins for the proxy in the Java programming language
+  - name: Record Encryption Guide
+    description: "Covers using the record encryption filter, including configuration,\
+      \ security and operation."
     tags:
-      - developer
-    path: html/developer-guide
-  - name: Developer quickstart
-    description: Start here if you're developing a filter for the first time.
-    tags:
-      - developer
-    path: /quickstarts
+      - filter
+    rank: '020'
+    path: html/record-encryption-guide
   - name: Kroxylicious Operator for Kubernetes
     description: "Covers using the Kubernetes operator for the proxy, including configuration,\
       \ security and operation."
     tags:
       - kubernetes
+    rank: '020'
     path: html/kroxylicious-operator
+  - name: Developer quickstart
+    description: Start here if you're developing a filter for the first time.
+    tags:
+      - developer
+    path: /quickstarts
+    rank: '031'
+  - name: Kroxylicious Developer guide
+    description: Covers writing plugins for the proxy in the Java programming language
+    tags:
+      - developer
+    rank: '032'
+    path: html/developer-guide
   - name: Kroxylicious Javadocs
     description: The Java API documentation.
     tags:
       - developer
     path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/0.13.0/index.html
+    rank: '033'

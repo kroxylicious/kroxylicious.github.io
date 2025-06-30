@@ -31,7 +31,7 @@ layout: default
   </div>
   <div class="col-lg-6" role="main">
     <div class="row row-cols-1 row-cols-md-2 g-4">
-{%- for docSet in site.data.documentation -%}
+{%- for docSet in site.data.documentation | sort: "rank" -%}
 {%- assign docSetVersion = docSet[0] | replace: '_', '.' -%}
 {%- if docSetVersion == version -%}
 {%- for doc in docSet[1].docs -%}
