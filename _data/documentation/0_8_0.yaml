@@ -1,7 +1,7 @@
 docs:
-  - name: Quick start
+  - title: Quick start
     description: Start here if you're just getting started with Kroxylicious.
     path: /quickstarts
-  - name: Proxy Guide
+  - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
     path: /docs/v0.8.0/
