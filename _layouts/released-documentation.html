@@ -28,6 +28,21 @@ layout: default
 <p>See the <a href="/release-archives/">release archives</a> for the documentation of other releases.</p>
       </div>
     </div>
+
+      <div class="card shadow px-2 mx-2">
+          <div class="card-body">
+              <h2 class="fs-3">Filters</h2>
+              <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
+              <label for="vehicle1"> Proxy</label><br>
+              <input type="checkbox" id="vehicle3" name="vehicle3" value="Boat">
+              <label for="vehicle3"> Filter</label><br>
+              <input type="checkbox" id="vehicle2" name="vehicle2" value="Car">
+              <label for="vehicle2"> Kubernetes</label><br>
+              <input type="checkbox" id="vehicle3" name="vehicle3" value="Boat">
+              <label for="vehicle3"> Developer</label><br>
+
+          </div>
+      </div>
   </div>
   <div class="col-lg-6" role="main">
     <div class="row row-cols-1 row-cols-md-2 g-4">
@@ -44,7 +59,7 @@ layout: default
 {%- assign pathPrefix = "/documentation/" | append: {{version}} | append: "/" -%}
 {%- endif -%}
       <div class="col">
-        <div class="card shadow mb-2 h-100 mx-2">
+        <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
           <div class="card-header">
             <h2 class="card-title fs-4"><a href="{{ pathPrefix }}{{ doc.path }}">{{ doc.name }}</a></h2>
           </div>
