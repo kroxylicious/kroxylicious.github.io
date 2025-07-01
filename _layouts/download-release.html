@@ -3,7 +3,7 @@ layout: default
 ---
 <!-- _layouts/download-release.html -->
 {% if page.version == 'latest' %}
-{% assign version = site.data.release.latest %}
+{% assign version = site.data.kroxylicious.latestRelease %}
 {% else %}
 {% assign version = page.url | split: "/" | slice: -1 | first %}
 {% endif %}
@@ -13,13 +13,13 @@ layout: default
     <div class="card shadow px-2 mx-2">
       <div class="card-body">
         <h1 id="page-title" class="fs-3">{{ version }} Download</h1>
-<p>The downloads linked here are for version {{ version }}{%if version == site.data.release.latest %}, which is the latest release.
+<p>The downloads linked here are for version {{ version }}{%if version == site.data.kroxylicious.latestRelease %}, which is the latest release.
 {% elsif version contains "SNAPSHOT" %}, which is an <strong>unstable, unreleased version</strong>.
           <div class="admonitionblock important alert alert-danger" role="alert">
               <i class="bi bi-exclamation-circle-fill krx-docs-important ms-2 me-4 fs-5" title="Important"></i>
               Use at your own risk.
           </div>
-{% else %}. <strong>The latest release is version {{ site.data.release.latest }}.</strong>
+{% else %}. <strong>The latest release is version {{ site.data.kroxylicious.latestRelease }}.</strong>
           <div class="admonitionblock note alert alert-info" role="alert">
               <i class="bi bi-info-circle-fill krx-docs-note ms-2 me-4 fs-5" title="Note"></i>
               Please consider upgrading.
@@ -32,12 +32,15 @@ layout: default
   </div>
   <div class="col-lg-6" role="main">
       <div class="row row-cols-1 row-cols-md-2 g-4">
-{% for release in site.data.release.list %}
-{% if release.version == version %}
+
+{% for rel in site.data.release %}
+{% assign release = rel[1] %}
+{% assign releaseVersion = rel[0] | replace: '_', '.' %}
+{% if releaseVersion == version %}
           <div class="col">
               <div class="card shadow mb-2 h-100 mx-2">
                   <div class="card-header">
-                      <h2 class="card-title fs-4"><a href='{{ release.releaseNotesUrl | replace: "$(VERSION)", release.version }}'>Release notes</a></h2>
+                      <h2 class="card-title fs-4"><a href='{{ release.releaseNotesUrl | replace: "$(VERSION)", releaseVersion }}'>Release notes</a></h2>
                   </div>
                   <div class="card-body mx-3 my-2">
                       What's been added, deprecated and/or removed
@@ -47,7 +50,7 @@ layout: default
           <div class="col">
               <div class="card shadow mb-2 h-100 mx-2">
                   <div class="card-header">
-                      <h2 class="card-title fs-4"><a href="/documentation/{{ release.version }}/">Documentation and quick starts</a></h2>
+                      <h2 class="card-title fs-4"><a href="/documentation/{{ releaseVersion }}/">Documentation and quick starts</a></h2>
                   </div>
                   <div class="card-body mx-3 my-2">
                       {{ asset.description }}
@@ -58,7 +61,7 @@ layout: default
           <div class="col">
               <div class="card shadow mb-2 h-100 mx-2">
                   <div class="card-header">
-                      <h2 class="card-title fs-4"><a href='{{ release.assetBaseUrl | replace: "$(VERSION)", release.version }}{{ asset.path | replace: "$(VERSION)", release.version }}'>{{ asset.name }}</a></h2>
+                      <h2 class="card-title fs-4"><a href='{{ release.assetBaseUrl | replace: "$(VERSION)", releaseVersion }}{{ asset.path | replace: "$(VERSION)", releaseVersion }}'>{{ asset.name }}</a></h2>
                   </div>
                   <div class="card-body mx-3 my-2">
                       {{ asset.description }}

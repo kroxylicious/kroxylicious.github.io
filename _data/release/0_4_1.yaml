@@ -1,0 +1,6 @@
+version: 0.4.1
+assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
+assets:
+  - name: Proxy (zip)
+    description: The proxy application
+    path: kroxylicious-app-$(VERSION)-bin.zip
