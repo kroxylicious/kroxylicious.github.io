@@ -42,8 +42,7 @@ RUN ./bootstrap_setup.sh
 RUN mkdir /site/
 WORKDIR /site/
 COPY . .
-RUN cp -r /css/_sass/* /site/_sass
 
 EXPOSE 4000
 
-CMD eval "$(rbenv init -)" && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND}
+CMD eval "$(rbenv init -)" && cp -r /css/_sass/* /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental
