@@ -19,8 +19,8 @@ docs:
     rank: '020'
     path: html/record-encryption-guide
   - name: Kroxylicious Operator for Kubernetes
-    description: "Covers using the Kubernetes operator for the proxy, including configuration,\
-      \ security and operation."
+    description: Describes how to deploy and run the Proxy in a Kubernetes environment
+      using the Kroxylicious Operator
     tags:
       - kubernetes
     rank: '020'
