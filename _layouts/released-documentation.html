@@ -1,0 +1,66 @@
+---
+layout: default
+---
+<!-- _layouts/released-documentation.html -->
+{%- if page.version == 'latest' -%}
+{%- assign version = site.data.kroxylicious.latestRelease -%}
+{%- else -%}
+{%- assign version = page.url | split: "/" | slice: -1 | first -%}
+{%- endif -%}
+<div class="row align-items-start justify-content-center my-5">
+  <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
+    <div class="card shadow px-2 mx-2">
+      <div class="card-body">
+        <h1 id="page-title" class="fs-3">{{ version }} Documentation</h1>
+<p>The documentation linked here covers version {{ version }}
+{%- if version == site.data.kroxylicious.latestRelease -%}
+, which is the latest release.
+{%- elsif version contains "SNAPSHOT" -%}
+, which is an <strong>unstable, unreleased version</strong>.
+          <div class="admonitionblock important alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-circle-fill krx-docs-important ms-2 me-4 fs-5" title="Important"></i>
+              Use at your own risk.
+          </div>
+{%- else -%}
+. <strong>The latest release is version {{ site.data.kroxylicious.latestRelease }}.</strong>
+          <div class="admonitionblock note alert alert-info" role="alert">
+              <i class="bi bi-info-circle-fill krx-docs-note ms-2 me-4 fs-5" title="Note"></i>
+              Please consider upgrading.
+          </div>
+{%- endif -%}
+</p>
+<p>See the <a href="/release-archives/">release archives</a> for the documentation of other releases.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6" role="main">
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+{%- for docSet in site.data.documentation | sort: "rank" -%}
+{%- assign docSetVersion = docSet[0] | replace: '_', '.' -%}
+{%- if docSetVersion == version -%}
+{%- for doc in docSet[1].docs -%}
+{%- assign first1 = doc.path | slice: 0, 1 -%}
+{%- assign first7 = doc.path | slice: 0, 7 -%}
+{%- assign first8 = doc.path | slice: 0, 8 -%}
+{%- if first7 == 'http://' or first8 == 'https://' or first1 == '/' -%}
+{%- assign pathPrefix = "" -%}
+{%- else -%} 
+{%- assign pathPrefix = "/documentation/" | append: {{version}} | append: "/" -%}
+{%- endif -%}
+      <div class="col">
+        <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
+          <div class="card-header">
+            <h2 class="card-title fs-4"><a href="{{ pathPrefix }}{{ doc.path }}">{{ doc.title }}</a></h2>
+          </div>
+          <div class="card-body mx-3 my-2">
+{{ doc.description }}
+          </div>
+        </div>
+      </div>
+{%- endfor -%}
+{%- endif -%}
+{%- endfor -%}
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,106 @@
+---
+layout: default
+---
+<!-- _layouts/download-release.html -->
+{%- if page.version == 'latest' -%}
+{%- assign version = site.data.kroxylicious.latestRelease -%}
+{%- else -%}
+{%- assign version = page.url | split: "/" | slice: -1 | first -%}
+{%- endif -%}
+
+<div class="row align-items-start justify-content-center my-5">
+  <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
+    <div class="card shadow px-2 mx-2">
+      <div class="card-body">
+        <h1 id="page-title" class="fs-3">{{ version }} Download</h1>
+<p>The downloads linked here are for version {{ version }}
+{%- if version == site.data.kroxylicious.latestRelease -%}
+, which is the latest release.
+{%- elsif version contains "SNAPSHOT" -%}
+, which is an <strong>unstable, unreleased version</strong>.
+          <div class="admonitionblock important alert alert-danger" role="alert">
+              <i class="bi bi-exclamation-circle-fill krx-docs-important ms-2 me-4 fs-5" title="Important"></i>
+              Use at your own risk.
+          </div>
+{%- else -%}
+. <strong>The latest release is version {{ site.data.kroxylicious.latestRelease }}.</strong>
+          <div class="admonitionblock note alert alert-info" role="alert">
+              <i class="bi bi-info-circle-fill krx-docs-note ms-2 me-4 fs-5" title="Note"></i>
+              Please consider upgrading.
+          </div>
+{%- endif -%}
+</p>
+<p>See the <a href="/release-archives/">release archives</a> for other releases.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6" role="main">
+      <div class="row row-cols-1 row-cols-md-2 g-4">
+{%- for rel in site.data.release -%}
+{%- assign release = rel[1] -%}
+{%- assign releaseVersion = rel[0] | replace: '_', '.' -%}
+{%- if releaseVersion == version -%}
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4"><a href='{{ release.releaseNotesUrl | replace: "$(VERSION)", releaseVersion }}'>Release notes</a></h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      What's been added, deprecated and/or removed.
+                  </div>
+              </div>
+          </div>
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4"><a href="/documentation/{{ releaseVersion }}/">Documentation and quick starts</a></h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      Learn how to use what you're downloading.
+                  </div>
+              </div>
+          </div>
+{%- for asset in release.assets -%}
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4">{{ asset.name }}</h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      {{ asset.description }}<br/>
+{%- for dl in asset.downloads -%}
+                      <a href='{{ release.assetBaseUrl | replace: "$(VERSION)", releaseVersion }}{{ dl.path | replace: "$(VERSION)", releaseVersion }}'>{{ dl.format }}</a>{% unless forloop.last %} | {% endunless -%}
+{%- endfor -%}
+                  </div>
+              </div>
+          </div>
+{%- endfor -%}
+{%- if release.images -%}
+{%- for image in release.images -%}
+          <div class="col">
+              <div class="card shadow mb-2 h-100 mx-2">
+                  <div class="card-header">
+                      <h2 class="card-title fs-4">{{ image.name }} container image</h2>
+                  </div>
+                  <div class="card-body mx-3 my-2">
+                      {{ image.name }} container images are published to <a href="{{ image.url }}">this repository</a>.
+                      Pull them to your container runtime using one of the following commands:
+                      <ul>
+                          <li><code>docker pull {{ image.registry }}:{{ image.tag  | replace: "$(VERSION)", releaseVersion }}</code></li>
+                          <li><code>podman pull {{ image.registry }}:{{ image.tag  | replace: "$(VERSION)", releaseVersion }}</code></li>
+{%- if image.digest -%}
+                          <li><code>docker pull {{ image.registry }}@{{ image.digest }}</code></li>
+                          <li><code>podman pull {{ image.registry }}@{{ image.digest }}</code></li>
+{%- endif -%}
+                      </ul>
+                  </div>
+              </div>
+          </div>
+{%- endfor -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+      </div>
+  </div>
+</div>
+

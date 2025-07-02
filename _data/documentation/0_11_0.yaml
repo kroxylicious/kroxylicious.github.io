@@ -1,0 +1,13 @@
+docs:
+  - title: Quick start
+    description: Start here if you're just getting started with Kroxylicious.
+    path: /quickstarts
+  - title: Proxy Guide
+    description: Describes how to deploy and operate the proxy on "bare metal".
+    path: html/proxy/
+  - title: Operator Guide
+    description: Describes how to deploy and operate the proxy on Kubernetes.
+    path: html/operator/
+  - title: Developer Guide
+    description: Describes how to write Kroxylicious plugins using the Java programming language.
+    path: html/developer/
