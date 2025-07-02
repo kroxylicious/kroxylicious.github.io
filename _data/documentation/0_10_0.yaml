@@ -4,4 +4,7 @@ docs:
     path: /quickstarts
   - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
-    path: /docs/v0.10.0/
+    path: /docs/v$(VERSION)/
+  - title: Javadoc
+    description: The Java API documentation.
+    path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/$(VERSION)/index.html

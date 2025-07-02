@@ -50,7 +50,7 @@ layout: default
       <div class="col">
         <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
           <div class="card-header">
-            <h2 class="card-title fs-4"><a href="{{ pathPrefix }}{{ doc.path }}">{{ doc.title }}</a></h2>
+            <h2 class="card-title fs-4"><a href='{{ pathPrefix }}{{ doc.path | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
           </div>
           <div class="card-body mx-3 my-2">
 {{ doc.description }}
