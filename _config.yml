@@ -49,6 +49,7 @@ exclude:
   - Dockerfile
   - run.sh
   - bootstrap_setup.sh
+  - README.md
 #   - .sass-cache/
 #   - .jekyll-cache/
 #   - gemfiles/
