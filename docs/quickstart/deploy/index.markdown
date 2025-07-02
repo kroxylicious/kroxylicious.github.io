@@ -1,17 +1,15 @@
 ---
-htmlid: deploy
-tab_title: Deployment
+layout: quickstart
+title: Deployment quickstart
 ---
 Kroxylicious is a Java application based on [Netty](https://netty.io/), which means it will run anywhere you can run a JVM. (That's a lot of places!)
 To help you get started with Kroxylicious, we've created this quick setup guide.
 
-<br />
+# Getting started
 
-<h1 id="getting-started-deployment">Getting started</h1>
+## Prerequisites
 
-<h2 class="fs-3" id="prerequisites-deployment">Prerequisites</h2>
-
-<h3 class="fs-4" id="java-deployment">Java</h3>
+### Java
 
 To get started deploying Kroxylicious, you will need to install a Java Runtime Environment (JRE) with minimum version 17. This does not come included with Kroxylicious.
 
@@ -27,15 +25,13 @@ If you get an error or the command doesn't return anything, you may not have a J
 
 {% include bs-alert.html type="primary" icon="info-circle-fill" content=jre_note %}
 
-<h3 class="fs-4" id="apache-kafka-deployment">Apache Kafka&#174;</h3>
+### Apache Kafka®
 
-You will also need a running Apache Kafka&#174; cluster for Kroxylicious to proxy. The official Apache Kafka&#174; [quickstart](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
+You will also need a running Apache Kafka® cluster for Kroxylicious to proxy. The official Apache Kafka® [quickstart](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
 
 Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#configure-deployment) section below).
 
-<br />
-
-<h2 class="fs-3" id="downloading-kroxylicious-deployment">Downloading Kroxylicious</h2>
+## Downloading Kroxylicious
 
 Kroxylicious can be downloaded from the [releases](https://github.com/kroxylicious/kroxylicious/releases) page of the Kroxylicious GitHub repository, or from Maven Central.
 
@@ -47,16 +43,12 @@ If you're trying Kroxylicious out on Linux or macOS, you may find the `.tar.gz` 
 
 {% include bs-alert.html type="primary" icon="info-circle-fill" content=os_archive_note %}
 
-<br />
-
-<h1 id="install-deployment">Install</h1>
+# Install
 
 Extract the downloaded Kroxylicious Zip file into the directory you would like to install Kroxylicious in.
 Ensure the `kroxylicious-start.sh` and `run-java.sh` files in the `bin/` directory within the extracted folder have at least read and execute (`r-x`) permissions for the owner.
 
-<br />
-
-<h1 id="configure-deployment">Configure</h1>
+# Configure
 
 Kroxylicious is configured with YAML. From the configuration file you can specify how Kroxylicious presents each Apache Kafka&#174; broker to clients, where Kroxylicious will locate the Apache Kafka&#174; cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
 
@@ -66,9 +58,7 @@ For this quickstart we will use Kroxylicious in Port-Per-Broker configuration, a
 
 If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka&#174; cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/#_deploying_proxies).
 
-<br />
-
-<h1 id="run-deployment">Run</h1>
+# Run
 
 From within the extracted Kroxylicious folder, run the following command:
 
@@ -78,9 +68,7 @@ From within the extracted Kroxylicious folder, run the following command:
 
 To use your own configuration file instead of the example, just replace the file path after `--config`.
 
-<br />
-
-<h1 id="use-deployment">Use</h1>
+# Use
 
 To use your Kroxylicious proxy, your client(s) will need to point to the proxy (using the configured address) rather than directly at the Apache Kafka&#174; cluster.
 
@@ -95,25 +83,19 @@ To use your Kroxylicious proxy, your client(s) will need to point to the proxy (
 {% capture apacheClientContent %}
 In each command below, substitute `$KROXYLICIOUS_BOOTSTRAP` for the bootstrap address of your Kroxylicious instance.
 
-<br />
-
-<h2 class="fs-5">1. Create a topic via Kroxylicious</h2>
+## 1. Create a topic via Kroxylicious
 Create a topic called "my_topic" using the `kafka-topics.sh` command line client:
 ```shell
 bin/kafka-topics.sh --create --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
 ```
 
-<br />
-
-<h2 class="fs-5">2. Produce a string to your topic via Kroxylicious</h2>
+## 2. Produce a string to your topic via Kroxylicious
 Produce the string "hello world" to your new topic using the `kafka-console-producer.sh` command line client:
 ```shell
 echo "hello world" | bin/kafka-console-producer.sh --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
 ```
 
-<br />
-
-<h2 class="fs-5">3. Consume your string from your topic via Kroxylicious</h2>
+## 3. Consume your string from your topic via Kroxylicious
 Consume your string ("hello world") from your topic ("my_topic") using the `kafka-console-consumer.sh` command line client:
 ```shell
 bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
@@ -123,25 +105,19 @@ bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-serv
 {% capture kafClientContent %}
 In each command below, substitute `$KROXYLICIOUS_BOOTSTRAP` for the bootstrap address of your Kroxylicious instance.
 
-<br />
-
-<h2 class="fs-5">1. Create a topic with Kaf via Kroxylicious</h2>
+## 1. Create a topic with Kaf via Kroxylicious
 Create a topic called "my_topic" using Kaf:
 ```shell
 kaf -b $KROXYLICIOUS_BOOTSTRAP topic create my_topic
 ```
 
-<br />
-
-<h2 class="fs-5">2. Produce a string to your topic with Kaf via Kroxylicious</h2>
+## 2. Produce a string to your topic with Kaf via Kroxylicious
 Produce the string "hello world" to your new topic:
 ```shell
 echo "hello world" | kaf -b $KROXYLICIOUS_BOOTSTRAP produce my_topic
 ```
 
-<br />
-
-<h2 class="fs-5">3. Consume your string from your topic with Kaf via Kroxylicious</h2>
+## 3. Consume your string from your topic with Kaf via Kroxylicious
 Consume your string ("hello world") from your topic ("my_topic"):
 ```shell
 kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic

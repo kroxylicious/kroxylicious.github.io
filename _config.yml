@@ -67,8 +67,6 @@ include:
 collections:
   use_cases:
     output: false
-  quickstarts:
-    output: false
 
 keep_files:
   - images

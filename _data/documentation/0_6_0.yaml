@@ -1,10 +1,21 @@
 docs:
-  - title: Quick start
-    description: Start here if you're just getting started with Kroxylicious.
-    path: /quickstarts
+  - title: Proxy quickstart
+    description: Start here if you're experimenting with the proxy for the first time.
+    tags:
+      - proxy
+    path: /docs/quickstart/deploy/
+    rank: '000'
   - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
     path: /docs/v$(VERSION)/
+    rank: '010'
+  - title: Developer quickstart
+    description: Start here if you're developing a filter for the first time.
+    tags:
+      - developer
+    path: /docs/quickstart/develop/
+    rank: '031'
   - title: Javadoc
     description: The Java API documentation.
     path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/$(VERSION)/index.html
+    rank: '033'

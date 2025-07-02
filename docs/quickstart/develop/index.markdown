@@ -1,6 +1,6 @@
 ---
-htmlid: develop
-tab_title: Development
+layout: quickstart
+title: Development quickstart
 ---
 Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol.
 
