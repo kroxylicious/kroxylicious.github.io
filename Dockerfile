@@ -44,5 +44,4 @@ WORKDIR /site/
 COPY . .
 
 EXPOSE 4000
-
-CMD eval "$(rbenv init -)" && cp -r /css/_sass/* /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental
+CMD eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site
