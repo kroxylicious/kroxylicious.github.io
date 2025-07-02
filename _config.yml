@@ -46,6 +46,10 @@ plugins:
 exclude:
   - .idea
   - docs/README.md
+  - Dockerfile
+  - run.sh
+  - bootstrap_setup.sh
+  - README.md
 #   - .sass-cache/
 #   - .jekyll-cache/
 #   - gemfiles/
