@@ -1,3 +1,5 @@
+version: 0.3.0
+rank: 0000.0003.0000
 assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
 assets:
   - name: Proxy

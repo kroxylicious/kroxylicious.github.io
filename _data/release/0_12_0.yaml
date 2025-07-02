@@ -1,3 +1,5 @@
+version: 0.12.0
+rank: 0000.0012.0000
 releaseNotesUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)/
 assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/download/v$(VERSION)/
 assets:
