@@ -41,7 +41,7 @@ RUN ./bootstrap_setup.sh
 
 RUN mkdir /site/
 WORKDIR /site/
-COPY . .
 
 EXPOSE 4000
+# Note --incremental mode is ineffective on the Mac owing to https://github.com/containers/podman/issues/22343.  Use force_regenerate.sh to trigger the incremental reload after changing the file on the host.
 CMD eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site
