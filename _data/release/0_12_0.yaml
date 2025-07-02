@@ -1,15 +1,15 @@
 releaseNotesUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)/
 assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/download/v$(VERSION)/
 assets:
-  - name: Proxy (zip)
-    description: The proxy application
-    path: kroxylicious-app-$(VERSION)-bin.zip
-  - name: Proxy (tar.gz)
-    description: The proxy application
-    path: kroxylicious-app-$(VERSION)-bin.tar.gz
-  - name: Operator (zip)
-    description: The Kubernetes operator
-    path: kroxylicious-app-$(VERSION)-bin.zip
-  - name: Operator (tar.gz)
-    description: The Kubernetes operator
-    path: kroxylicious-app-$(VERSION)-bin.tar.gz
+  - name: Proxy
+    description: The proxy application.
+    downloads:
+      - format: zip
+        path: kroxylicious-app-$(VERSION)-bin.zip
+      - format: tar.gz
+        path: kroxylicious-app-$(VERSION)-bin.tar.gz
+images:
+  - name: Proxy
+    url: https://quay.io/repository/kroxylicious/kroxylicious?tab=tags
+    registry: quay.io/kroxylicious/kroxylicious
+    tag: $(VERSION)
