@@ -25,29 +25,41 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    services:
+      # we spin up a registry to share the image built by build-push-action with the later docker run step
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.4.4' # Not needed with a .ruby-version file
-          cache-version: 0 # Increment this number if you need to re-download cached gems
       - name: Setup Pages
         uses: actions/configure-pages@v3
-      - name: Install rake
-        run: gem install rake
-      - name: Update Bundler and Setup Jekyll
-        run: bundle install && bundle update --bundler
-      - name: Setup Go
-        uses: actions/setup-go@v5
-      - name: Setup ASCIIToSVG
-        run: go install github.com/asciitosvg/asciitosvg/cmd/a2s@latest
-      - name: Download Bootstrap 5 SCSS Sources
-        run: ./bootstrap_setup.sh
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          # this is required for the subsequent build to be able to push to the registry on localhost:5000
+          driver-opts: network=host
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: localhost:5000/kroxy-jekyll:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Build with Jekyll
         # Outputs to the './_site' directory by default
-        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: |
+          docker run \
+            --rm \
+            -u "$(id -u):$(id -g)" \
+            -v "$(pwd):/site" \
+            localhost:5000/kroxy-jekyll:latest \
+            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"'
         env:
           JEKYLL_ENV: production
       - name: Upload artifact
