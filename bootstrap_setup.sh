@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export BOOTSTRAP_VERSION="5.3.3"
+export BOOTSTRAP_VERSION="5.3.7"
 
 #Remove any existing Bootstrap sources
 rm -f "v$BOOTSTRAP_VERSION.zip"
