@@ -1,3 +1,4 @@
+rank: "000_013_000"
 releaseNotesUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)/
 assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/download/v$(VERSION)/
 assets:
