@@ -14,17 +14,22 @@ You'll also need to ensure you have Ruby 3.2+ installed, along with the latest v
 
 ## Development
 
-Built with Jekyll, Bootstrap 5, and Ruby 3.2
+Built with Jekyll, Bootstrap 5, and Ruby 3.4
 
-There is a GitHub action that builds and deploys the HTML/CSS
-to the `gh-pages` branch on push to `main`.
+There is a GitHub action that builds and deploys the HTML/CSS on push to `main`.
 
 We don't use the Bootstrap 5 ruby gem here, as it runs on a
 `dart-sass` implementation that's incompatible with the one Jekyll uses.
 
-### Running Locally
+### Running in a Container
 
-To run the site locally, you'll first need to download the Bootstrap 5 Sass sources by running [bootstrap_setup.sh](bootstrap_setup.sh).
+To build and serve the website from a container you can run `./run.sh`. It will be deployed on http://localhost:4000
+
+This assumes the use of `podman`, if you are a `docker` user you can run `CONTAINER_ENGINE=docker ./run.sh`.
+
+### Running Natively
+
+To run the site natively, you'll first need to download the Bootstrap 5 Sass sources by running [bootstrap_setup.sh](bootstrap_setup.sh).
 
 Then install the site's prerequisites by running this:
 
