@@ -31,7 +31,7 @@ If you get an error or the command doesn't return anything, you may not have a J
 
 You will also need a running Apache Kafka® cluster for Kroxylicious to proxy. The official Apache Kafka® [quick start](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
 
-Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#configure-deployment) section below).
+Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#step-2-configure-the-proxy) section below).
 
 ## Step 1: Download and install the proxy
 
@@ -56,7 +56,7 @@ An example configuration file can be found in the `config/` directory of the ext
 
 For this quickstart we will use Kroxylicious in Port-Per-Broker configuration, and assume that both your Apache Kafka® cluster and clients are running on your local machine and using their default configuration. This means we can use the example proxy config file that comes with Kroxylicious.
 
-If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka® cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. More information about configuring Kroxylicious can be found in the [documentation](https://kroxylicious.io/kroxylicious/#_deploying_proxies).
+If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka® cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. More information about configuring Kroxylicious can be found in the [documentation](/documentation/).
 
 ## Step 3: Start the proxy
 
@@ -83,19 +83,19 @@ Your client(s) will need to point to the proxy (using the configured address) ra
 {% capture apacheClientContent %}
 In each command below, substitute `$KROXYLICIOUS_BOOTSTRAP` for the bootstrap address of your proxy instance.
 
-## 1. Create a topic via the proxy
+### i. Create a topic via the proxy
 Create a topic called "my_topic" using the `kafka-topics.sh` command line client:
 ```shell
 bin/kafka-topics.sh --create --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
 ```
 
-## 2. Produce a string to your topic via the proxy
+### ii. Produce a string to your topic via the proxy
 Produce the string "hello world" to your new topic using the `kafka-console-producer.sh` command line client:
 ```shell
 echo "hello world" | bin/kafka-console-producer.sh --topic my_topic --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
 ```
 
-## 3. Consume your string from your topic via the proxy
+### iii. Consume your string from your topic via the proxy
 Consume your string ("hello world") from your topic ("my_topic") using the `kafka-console-consumer.sh` command line client:
 ```shell
 bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-server $KROXYLICIOUS_BOOTSTRAP
@@ -105,19 +105,19 @@ bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-serv
 {% capture kafClientContent %}
 In each command below, substitute `$KROXYLICIOUS_BOOTSTRAP` for the bootstrap address of your proxy instance.
 
-## 1. Create a topic with Kaf via the proxy
+### i. Create a topic with Kaf via the proxy
 Create a topic called "my_topic" using Kaf:
 ```shell
 kaf -b $KROXYLICIOUS_BOOTSTRAP topic create my_topic
 ```
 
-## 2. Produce a string to your topic with Kaf via the proxy
+### ii. Produce a string to your topic with Kaf via the proxy
 Produce the string "hello world" to your new topic:
 ```shell
 echo "hello world" | kaf -b $KROXYLICIOUS_BOOTSTRAP produce my_topic
 ```
 
-## 3. Consume your string from your topic with Kaf via the proxy
+### iii. Consume your string from your topic with Kaf via the proxy
 Consume your string ("hello world") from your topic ("my_topic"):
 ```shell
 kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic
