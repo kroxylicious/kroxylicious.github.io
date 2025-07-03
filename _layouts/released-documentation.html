@@ -7,6 +7,7 @@ layout: default
 {%- else -%}
 {%- assign version = page.url | split: "/" | slice: -1 | first -%}
 {%- endif -%}
+{%- assign underscored_version = version | replace: '.', '_' -%}
 <div class="row align-items-start justify-content-center my-5">
   <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
     <div class="card shadow px-2 mx-2">
@@ -35,17 +36,15 @@ layout: default
   </div>
   <div class="col-lg-6" role="main">
     <div class="row row-cols-1 row-cols-md-2 g-4">
-{%- for docSet in site.data.documentation | sort: "rank" -%}
-{%- assign docSetVersion = docSet[0] | replace: '_', '.' -%}
-{%- if docSetVersion == version -%}
-{%- for doc in docSet[1].docs -%}
+{%- assign docs_for_release = site.data.documentation[underscored_version].docs | sort: "rank" -%}
+{%- for doc in docs_for_release -%}
 {%- assign first1 = doc.path | slice: 0, 1 -%}
 {%- assign first7 = doc.path | slice: 0, 7 -%}
 {%- assign first8 = doc.path | slice: 0, 8 -%}
 {%- if first7 == 'http://' or first8 == 'https://' or first1 == '/' -%}
 {%- assign pathPrefix = "" -%}
 {%- else -%} 
-{%- assign pathPrefix = "/documentation/" | append: {{version}} | append: "/" -%}
+{%- assign pathPrefix = "/documentation/" | append: version | append: "/" -%}
 {%- endif -%}
       <div class="col">
         <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
@@ -57,8 +56,6 @@ layout: default
           </div>
         </div>
       </div>
-{%- endfor -%}
-{%- endif -%}
 {%- endfor -%}
     </div>
   </div>
