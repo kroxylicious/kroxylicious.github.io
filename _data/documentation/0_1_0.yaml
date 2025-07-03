@@ -1,10 +1,4 @@
 docs:
-  - title: Proxy quick start
-    description: Start here if you're experimenting with the proxy for the first time.
-    tags:
-      - proxy
-    path: html/proxy-quick-start/
-    rank: '000'
   - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
     path: /docs/v$(VERSION)/
