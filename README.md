@@ -27,22 +27,6 @@ To build and serve the website from a container you can run `./run.sh`. It will 
 
 This assumes the use of `podman`, if you are a `docker` user you can run `CONTAINER_ENGINE=docker ./run.sh`.
 
-### Running Natively
-
-To run the site natively, you'll first need to download the Bootstrap 5 Sass sources by running [bootstrap_setup.sh](bootstrap_setup.sh).
-
-Then install the site's prerequisites by running this:
-
-```bash
-bundle install
-```
-
-You can then run the site with this command (don't close the terminal once you've run this, or the process serving the site will terminate):
-
-```bash
-bundle exec jekyll serve
-```
-
 # Binary content
 
 We have an ever-growing collection of binary assets, mostly images but also a few PDF slide decks etc all of these
