@@ -38,18 +38,11 @@ layout: default
     <div class="row row-cols-1 row-cols-md-2 g-4">
 {%- assign docs_for_release = site.data.documentation[underscored_version].docs | sort: "rank" -%}
 {%- for doc in docs_for_release -%}
-{%- assign first1 = doc.path | slice: 0, 1 -%}
-{%- assign first7 = doc.path | slice: 0, 7 -%}
-{%- assign first8 = doc.path | slice: 0, 8 -%}
-{%- if first7 == 'http://' or first8 == 'https://' or first1 == '/' -%}
-{%- assign pathPrefix = "" -%}
-{%- else -%} 
-{%- assign pathPrefix = "/documentation/" | append: version | append: "/" -%}
-{%- endif -%}
+{%- assign docBaseForVersion = "/documentation/" | append: version -%}
       <div class="col">
         <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
           <div class="card-header">
-            <h2 class="card-title fs-4"><a href='{{ pathPrefix }}{{ doc.path | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
+            <h2 class="card-title fs-4"><a href='{{ doc.path | replace: "$(VERSION)", version | replace: "$(DOC_BASE_FOR_VERSION)", docBaseForVersion}}'>{{ doc.title }}</a></h2>
           </div>
           <div class="card-body mx-3 my-2">
 {{ doc.description }}
