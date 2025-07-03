@@ -1,6 +1,6 @@
 ---
 layout: quickstart
-title: Developer quickstart
+title: Developer quick start
 ---
 
 This quick start will guide you through developing a filter for the proxy.
