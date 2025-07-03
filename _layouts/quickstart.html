@@ -1,14 +1,19 @@
 ---
 layout: default
 ---
-
 <div class="row justify-content-center">
     <div class="col-11 col-lg-8 card shadow gx-5 gy-5 m-lg-5">
-        <div class="card-header">
-            <div class="card-title display-6 mx-2 mt-3 mb-4"><i class="bi bi-stopwatch me-4"></i>{{ page.title }}</div>
-        </div>
-        <div class="card-body tab-content p-4 p-lg-5" idrole="main">
-            {{ content }}
+        <div class="card-body mx-2" role="main" aria-labelledby="page-title">
+            <div class="card-title display-6 mt-3 mb-4">
+                <h1 id="page-title"><i class="bi bi-stopwatch me-4"></i>{{ page.title }}</h1>
+            </div>
+            <div class="row g-0">
+                <div class="col-auto">
+                    <div class="card-text">
+                        {{ content }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
