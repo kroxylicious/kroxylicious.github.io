@@ -1,9 +1,11 @@
 ---
 layout: quickstart
-title: Deployment quickstart
+title: Proxy quick start
 ---
+
+This quick start will guide you through deploying the proxy.
+
 Kroxylicious is a Java application based on [Netty](https://netty.io/), which means it will run anywhere you can run a JVM. (That's a lot of places!)
-To help you get started with Kroxylicious, we've created this quick setup guide.
 
 # Getting started
 

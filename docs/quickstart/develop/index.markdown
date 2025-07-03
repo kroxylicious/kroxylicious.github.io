@@ -1,7 +1,10 @@
 ---
 layout: quickstart
-title: Development quickstart
+title: Developer quickstart
 ---
+
+This quick start will guide you through developing a filter for the proxy.
+
 Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol.
 
 In this quickstart you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn about filter configuration and running custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
