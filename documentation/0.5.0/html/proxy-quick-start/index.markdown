@@ -1,6 +1,7 @@
 ---
 layout: quickstart
 title: Proxy quick start
+version: 0.5.0
 ---
 
 This quick start will guide you through deploying the proxy.
@@ -39,8 +40,8 @@ Once your cluster is set up, the cluster bootstrap address used by Kroxylicious 
 
 Kroxylicious can be downloaded from the [releases](https://github.com/kroxylicious/kroxylicious/releases) page of the Kroxylicious GitHub repository, or from Maven Central.
 
-In GitHub, all releases since v0.4.0 have an attached `kroxylicious-app-*-bin.zip` file. 
-Download the latest version of this zip, and optionally verify the contents of the package with the attached `kroxylicious-app-*-bin.zip.asc` file.
+Download [`kroxylicious-app-{{ page.version }}-bin.zip`](https://github.com/kroxylicious/kroxylicious/releases/download/v{{ page.version }}/kroxylicious-app-{{ page.version }}-bin.zip) from the [GitHub release page](https://github.com/kroxylicious/kroxylicious/releases/tag/v{{ page.version }}).
+Optionally, verify the contents of the package with the attached [`kroxylicious-app-{{ page.version }}-bin.zip.asc`](https://github.com/kroxylicious/kroxylicious/releases/download/v{{ page.version }}/kroxylicious-app-{{ page.version }}-bin.zip.asc) file.
 
 {% capture os_archive_note %}
 If you're trying Kroxylicious out on Linux or macOS, you may find the `.tar.gz` format easier to work with. 

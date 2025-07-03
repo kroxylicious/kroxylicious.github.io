@@ -3,7 +3,7 @@ docs:
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
-    path: /docs/quickstart/deploy/
+    path: html/proxy-quick-start/
     rank: '000'
   - title: Proxy guide
     description: "Covers using the proxy, including configuration, security and operation."
@@ -29,7 +29,7 @@ docs:
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer
-    path: /docs/quickstart/develop/
+    path: html/developer-quick-start/
     rank: '031'
   - title: Kroxylicious Developer guide
     description: Covers writing plugins for the proxy in the Java programming language

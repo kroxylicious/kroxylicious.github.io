@@ -1,11 +1,12 @@
 ---
 layout: quickstart
 title: Proxy quick start
+version: 0.13.0
 ---
 
 This quick start will guide you through deploying the proxy.
 
-Kroxylicious is a Java application based on [Netty](https://netty.io/), which means it will run anywhere you can run a JVM. (That's a lot of places!)
+Kroxylicious is a Java application based on [Netty](https://netty.io/), which means it will run anywhere you can run a JVM.
 
 # Getting started
 
@@ -13,7 +14,8 @@ Kroxylicious is a Java application based on [Netty](https://netty.io/), which me
 
 ### Java
 
-To get started deploying Kroxylicious, you will need to install a Java Runtime Environment (JRE) with minimum version 17. This does not come included with Kroxylicious.
+To get started deploying Kroxylicious, you will need to install a Java Runtime Environment (JRE) with minimum version 17. 
+This does not come included with Kroxylicious.
 
 Some operating systems come with a JRE already installed. You can check what Java version you have installed by running the following command:
 
@@ -29,7 +31,8 @@ If you get an error or the command doesn't return anything, you may not have a J
 
 ### Apache Kafka®
 
-You will also need a running Apache Kafka® cluster for Kroxylicious to proxy. The official Apache Kafka® [quick start](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
+You will also need a running Apache Kafka® cluster for Kroxylicious to proxy. 
+The official Apache Kafka® [quick start](https://kafka.apache.org/documentation/#quickstart) has instructions for setting up a local bare metal cluster.
 
 Once your cluster is set up, the cluster bootstrap address used by Kroxylicious can be changed in the configuration YAML file (see the [**Configure**](#step-2-configure-the-proxy) section below).
 
@@ -37,10 +40,12 @@ Once your cluster is set up, the cluster bootstrap address used by Kroxylicious 
 
 Kroxylicious can be downloaded from the [releases](https://github.com/kroxylicious/kroxylicious/releases) page of the Kroxylicious GitHub repository, or from Maven Central.
 
-In GitHub, all releases since v0.4.0 have an attached `kroxylicious-app-*-bin.zip` file. Download the latest version of this zip, and optionally verify the contents of the package with the attached `kroxylicious-app-*-bin.zip.asc` file.
+Download [`kroxylicious-app-{{ page.version }}-bin.zip`](https://github.com/kroxylicious/kroxylicious/releases/download/v{{ page.version }}/kroxylicious-app-{{ page.version }}-bin.zip) from the [GitHub release page](https://github.com/kroxylicious/kroxylicious/releases/tag/v{{ page.version }}).
+Optionally, verify the contents of the package with the attached [`kroxylicious-app-{{ page.version }}-bin.zip.asc`](https://github.com/kroxylicious/kroxylicious/releases/download/v{{ page.version }}/kroxylicious-app-{{ page.version }}-bin.zip.asc) file.
 
 {% capture os_archive_note %}
-If you're trying Kroxylicious out on Linux or macOS, you may find the `.tar.gz` format easier to work with. We're using the `.zip` files in this quick start for cross-platform compatibility, but we recommend you use whichever format you're most familiar with.
+If you're trying Kroxylicious out on Linux or macOS, you may find the `.tar.gz` format easier to work with. 
+We're using the `.zip` files in this quick start for cross-platform compatibility, but we recommend you use whichever format you're most familiar with.
 {% endcapture %}
 
 {% include bs-alert.html type="primary" icon="info-circle-fill" content=os_archive_note %}
@@ -50,13 +55,16 @@ Ensure the `kroxylicious-start.sh` and `run-java.sh` files in the `bin/` directo
 
 ## Step 2: Configure the proxy
 
-Kroxylicious is configured with YAML. From the configuration file you can specify how Kroxylicious presents each Apache Kafka® broker to clients, where Kroxylicious will locate the Apache Kafka® cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
+Kroxylicious is configured with YAML. 
+From the configuration file you can specify how Kroxylicious presents each Apache Kafka® broker to clients, where Kroxylicious will locate the Apache Kafka® cluster(s) to be proxied, and which filters Kroxylicious should use along with any configuration for those filters.
 
 An example configuration file can be found in the `config/` directory of the extracted Kroxylicious folder, which you can either modify or use as reference for creating your own configuration file.
 
-For this quickstart we will use Kroxylicious in Port-Per-Broker configuration, and assume that both your Apache Kafka® cluster and clients are running on your local machine and using their default configuration. This means we can use the example proxy config file that comes with Kroxylicious.
+For this quickstart we will use Kroxylicious in Port-Per-Broker configuration, and assume that both your Apache Kafka® cluster and clients are running on your local machine and using their default configuration. 
+This means we can use the example proxy config file that comes with Kroxylicious.
 
-If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka® cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. More information about configuring Kroxylicious can be found in the [documentation](/documentation/).
+If your machine uses a non-standard port configuration, or if you have used custom settings for your Apache Kafka® cluster (or if your cluster is running on a different machine) you will need to adjust your Kroxylicious configuration accordingly. 
+More information about configuring Kroxylicious can be found in the [documentation](/documentation/).
 
 ## Step 3: Start the proxy
 

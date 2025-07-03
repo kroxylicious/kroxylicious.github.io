@@ -1,6 +1,7 @@
 ---
 layout: quickstart
 title: Developer quick start
+version: 0.12.0
 ---
 
 Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol, using the Java programming language.
@@ -46,12 +47,12 @@ mvn verify -Pdist -Dquick
 Build both `kroxylicious-sample` and `kroxylicious-app` with the `dist` profile as above, then run the following command:
 
 ```shell
-KROXYLICIOUS_CLASSPATH="kroxylicious-sample/target/*" kroxylicious-app/target/kroxylicious-app-*-bin/kroxylicious-app-*/bin/kroxylicious-start.sh --config kroxylicious-sample/sample-proxy-config.yml
+KROXYLICIOUS_CLASSPATH="kroxylicious-sample/target/*" kroxylicious-app/target/kroxylicious-app-{{ page.version }}-bin/kroxylicious-app-{{ page.version }}/bin/kroxylicious-start.sh --config kroxylicious-sample/sample-proxy-config.yml
 ```
 
 # Configure
 
-Filters can be added and removed by altering the `filters` list in the `sample-proxy-config.yml` file. 
+Filters can be added and removed by altering the `filterDefinitions` list in the `kroxylicious-sample/sample-proxy-config.yaml` file. 
 You can also reconfigure the sample filters by changing the configuration values in this file.
 
 The **SampleFetchResponseFilter** and **SampleProduceRequestFilter** each have two configuration values that must be specified for them to work:
@@ -64,8 +65,9 @@ The **SampleFetchResponseFilter** and **SampleProduceRequestFilter** each have t
 The default configuration for **SampleProduceRequestFilter** is:
 
 ```yaml
-filters:
-  - type: SampleProduceRequestFilterFactory
+filterDefinitions:
+  - name: produce-request-filter
+    type: SampleProduceRequestFilterFactory
     config:
       findValue: foo
       replacementValue: bar
@@ -77,8 +79,9 @@ For example, if a Kafka Producer sent a produce request with data `{"myValue":"f
 The default configuration for **SampleFetchResponseFilter** is:
 
 ```yaml
-filters:
-  - type: SampleFetchResponseFilterFactory
+filterDefinitions:
+  - name: fetch-response-filter
+    type: SampleFetchResponseFilterFactory
     config:
       findValue: bar
       replacementValue: baz
