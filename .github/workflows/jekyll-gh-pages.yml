@@ -59,6 +59,9 @@ jobs:
           tags: localhost:5000/kroxy-jekyll:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Load Jekyll configuration overrides
+        # this is to enable forks to override the url and baseurl
+        run: echo "${{ vars.JEKYLL_CONFIG_OVERRIDES }}" > _config-overrides.yml
       - name: Build with Jekyll
         # Outputs to the './_site' directory by default
         run: |
@@ -67,7 +70,7 @@ jobs:
             -u "$(id -u):$(id -g)" \
             -v "$(pwd):/site" \
             localhost:5000/kroxy-jekyll:latest \
-            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"'
+            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll build --config=_config.yml,_config-overrides.yml'
         env:
           JEKYLL_ENV: production
       - name: Upload artifact
