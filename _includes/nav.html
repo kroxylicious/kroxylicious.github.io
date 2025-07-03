@@ -1,3 +1,5 @@
+{% assign path_components = page.url | remove_first: "/" | split: "/" %}
+
 <header class="navbar navbar-expand-lg navbar-dark krx-navbar sticky-top">
   <nav class="container-xxl krx-gutter flex-wrap flex-lg-nowrap" data-bs-theme="dark" aria-label="Main navigation">
     <div class="d-lg-none" style="width: 2.25rem;"></div>
@@ -20,7 +22,7 @@
         <hr class="d-lg-none text-white-50">
         <ul class="navbar-nav flex-row flex-wrap ms-md-auto">
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/overview/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/overview/' | absolute_url }}">
+            <a class="nav-link {% if path_components[0] == 'overview' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/overview/' | absolute_url }}">
               Overview
             </a>
           </li>
@@ -28,7 +30,7 @@
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/use-cases/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/download/' | absolute_url }}">
+            <a class="nav-link {% if path_components[0] == 'download' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/download/' | absolute_url }}">
               Download
             </a>
           </li>
@@ -36,7 +38,7 @@
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/quickstarts/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/documentation/' | absolute_url }}">
+            <a class="nav-link {% if path_components[0] == 'documentation' or path_components[0] == 'docs' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/documentation/' | absolute_url }}">
               Documentation
             </a>
           </li>
@@ -44,7 +46,7 @@
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
-            <a class="nav-link {% if page.url == '/blog/' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/blog/' | absolute_url }}">
+            <a class="nav-link {% if path_components[0] == 'blog' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/blog/' | absolute_url }}">
               Blog
             </a>
           </li>

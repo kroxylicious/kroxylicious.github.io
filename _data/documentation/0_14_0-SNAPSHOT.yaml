@@ -1,5 +1,5 @@
 docs:
-  - title: Proxy quickstart
+  - title: Proxy quick start
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
@@ -25,7 +25,7 @@ docs:
       - kubernetes
     rank: '020'
     path: html/kroxylicious-operator
-  - title: Developer quickstart
+  - title: Developer quick start
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer

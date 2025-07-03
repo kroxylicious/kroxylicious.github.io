@@ -1,24 +1,21 @@
 ---
-htmlid: develop
-tab_title: Development
+layout: quickstart
+title: Developer quick start
 ---
-Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol.
 
-In this quickstart you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn about filter configuration and running custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
+Kroxylicious' composable filter chains and pluggable API mean that you can write your own filters to apply your own rules to the Kafka protocol, using the Java programming language.
 
-<br />
+In this quick start you will build a custom filter and use it to modify messages being sent to/consumed from Kafka, learn about filter configuration and running custom filters, and find a starting point for developing your own custom filters with your own rules and logic.
 
-<h1 id="getting-started-development">Getting started</h1>
+# Getting started
 
-<h2 class="fs-3" id="prerequisites-development">Prerequisites</h2>
+## Prerequisites
 
 To start developing your own custom filters for Kroxylicious, you will need to install [JDK 21](https://openjdk.org/projects/jdk/21/).
 
 You'll also need to install the [Apache Maven CLI](https://maven.apache.org/index.html) and one of either [Podman](https://podman.io/docs/installation) or [Docker](https://docs.docker.com/install/) (Note that if you are using Podman, you may encounter issues with the integration tests. There are instructions [here](https://github.com/kroxylicious/kroxylicious/blob/main/DEV_GUIDE.md#running-integration-tests-on-podman) to resolve this).
 
-<br />
-
-<h2 class="fs-3" id="get-the-code-development">Get the code</h2>
+## Get the code
 
 The easiest way to learn how to build custom filters is with our `kroxylicious-sample` module, which contains some basic find-and-replace filters for you to experiment with.
 Begin by downloading the latest `kroxylicious-sample` sources from the [Kroxylicious repository](https://github.com/kroxylicious/kroxylicious).
@@ -27,9 +24,7 @@ Begin by downloading the latest `kroxylicious-sample` sources from the [Kroxylic
 git clone https://github.com/kroxylicious/kroxylicious.git
 ```
 
-<br />
-
-<h1 id="build-development">Build</h1>
+# Build
 
 Building the sample project is easy! You can build the `kroxylicious-sample` jar either on its own or with the rest of the Kroxylicious project.
 
@@ -45,9 +40,7 @@ Build with the `dist` profile for creating executable JARs:
 mvn verify -Pdist -Dquick
 ```
 
-<br />
-
-<h1 id="run-development">Run</h1>
+# Run
 
 Build both `kroxylicious-sample` and `kroxylicious-app` with the `dist` profile as above, then run the following command:
 
@@ -55,9 +48,7 @@ Build both `kroxylicious-sample` and `kroxylicious-app` with the `dist` profile 
 KROXYLICIOUS_CLASSPATH="kroxylicious-sample/target/*" kroxylicious-app/target/kroxylicious-app-*-bin/kroxylicious-app-*/bin/kroxylicious-start.sh --config kroxylicious-sample/sample-proxy-config.yml
 ```
 
-<br />
-
-<h1 id="configure-development">Configure</h1>
+# Configure
 
 Filters can be added and removed by altering the `filters` list in the `sample-proxy-config.yml` file. You can also reconfigure the sample filters by changing the configuration values in this file.
 
@@ -66,9 +57,7 @@ The **SampleFetchResponseFilter** and **SampleProduceRequestFilter** each have t
 - `findValue` - the string the filter will search for in the produce/fetch data
 - `replacementValue` - the string the filter will replace the value above with
 
-<br />
-
-<h2 class="fs-3" id="default-Configuration-development">Default Configuration</h2>
+## Default Configuration
 
 The default configuration for **SampleProduceRequestFilter** is:
 
@@ -94,8 +83,6 @@ filters:
 
 This means that it will search for the string `bar` in the fetch data and replace all occurrences with the string `baz`. For example, if a Kafka Broker sent a fetch response with data `{"myValue":"bar"}`, the filter would transform this into `{"myValue":"baz"}` and Kroxylicious would send that to the Kafka Consumer instead.
 
-<br />
-
-<h1 id="modify-development">Modify</h1>
+# Modify
 
 Now that you know how the sample filters work, you can start modifying them! Replace the `SampleFilterTransformer` logic with your own code, change which messages they apply to, or whatever else you like!

@@ -1,34 +1,19 @@
 ---
 layout: default
 ---
-<div class="card gx-5 gy-5 m-lg-5" role="navigation" aria-label="Quickstart navigation">
-    <div class="card-header">
-        <div class="card-title display-6 mx-2 mt-3 mb-4"><i class="bi bi-stopwatch me-4"></i>Quick Start Guide</div>
-        <ul class="nav nav-tabs nav-justified fs-5 card-header-tabs" id="quickstart" role="tablist">
-            {% for quickstart in site.quickstarts %}
-                {% if quickstart.htmlid and quickstart.tab_title %}
-                    <li class="nav-item">
-                        <button class="nav-link krx-card-nav-link {% if forloop.first %}active{% endif %}"
-                                id="{{ quickstart.htmlid }}" data-bs-toggle="tab"
-                                data-bs-target="#{{ quickstart.htmlid }}-tab-pane" type="button"
-                                role="tab" aria-controls="{{ quickstart.htmlid }}-tab-pane"
-                                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
-                            {{ quickstart.tab_title }}
-                        </button>
-                    </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-    </div>
-    <div class="card-body tab-content p-4 p-lg-5" id="quickstartContent" role="main" aria-labelledby="{{ quickstart.htmlid }}">
-        {% for quickstart in site.quickstarts %}
-            {% if quickstart.htmlid and quickstart.tab_title %}
-                <div class="tab-pane fade show {% if forloop.first %}active{% endif %}"
-                     id="{{ quickstart.htmlid }}-tab-pane" role="tabpanel"
-                     aria-labelledby="{{ quickstart.htmlid }}" tabindex="{{ forloop.index0 }}">
-                    {{ quickstart.content | markdownify }}
+<div class="row justify-content-center">
+    <div class="col-11 col-lg-8 card shadow gx-5 gy-5 m-lg-5">
+        <div class="card-body mx-2" role="main" aria-labelledby="page-title">
+            <div class="card-title display-6 mt-3 mb-4">
+                <h1 id="page-title"><i class="bi bi-stopwatch me-4"></i>{{ page.title }}</h1>
+            </div>
+            <div class="row g-0">
+                <div class="col-auto">
+                    <div class="card-text">
+                        {{ content }}
+                    </div>
                 </div>
-            {% endif %}
-        {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
