@@ -7,7 +7,7 @@ docs:
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer
-    path: html/developer-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/developer-quick-start/
     rank: '031'
   - title: Javadoc
     description: The Java API documentation.

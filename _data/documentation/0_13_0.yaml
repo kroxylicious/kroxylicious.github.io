@@ -3,40 +3,40 @@ docs:
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
-    path: html/proxy-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/proxy-quick-start/
     rank: '000'
   - title: Proxy guide
     description: "Covers using the proxy, including configuration, security and operation."
     tags:
       - proxy
     rank: '010'
-    path: html/kroxylicious-proxy
+    path: $(DOC_BASE_FOR_VERSION)/html/kroxylicious-proxy
   - title: Record Encryption Guide
     description: "Covers using the record encryption filter, including configuration,\
       \ security and operation."
     tags:
       - filter
     rank: '020'
-    path: html/record-encryption-guide
+    path: $(DOC_BASE_FOR_VERSION)/html/record-encryption-guide
   - title: Kroxylicious Operator for Kubernetes
     description: Describes how to deploy and run the Proxy in a Kubernetes environment
       using the Kroxylicious Operator
     tags:
       - kubernetes
     rank: '020'
-    path: html/kroxylicious-operator
+    path: $(DOC_BASE_FOR_VERSION)/html/kroxylicious-operator
   - title: Developer quick start
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer
-    path: html/developer-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/developer-quick-start/
     rank: '031'
   - title: Kroxylicious Developer guide
     description: Covers writing plugins for the proxy in the Java programming language
     tags:
       - developer
     rank: '032'
-    path: html/developer-guide
+    path: $(DOC_BASE_FOR_VERSION)/html/developer-guide
   - title: Kroxylicious Javadocs
     description: The Java API documentation.
     tags:

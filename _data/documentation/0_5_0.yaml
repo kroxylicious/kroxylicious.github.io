@@ -3,7 +3,7 @@ docs:
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
-    path: html/proxy-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/proxy-quick-start/
     rank: '000'
   - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
@@ -13,7 +13,7 @@ docs:
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer
-    path: html/developer-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/developer-quick-start/
     rank: '031'
   - title: Javadoc
     description: The Java API documentation.
