@@ -71,7 +71,7 @@ More information about configuring Kroxylicious can be found in the [documentati
 From within the extracted Kroxylicious folder, run the following command:
 
 ```shell
-./bin/kroxylicious-start.sh --config config/example-proxy-config.yml
+./bin/kroxylicious-start.sh --config config/example-proxy-config.yaml
 ```
 
 To use your own configuration file instead of the example, just replace the file path after `--config`.
