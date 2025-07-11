@@ -3,23 +3,23 @@ docs:
     description: Start here if you're experimenting with the proxy for the first time.
     tags:
       - proxy
-    path: html/proxy-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/proxy-quick-start/
     rank: '000'
   - title: Developer quick start
     description: Start here if you're developing a filter for the first time.
     tags:
       - developer
-    path: html/developer-quick-start/
+    path: $(DOC_BASE_FOR_VERSION)/html/developer-quick-start/
     rank: '031'
   - title: Proxy Guide
     description: Describes how to deploy and operate the proxy on "bare metal".
     path: /docs/v$(VERSION)/kroxylicious-proxy/
   - title: Operator Guide
     description: Describes how to deploy and operate the proxy on Kubernetes.
-    path: html/operator/
+    path: $(DOC_BASE_FOR_VERSION)/html/operator/
   - title: Developer Guide
     description: Describes how to write Kroxylicious plugins using the Java programming language.
-    path: html/developer/
+    path: $(DOC_BASE_FOR_VERSION)/html/developer/
     rank: '032'
   - title: Javadoc
     description: The Java API documentation.
