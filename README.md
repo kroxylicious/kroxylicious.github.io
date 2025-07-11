@@ -27,6 +27,26 @@ To build and serve the website from a container you can run `./run.sh`. It will 
 
 This assumes the use of `podman`, if you are a `docker` user you can run `CONTAINER_ENGINE=docker ./run.sh`.
 
+### Running on GitHub Pages on a Fork
+
+To exercise the GitHub workflows and share changes it can be convenient to deploy a fork to GitHub Pages.
+
+To enable pages on your fork:
+1. go to `https://github.com/${yourname}/kroxylicious.github.io/settings` in a browser, replacing `${yourname}` with your GitHub username.
+2. Navigate to "Pages" under "Code and automation"
+3. Under "Build and deployment", under "Source", select "Github Actions".
+4. Navigate to "Actions" under "Secrets and variables" under "Security"
+5. Select the "Variables" tab
+6. Click "New repository variable"
+7. Create a new repository variable named `JEKYLL_CONFIG_OVERRIDES` with value:
+   ```yaml
+   baseurl: "kroxylicious.github.io"
+   url: "https://${yourname}.github.io"
+   ```
+   replacing `${yourname}` with your GitHub username.
+8. Push changes to the `main` branch of your fork and they should be deployed to `https://${yourname}.github.io/kroxylicious.github.io`.
+  You can observe the Action to see if it succeeds.
+
 # Binary content
 
 We have an ever-growing collection of binary assets, mostly images but also a few PDF slide decks etc all of these
