@@ -46,6 +46,14 @@
             <div class="vr d-none d-lg-flex h-100 text-white"></div>
           </li>
           <li class="nav-item col-6 col-lg-auto">
+            <a class="nav-link {% if path_components[0] == 'join-us' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/join-us/' | absolute_url }}">
+              Join us
+            </a>
+          </li>
+          <li class="nav-item py-lg-1 col-lg-auto">
+            <div class="vr d-none d-lg-flex h-100 text-white"></div>
+          </li>
+          <li class="nav-item col-6 col-lg-auto">
             <a class="nav-link {% if path_components[0] == 'blog' %}active{% endif %} krx-nav-link py-2 px-0 px-lg-4" href="{{ '/blog/' | absolute_url }}">
               Blog
             </a>
