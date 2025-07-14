@@ -45,10 +45,11 @@ module SamplePlugin
       @ext = '.html' # the extension.
       @name = basename + ext # basically @basename + @ext.
       @layout = 'redirect.html'
-
+      delay = redirectConfig['delay'] ||= 1
       @data = {
         'target' => "#{redirectConfig['baseUrl']}#{mapping['version']}#{mapping['path']}",
-        'layout' => 'redirect'
+        'layout' => 'redirect',
+        'delay' => "#{delay}",
       }
 
       Jekyll.logger.info "generated redirect from #{@dir}#{@basename} to #{data['target']}"

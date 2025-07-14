@@ -1,4 +1,5 @@
 baseUrl: https://kroxylicious.io/documentation/
+delay: 3
 mappings:
 - name: suspectedTls
   fromVersion: 0.13.0
