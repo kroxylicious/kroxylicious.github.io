@@ -70,7 +70,7 @@ jobs:
             -u "$(id -u):$(id -g)" \
             -v "$(pwd):/site" \
             localhost:5000/kroxy-jekyll:latest \
-            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll build --config=_config.yml,_config-overrides.yml'
+            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && JEKYLL_ENV=production bundle exec jekyll build --config=_config.yml,_config-overrides.yml'
         env:
           JEKYLL_ENV: production
       - name: Upload artifact
