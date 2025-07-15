@@ -66,6 +66,7 @@ Each yaml document defines a namespace for redirections. For example `errors.yam
 
 ```yaml
 baseUrl: https://kroxylicious.io/documentation/ #The base URL to build redirects from
+delay: 3 #How long should the re-direction message be shown before loading the target. Defaults to 1.
 mappings:
 - name: test #the token to be the landing url
   fromVersion: 0.10.0 #Optional, if not specified the latest release at time of site build is used. 
