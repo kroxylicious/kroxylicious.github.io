@@ -7,3 +7,4 @@ vendor
 *.iml
 */bootstrap/
 _config-overrides.yml
+.ruby-version

@@ -60,3 +60,16 @@ should go under `/assets/`. To try and preserve a bit of sanity to the repo we s
 Some content such as the use-cases include diagrams drawn in Excalidraw.  Browsers can't handle the format natively, so instead, in addition to
 commiting the `.excalidraw` orginals to the repo, we also export a transparent `.png` for inclusion in the content.
 
+# Redirects
+There is nothing more frustrating than reading some documentation or a stack trace with a link to some helpful sounding answer only for that link to be a 404. To try and minimise that pain we have built a Jekyll plugin to generate a redirect from a token to a URL. This plug-in generates a collection of static pages derived from the yaml documents in `_data/redirects`.
+Each yaml document defines a namespace for redirections. For example `errors.yaml` will build pages under `/redirects/errors/`. The yaml document takes the format outlined here:
+
+```yaml
+baseUrl: https://kroxylicious.io/documentation/ #The base URL to build redirects from
+delay: 3 #How long should the re-direction message be shown before loading the target. Defaults to 1.
+mappings:
+- name: test #the token to be the landing url
+  fromVersion: 0.10.0 #Optional, if not specified the latest release at time of site build is used. 
+  toVersion: 0.12.0 #Optional, if not specified the latest release at time of site build  is used.
+  path: /html/kroxylicious-proxy/#con-configuring-client-connections-proxy # the path within the baseUrl
+```

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }} | {{ site.description }}</title>
+    <link rel="icon" href="{{ '/favicon.ico' | absolute_url }}" type="image/x-icon"/>
+    <link rel="stylesheet" href="{{ '/css/style.css' | absolute_url }}"/>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css"
+          integrity="sha512-oAvZuuYVzkcTc2dH5z1ZJup5OmSQ000qlfRvuoTTiyTBjwX1faoyearj8KdMq0LgsBTHMrRuMek7s+CxF8yE+w=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"
+            integrity="sha512-X/YkDZyjTf4wyc2Vy16YGCPHwAY8rZJY+POgokZjQB2mhIRFJCckEGc6YyX9eNsPfn0PzThEuNs+uaomE5CO6A=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta http-equiv="refresh" content="{{ page.delay }}; url={{ page.target }}">
+</head>
+<body class="d-flex flex-column min-vh-100" data-bs-theme="light">
+{% include nav.html %}
+<div class="container-fluid px-0 krx-content" data-bs-theme="light">
+    <div class="paragraph" role="main">
+        <div>Redirecting to <a href="{{ page.target }}">{{ page.target }}</a>...</div>
+        <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">waiting...</span>
+        </div>
+    </div>
+</div>
+{% include footer.html %}
+</body>
+<body>
