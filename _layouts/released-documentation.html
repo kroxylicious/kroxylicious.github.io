@@ -41,15 +41,17 @@ layout: default
 {%- assign first1 = doc.path | slice: 0, 1 -%}
 {%- assign first7 = doc.path | slice: 0, 7 -%}
 {%- assign first8 = doc.path | slice: 0, 8 -%}
-{%- if first7 == 'http://' or first8 == 'https://' or first1 == '/' -%}
-{%- assign pathPrefix = "" -%}
+{%- if first7 == 'http://' or first8 == 'https://' -%}
+{%- assign linkTemplate = doc.path -%}
+{%- elsif first1 == '/' -%}
+{%- assign linkTemplate = doc.path | absolute_url -%}
 {%- else -%} 
-{%- assign pathPrefix = "/documentation/" | append: version | append: "/" -%}
+{%- assign linkTemplate = "/documentation/" | append: version | append: "/" | append: doc.path | absolute_url -%}
 {%- endif -%}
       <div class="col">
         <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
           <div class="card-header">
-            <h2 class="card-title fs-4"><a href='{{ pathPrefix }}{{ doc.path | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
+            <h2 class="card-title fs-4"><a href='{{ linkTemplate | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
           </div>
           <div class="card-body mx-3 my-2">
 {{ doc.description }}
