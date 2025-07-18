@@ -58,7 +58,7 @@ title: Join Us!
             <div class="card-body mx-3 my-2">
               <p>Sometimes it's just easier to talk face-to-face. 
               We have a meeting every month that's open to anyone to come along.</p>
-              <p>The date an time is advertised on the <a href="https://kroxylicious.slack.com/archives/C050RNMQW8G">#general</a> Slack channel.</p>
+              <p>The date and time is advertised on the <a href="https://kroxylicious.slack.com/archives/C050RNMQW8G">#general</a> Slack channel.</p>
             </div>
           </div>
         </div>
