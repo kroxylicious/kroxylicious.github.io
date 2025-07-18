@@ -31,8 +31,8 @@ title: Release Archives
 <h2 id="{{ releaseVersion }}" class="card-title fs-4">{{ releaseVersion }}
 {%- if releaseVersion == site.data.kroxylicious.latestRelease %} (latest release){%- endif -%}
 </h2>
-<a href="/documentation/{{ releaseVersion }}/">Documentation</a><br/>
-<a href="/download/{{ releaseVersion }}/">Download</a>
+<a href="{{ '/documentation/' | append: releaseVersion | append: '/' | absolute_url }}">Documentation</a><br/>
+<a href="{{ '/download/' | append: releaseVersion | append: '/' | absolute_url }}">Download</a>
       </div>
     </div>
 {%- endfor -%}
