@@ -10,11 +10,11 @@ module Jekyll
 
         normalized_str = key_str.gsub('.', '_')
 
-        unless normalized_str.match?(/\A\d+_\d+_\d+\z/)
-          raise ArgumentError, "Invalid semver key in 'sort_by_semver_key'. Expected '1.2.3' or '1_2_3', but found '#{key_str}'."
+        unless normalized_str.match?(/\A\d+_\d+_\d+(?:-SNAPSHOT)?\z/)
+          raise ArgumentError, "Invalid semver key in 'sort_by_semver_key'. Expected '1.2.3[-SNAPSHOT]' or '1_2_3[-SNAPSHOT]', but found '#{key_str}'."
         end
 
-        normalized_str.split('_').map { |part| part.rjust(5, '0') }.join('.')
+        normalized_str.split('_').map { |part| part.rjust(12, '0') }.join('.')
       end
 
       # controlling this from the filter is convenient because 'sort_by_semver_key | reverse' doesn't work as expected
