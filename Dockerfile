@@ -17,7 +17,7 @@ RUN apt-get update && \
                    wget \
                    golang && \
                    rm -rf /var/lib/apt/lists/*
-ENV RBENV_ROOT /usr/local/rbenv
+ENV RBENV_ROOT=/usr/local/rbenv
 RUN git clone https://github.com/rbenv/rbenv.git ${RBENV_ROOT} && \
     git clone https://github.com/rbenv/ruby-build.git ${RBENV_ROOT}/plugins/ruby-build
 
@@ -45,4 +45,4 @@ RUN mkdir /site/
 WORKDIR /site/
 EXPOSE 4000
 # Note --incremental mode is ineffective on the Mac owing to https://github.com/containers/podman/issues/22343.  Use force_regenerate.sh to trigger the incremental reload after changing the file on the host.
-CMD eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site
+CMD [ "bash", "-c", "eval \"$(rbenv init -)\" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site"]
