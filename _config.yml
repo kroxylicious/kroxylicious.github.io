@@ -47,6 +47,7 @@ exclude:
   - .idea
   - docs/README.md
   - Dockerfile
+  - build.sh
   - run.sh
   - bootstrap_setup.sh
   - README.md
