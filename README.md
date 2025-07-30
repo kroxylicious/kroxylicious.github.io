@@ -23,13 +23,27 @@ We don't use the Bootstrap 5 ruby gem here, as it runs on a
 
 ### Running in a Container
 
+When developing website content (editing markdown/asciidoc, modifying ruby extensions) it is useful to deploy a
+local testing server that presents the website, with hot-reloading so that source changes are reflected quickly
+in the built HTML.
+
 To build and serve the website from a container you can run `./run.sh`. It will be deployed on http://localhost:4000
 
 This assumes the use of `podman`, if you are a `docker` user you can run `CONTAINER_ENGINE=docker ./run.sh`.
 
+### Building Production HTML
+
+When developing build automation, it is useful to be able to build the static website output, that will be deployed to production, the
+same way it will be built in GitHub Actions.
+
+To build the production site you can run `./build.sh` which will produce an `_site` directory containing the built website for production.
+
+This assumes the use of `podman`, if you are a `docker` user you can run `CONTAINER_ENGINE=docker ./build.sh`.
+
 ### Running on GitHub Pages on a Fork
 
-To exercise the GitHub workflows and share changes it can be convenient to deploy a fork to GitHub Pages.
+When developing build automation, it is useful to be able to deploy your changes to the GitHub Pages a Fork of this repository. This
+exercises all the production artifact creation and Pages deployment parts of the automation.
 
 To enable pages on your fork:
 1. go to `https://github.com/${yourname}/kroxylicious.github.io/settings` in a browser, replacing `${yourname}` with your GitHub username.

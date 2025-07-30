@@ -63,16 +63,13 @@ jobs:
         # this is to enable forks to override the url and baseurl
         run: echo "${{ vars.JEKYLL_CONFIG_OVERRIDES }}" > _config-overrides.yml
       - name: Build with Jekyll
-        # Outputs to the './_site' directory by default
+        # Outputs to the './_site' directory
         run: |
-          docker run \
-            --rm \
-            -u "$(id -u):$(id -g)" \
-            -v "$(pwd):/site" \
-            localhost:5000/kroxy-jekyll:latest \
-            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && JEKYLL_ENV=production bundle exec jekyll build --config=_config.yml,_config-overrides.yml'
+          ./build.sh
         env:
-          JEKYLL_ENV: production
+          CONTAINER_ENGINE: docker
+          CONFIG_OVERRIDES: _config-overrides.yml
+          BUILD_IMAGE_SPEC: localhost:5000/kroxy-jekyll:latest
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3

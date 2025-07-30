@@ -32,10 +32,9 @@ jobs:
           cache-to: type=gha,mode=max
  
       - name: Build with Jekyll
+        # Outputs to the './_site' directory
         run: |
-          docker run \
-            --rm \
-            -u "$(id -u):$(id -g)" \
-            -v "$(pwd):/site" \
-            localhost:5000/kroxy-jekyll:latest \
-            bash -c 'eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/ && JEKYLL_ENV=production bundle exec jekyll build --config=_config.yml'
+          ./build.sh
+        env:
+          CONTAINER_ENGINE: docker
+          BUILD_IMAGE_SPEC: localhost:5000/kroxy-jekyll:latest
