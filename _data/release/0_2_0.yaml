@@ -1,4 +1,4 @@
-assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)
+assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)/
 assets:
   - name: Proxy
     description: The proxy application.
