@@ -1,6 +1,0 @@
----
-title: Kroxylicious Record Encryption Guide v0.13.0
----
-
-include::../_files/record-encryption-guide/index.adoc[leveloffset=0]
-
