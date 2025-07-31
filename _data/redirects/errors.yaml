@@ -1,4 +1,4 @@
-baseUrl: https://kroxylicious.io/documentation/
+baseUrl: /documentation/
 delay: 3
 mappings:
   - name: clientTls

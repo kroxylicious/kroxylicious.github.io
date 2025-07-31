@@ -1,6 +1,0 @@
----
-title: Kroxylicious Developer Guide v0.13.0
----
-
-include::../_files/developer-guide/index.adoc[leveloffset=0]
-
