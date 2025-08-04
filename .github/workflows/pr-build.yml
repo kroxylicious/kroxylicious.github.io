@@ -38,3 +38,19 @@ jobs:
         env:
           CONTAINER_ENGINE: docker
           BUILD_IMAGE_SPEC: localhost:5000/kroxy-jekyll:latest
+
+      # Currently the image shas are not available when we create the release, they need to be manually
+      # updated in the release PR before merge.
+      - name: Require release manifests to contain non-placeholder container image SHAs
+        run: |
+          PLACEHOLDER="REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE"
+          # || true prevents the script failing when 0 matches are found
+          matching_files=$(grep -r -l "${PLACEHOLDER}" _data/release/ || true)
+          if [[ -n "${matching_files}" ]]; then
+            echo "Error: ${PLACEHOLDER} found in release manifests:" >&2
+            echo "${matching_files}" >&2
+            echo "Please replace the placeholders in these files with the released image SHAs" >&2
+            exit 1
+          else
+            echo "Success: Release manifests contain no image SHA placeholders"
+          fi
