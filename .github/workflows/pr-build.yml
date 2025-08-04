@@ -45,7 +45,7 @@ jobs:
         run: |
           PLACEHOLDER="REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE"
           # || true prevents the script failing when 0 matches are found
-          matching_files=$(grep -r -l "${PLACEHOLDER}" _data/release/ || true)
+          matching_files=$(grep -F -r -l "${PLACEHOLDER}" _data/release/ || true)
           if [[ -n "${matching_files}" ]]; then
             echo "Error: ${PLACEHOLDER} found in release manifests:" >&2
             echo "${matching_files}" >&2
