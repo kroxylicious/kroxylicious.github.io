@@ -307,6 +307,10 @@ b.conum * {
   pointer-events: none; /* Clicks will "pass through" the watermark */
 }
 
+.imageblock img {
+  max-width: 100%;
+}
+
 .listingblock {
   margin-bottom: 0.75rem;
 }
