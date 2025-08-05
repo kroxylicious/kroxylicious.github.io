@@ -306,3 +306,7 @@ b.conum * {
   
   pointer-events: none; /* Clicks will "pass through" the watermark */
 }
+
+.imageblock img {
+  max-width: 100%;
+}
