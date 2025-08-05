@@ -35,7 +35,12 @@ layout: default
     </div>
   </div>
   <div class="col-lg-6" role="main">
-    <div class="row row-cols-1 row-cols-md-2 g-4">
+    <div class="row">
+    <table class="table">
+      <thead>
+      <tr><th class="col-lg-2">Document</th><th class="col-lg-4">Description</th></tr>
+      </thead>
+      <tbody>
 {%- assign docs_for_release = site.data.documentation[underscored_version].docs | sort: "rank" -%}
 {%- for doc in docs_for_release -%}
 {%- assign first1 = doc.path | slice: 0, 1 -%}
@@ -48,18 +53,17 @@ layout: default
 {%- else -%} 
 {%- assign linkTemplate = "/documentation/" | append: version | append: "/" | append: doc.path | absolute_url -%}
 {%- endif -%}
-      <div class="col">
-        <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
-          <div class="card-header">
-            <h2 class="card-title fs-4"><a href='{{ linkTemplate | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
-          </div>
-          <div class="card-body mx-3 my-2">
+      <tr>
+          <td>
+            <a href='{{ linkTemplate | replace: "$(VERSION)", version}}'>{{ doc.title }}</a>
+          </td>
+          <td>
 {{ doc.description }}
-          </div>
-        </div>
-      </div>
+          </td>
+      </tr>
 {%- endfor -%}
-    </div>
+      </tbody>
+  </table>
   </div>
 </div>
 
