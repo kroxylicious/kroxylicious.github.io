@@ -6,6 +6,20 @@ This is the repo containing the kroxylicious.io website.
 The site runs on Jekyll, so you'll need to ensure you have the [prerequisites](https://jekyllrb.com/docs/) installed to try it locally.
 You'll also need to ensure you have Ruby 3.2+ installed, along with the latest versions of Rake and Bundler for your Ruby distribution.
 
+<!-- TOC -->
+* [Kroxylicous.io Site](#kroxylicousio-site)
+  * [What?](#what)
+  * [Key Files](#key-files)
+  * [Development](#development)
+    * [Running in a Container](#running-in-a-container)
+    * [Building Production HTML](#building-production-html)
+    * [Running on GitHub Pages on a Fork](#running-on-github-pages-on-a-fork)
+* [Binary content](#binary-content)
+* [Excalidraw images](#excalidraw-images)
+* [Redirects](#redirects)
+* [Contributing](#contributing)
+<!-- TOC -->
+
 ## Key Files
 - [Gemfile](Gemfile) - required ruby gems for building and serving the site
 - [_config.yml](_config.yml) - Jekyll configuration for building the site
@@ -87,3 +101,13 @@ mappings:
   toVersion: 0.12.0 #Optional, if not specified the latest release at time of site build  is used.
   path: /html/kroxylicious-proxy/#con-configuring-client-connections-proxy # the path within the baseUrl
 ```
+
+# Contributing
+
+You can contribute by:
+
+* Raising any issues you find in the [Issue tracker](https://github.com/kroxylicious/kroxylicious/issues)
+* Fixing issues by opening Pull Requests
+* Improving documentation (note that release-specific documentation lives in [kroxylicous/kroxylicious](https://github.com/kroxylicious/kroxylicious/tree/main/docs))
+
+Check out our [Join Us](https://kroxylicious.io/join-us/) page for more information on contributing to the project!
