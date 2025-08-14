@@ -161,7 +161,7 @@ a {
 // ensure padding for code blocks
 .highlight {
   text-wrap: wrap;
-  padding: 0.5em;
+  padding: 1rem;
   border-radius: 4px;
   margin-bottom: 0;
 }
@@ -307,10 +307,30 @@ b.conum * {
   pointer-events: none; /* Clicks will "pass through" the watermark */
 }
 
-.imageblock img {
+
+/* Kroxylicious Guide CSS Specializations */
+
+.kroxylicious-guide .imageblock img {
   max-width: 100%;
 }
 
-.listingblock {
+.kroxylicious-guide .listingblock {
   margin-bottom: 0.75rem;
+}
+
+.kroxylicious-guide h2,h3,h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.kroxylicious-guide p, summary {
+  margin-bottom: 0.625rem;
+}
+
+.kroxylicious-guide .sect1 {
+  padding-bottom: 1.25rem;
+}
+
+.kroxylicious-guide .sect1+.sect1 {
+  border-top: 1px solid $kroxy-light;
 }
