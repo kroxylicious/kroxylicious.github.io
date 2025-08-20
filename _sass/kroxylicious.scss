@@ -334,3 +334,14 @@ b.conum * {
 .kroxylicious-guide .sect1+.sect1 {
   border-top: 1px solid $kroxy-light;
 }
+
+.kroxylicious-guide .clipboardBtn {
+  background:url(/assets/theme/images/clippy.svg) no-repeat;
+  float: right;
+  vertical-align: top;
+  cursor:pointer;
+  width: 13px;
+  height: 15px;
+  background-size:contain;
+  border: none;
+}
