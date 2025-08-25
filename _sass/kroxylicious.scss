@@ -335,13 +335,25 @@ b.conum * {
   border-top: 1px solid $kroxy-light;
 }
 
+.kroxylicious-guide pre.CodeRay {
+  /* enable clipboardButton to be absolutely positioned within the pre */
+  position: relative;
+}
+
+.kroxylicious-guide pre.CodeRay:hover .clipboardBtn {
+  opacity: 1.0;
+}
+
 .kroxylicious-guide .clipboardBtn {
   background:url(/assets/theme/images/clippy.svg) no-repeat;
-  float: right;
-  vertical-align: top;
+  display: inline-block;
+  position: absolute;
+  top: 6px;
+  right: 6px;
   cursor:pointer;
   width: 13px;
   height: 15px;
   background-size:contain;
   border: none;
+  opacity: 0;
 }
