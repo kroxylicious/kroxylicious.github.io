@@ -6,16 +6,16 @@
     document.querySelectorAll("code").forEach((codeElem) => {
         if (codeElem.textContent && codeElem.closest('.listingblock')) {
             let selectableCode = codeElem.textContent;
-            if (codeElem.getAttribute("data-lang") === "terminal") {
+            if (codeElem.dataset.lang === "terminal") {
                 let codeLines = codeElem.textContent.split(/\n/);
                 for (let idx = 0; idx < codeLines.length; idx++) {
-                    // line is a shell command, remove the console prompt
-                    codeLines[idx] = codeLines[idx].replace("$ ", "")
+                    // line is a shell command, remove any console prompt
+                    codeLines[idx] = codeLines[idx].replace(/^\$ +/, "")
                 }
                 selectableCode = codeLines.join("\n");
             }
             let clipboardBtn =  document.createElement("button");
-            clipboardBtn.setAttribute('data-clipboard-text', selectableCode);
+            clipboardBtn.dataset.clipboardText = selectableCode;
             clipboardBtn.className = "clipboardBtn";
             codeElem.parentNode.insertBefore(clipboardBtn, codeElem.nextSibling);
             atLeastOne = true;
