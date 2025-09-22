@@ -98,14 +98,14 @@ a {
   margin-bottom: 0;
 }
 
-.redhat-footer {
+.footer {
   background-color: $black;
   color: $white;
   font-size: .8rem;
   font-weight: 200;
 
-  .grid-wrapper { 
-    padding: .75rem 0; 
+  .grid-wrapper {
+    padding: .75rem 0;
     display: flex;
     justify-content: space-between;
 
@@ -122,22 +122,9 @@ a {
 
   .license {
     align-self: center;
-  
+
     a {
       color: $white;
-    }
-  }
-
-  .redhat-logo {
-    align-self: center;
-    padding-left: 2rem;
-    
-    img { width: 14rem; }
-
-    @media screen and (max-width: 600px) {
-    padding-top: .75rem;
-    padding-bottom: 1rem;
-    padding-left: 0;
     }
   }
 
