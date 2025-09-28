@@ -21,7 +21,7 @@ if [ ! -f "${TEST_FILE}" ]; then
 fi
 
 cd ${KROXYLICIOUS_DIR}
-mvn -Dquick -P dist clean package --non-recursive
-cp -r target/web/* ${SCRIPT_DIR}
+mvn -P dist clean package -pl :kroxylicious-docs
+cp -r kroxylicious-docs/target/web/* ${SCRIPT_DIR}
 cd ${SCRIPT_DIR}
 exec ./run.sh
