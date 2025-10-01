@@ -1,0 +1,71 @@
+docs:
+  - title: Proxy Quick Start
+    description: Start here if you're experimenting with the proxy for the first time.
+    tags:
+      - proxy
+    rank: '000'
+    path: html/proxy-quick-start
+  - title: Proxy guide
+    description: "Covers using the proxy, including configuration, security and operation."
+    tags:
+      - proxy
+    rank: '010'
+    path: html/kroxylicious-proxy
+  - title: Record Encryption quickstart
+    description: Shows how to use the proxy to provide an encryption at rest solution
+      for Apache Kafka
+    tags:
+      - record-encryption
+      - encryption-at-rest
+    rank: '011'
+    path: html/record-encryption-quickstart
+  - title: Kroxylicious Operator for Kubernetes
+    description: Describes how to deploy and run the Proxy in a Kubernetes environment
+      using the Kroxylicious Operator
+    tags:
+      - kubernetes
+    rank: '020'
+    path: html/kroxylicious-operator
+  - title: Record Encryption Guide
+    description: "Covers using the record encryption filter, including configuration,\
+      \ security and operation."
+    tags:
+      - filter
+    rank: '020'
+    path: html/record-encryption-guide
+  - title: Record Validation Guide
+    description: Covers using the record validation filter.
+    tags:
+      - filter
+    rank: '021'
+    path: html/record-validation-guide
+  - title: Multi-tenancy Guide
+    description: Covers using the multi-tenancy filter.
+    tags:
+      - filter
+    rank: '022'
+    path: html/multi-tenancy-guide
+  - title: Oauth Bearer Validation Guide
+    description: Covers using the Oauth Bearer validation filter.
+    tags:
+      - filter
+    rank: '023'
+    path: html/oauth-bearer-validation
+  - title: Developer Quick Start
+    description: Start here if you're developing a filter for the first time.
+    tags:
+      - developer
+    rank: '031'
+    path: html/developer-quick-start
+  - title: Kroxylicious Developer guide
+    description: Covers writing plugins for the proxy in the Java programming language
+    tags:
+      - developer
+    rank: '032'
+    path: html/developer-guide
+  - title: Kroxylicious Javadocs
+    description: The Java API documentation.
+    tags:
+      - developer
+    path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/0.16.0/index.html
+    rank: '033'
