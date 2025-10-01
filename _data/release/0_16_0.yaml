@@ -26,9 +26,9 @@ images:
     url: https://quay.io/repository/kroxylicious/kroxylicious?tab=tags
     registry: quay.io/kroxylicious/kroxylicious
     tag: $(VERSION)
-    digest: sha256:REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE
+    digest: sha256:61e9bf6a420336bfc13cbf07a025986060a8650ff3e25b1b7a93717a4f0b41aa
   - name: Operator
     url: https://quay.io/repository/kroxylicious/operator?tab=tags
     registry: quay.io/kroxylicious/operator
     tag: $(VERSION)
-    digest: sha256:REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE
+    digest: sha256:678671d615d8f1fe353158a3d1532d297e8910d21024d498c2b284d8f8e938dd
