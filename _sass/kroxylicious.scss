@@ -344,3 +344,8 @@ b.conum * {
   border: none;
   opacity: 0;
 }
+
+.default-layout > .container-fluid.px-0 > .row {
+  margin-left: 0;
+  margin-right: 0;
+}
