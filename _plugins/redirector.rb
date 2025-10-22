@@ -15,6 +15,10 @@ module SamplePlugin
           versions.each { |version|
             mapping['version'] = version
             site.pages << RedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
+            if version == latest_release
+              mapping['landing_version'] = "latest"
+              site.pages << RedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
+            end
           }
         end
         Jekyll.logger.info "Generated redirects #{redirect_config[0]}"
@@ -34,20 +38,20 @@ module SamplePlugin
 
   # Subclass of `Jekyll::Page` with custom method definitions.
   class RedirectPage < Jekyll::Page
-    def initialize(site, group, redirectConfig, mapping)
+    def initialize(site, group, redirect_config, mapping)
 
       @site = site # the current site instance.
       @base = site.source # path to the source directory.
-      @dir = "/redirect/#{group}/#{mapping['version']}/" # the directory the page will reside in.
+      @dir = "/redirect/#{group}/#{mapping['landing_version'] || mapping['version']}/" # the directory the page will reside in.
 
       # All pages have the same filename, so define attributes straight away.
       @basename = mapping['name'] # filename without the extension.
       @ext = '.html' # the extension.
       @name = basename + ext # basically @basename + @ext.
       @layout = 'redirect.html'
-      delay = redirectConfig['delay'] ||= 1
+      delay = redirect_config['delay'] ||= 1
       @data = {
-        'target' => "#{redirectConfig['baseUrl']}#{mapping['version']}#{mapping['path']}",
+        'target' => "#{redirect_config['baseUrl']}#{mapping['version']}#{mapping['path']}",
         'layout' => 'redirect',
         'delay' => "#{delay}",
       }

@@ -1,0 +1,12 @@
+baseUrl: /documentation/
+delay: 0
+mappings:
+  - name: current25-configuring-the-proxy
+    fromVersion: 0.15.0
+    path: /html/kroxylicious-proxy/#assembly-configuring-proxy-proxy
+  - name: current25-operator
+    fromVersion: 0.14.0
+    path: /html/kroxylicious-operator/
+
+
+
