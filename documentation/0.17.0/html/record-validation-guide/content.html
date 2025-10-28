@@ -1,0 +1,311 @@
+{% raw %}
+<html>
+ <head></head>
+ <body>
+  <div id="preamble">
+   <div class="sectionbody">
+    <h2 id="con-about-record-validation-guide-record-validation" class="discrete">About this guide</h2>
+    <div class="paragraph _abstract">
+     <p>This guide covers using the <strong>Kroxylicious Record Validation Filter</strong> to validate records sent by Kafka client to Kafka brokers. Refer to other Kroxylicious guides for information on running the proxy or for advanced topics such as plugin development.</p>
+    </div>
+    <div class="paragraph _abstract">
+     <p>The Record Validation filter validates records sent by a producer. Only records that pass the validation are sent to the broker. This filter can be used to prevent <em>poison messages</em>—such as those containing corrupted data or invalid formats—from entering the Kafka system, which may otherwise lead to consumer failure.</p>
+    </div>
+    <div class="paragraph">
+     <p>The filter currently supports two modes of operation:</p>
+    </div>
+    <div class="olist arabic">
+     <ol class="arabic">
+      <li>
+       <p>Schema Validation ensures the content of the record conforms to a schema stored in an <a href="https://www.apicur.io/registry/">Apicurio Registry</a>.</p>
+      </li>
+      <li>
+       <p>JSON Syntax Validation ensures the content of the record contains syntactically valid JSON.</p>
+      </li>
+     </ol>
+    </div>
+    <div class="paragraph">
+     <p>Validation rules can be applied to check the content of the Kafka record key or value.</p>
+    </div>
+    <div class="paragraph">
+     <p>If the validation fails, the product request is rejected and the producing application receives an error response. The broker will not receive the rejected records.</p>
+    </div>
+    <div class="admonitionblock note">
+     <table>
+      <tbody>
+       <tr>
+        <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+        <td class="content">This filter is currently in incubation and available as a preview. We would not recommend using it in a production environment.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-configuring-record-validation-filter-record-validation">1. (Preview) Setting up the Record Validation filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This procedure describes how to set up the Record Validation filter. Provide the filter configuration and rules that the filter uses to check against Kafka record keys and values.</p>
+    </div>
+    <div class="ulist">
+     <div class="title">Prerequisites</div>
+     <ul>
+      <li>
+       <p>An instance of Kroxylicious. For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+      </li>
+      <li>
+       <p>A config map for Kroxylicious that includes the configuration for creating a virtual cluster.</p>
+      </li>
+      <li>
+       <p>Apicurio Registry (if wanting to use Schema validation).</p>
+      </li>
+     </ul>
+    </div>
+    <div class="olist arabic">
+     <div class="title">Procedure</div>
+     <ol class="arabic">
+      <li>
+       <p>Configure a <code>RecordValidation</code> type filter.</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p>In a standalone proxy deployment. See <a href="#con-example-proxy-config-record-validation">Example proxy configuration file</a></p>
+         </li>
+         <li>
+          <p>In a Kubernetes deployment using a <code>KafkaProcotolFilter</code> resource. See <a href="#con-example-kafkaprotocolfilter-resource-record-validation">Example <code>KafkaProtocolFilter</code> resource</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+     </ol>
+    </div>
+    <div class="paragraph">
+     <p>Replace the token <code>&lt;rule definition&gt;</code> in the YAML configuration with either a Schema Validation rule or a JSON Syntax Validation rule depending on your requirements.</p>
+    </div>
+    <div class="paragraph">
+     <div class="title">Example Schema Validation Rule Definition</div>
+     <p>The Schema Validation rule validates that the key or value matches a schema identified by its global ID within an Apicurio Schema Registry.</p>
+    </div>
+    <div class="paragraph">
+     <p>If the key or value does not adhere to the schema, the record will be rejected.</p>
+    </div>
+    <div class="paragraph">
+     <p>Additionally, if the kafka producer has embedded a global ID within the record it will be validated against the global ID defined by the rule. If they do not match, the record will be rejected. See the <a href="https://www.apicur.io/registry/docs/apicurio-registry/2.6.x//getting-started/assembly-using-kafka-client-serdes.html#_consumer_schema_configuration" target="_blank" rel="noopener">Apicurio documentation</a> for details on how the global ID could be embedded into the record. The filter supports extracting ID’s from either the Apicurio <code>globalId</code> record header or from the initial bytes of the serialized content itself.</p>
+    </div>
+    <div class="listingblock">
+     <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">schemaValidationConfig</span>:
+    <span class="key">apicurioGlobalId</span>: <span class="string"><span class="content">1001                                       </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="key">apicurioRegistryUrl</span>: <span class="string"><span class="content">http://registry.local:8080              </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+<span class="key">allowNulls</span>: <span class="string"><span class="content">true                                                 </span></span><i class="conum" data-value="3"></i><b>(3)</b>
+<span class="key">allowEmpty</span>: <span class="string"><span class="content">true                                                 </span></span><i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+     </div>
+    </div>
+    <div class="colist arabic">
+     <table>
+      <tbody>
+       <tr>
+        <td><i class="conum" data-value="1"></i><b>1</b></td>
+        <td>Apicurio registry global ID identifying the schema that will be enforced.</td>
+       </tr>
+       <tr>
+        <td><i class="conum" data-value="2"></i><b>2</b></td>
+        <td>Apicurio Registry endpoint.</td>
+       </tr>
+       <tr>
+        <td><i class="conum" data-value="3"></i><b>3</b></td>
+        <td>if <code>true</code>, the validator allows keys and or values to be <code>null</code>. The default is <code>false</code>.</td>
+       </tr>
+       <tr>
+        <td><i class="conum" data-value="4"></i><b>4</b></td>
+        <td>if <code>true</code>, the validator allows keys and or values to be empty. The default is <code>false</code>.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="admonitionblock note">
+     <table>
+      <tbody>
+       <tr>
+        <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+        <td class="content">Schema validation mode currently has the capability to enforce only JSON schemas (<a href="https://github.com/kroxylicious/kroxylicious/issues/1431">issue</a>)</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="paragraph">
+     <div class="title">Example JSON Syntax Validation Rule Definition</div>
+     <p>The JSON Syntax Validation rule validates that the key or value contains only syntactically correct JSON.</p>
+    </div>
+    <div class="listingblock">
+     <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">syntacticallyCorrectJson</span>:
+    <span class="key">validateObjectKeysUnique</span>: <span class="string"><span class="content">true                               </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+<span class="key">allowNulls</span>: <span class="string"><span class="content">true                                                 </span></span><i class="conum" data-value="2"></i><b>(2)</b>
+<span class="key">allowEmpty</span>: <span class="string"><span class="content">true                                                 </span></span><i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+     </div>
+    </div>
+    <div class="colist arabic">
+     <table>
+      <tbody>
+       <tr>
+        <td><i class="conum" data-value="1"></i><b>1</b></td>
+        <td>If <code>true</code>, the validator enforces that objects keys must be unique. The default is <code>false</code>.</td>
+       </tr>
+       <tr>
+        <td><i class="conum" data-value="2"></i><b>2</b></td>
+        <td>if <code>true</code>, the validator allows keys and or values to be <code>null</code>. The default is <code>false</code>.</td>
+       </tr>
+       <tr>
+        <td><i class="conum" data-value="3"></i><b>3</b></td>
+        <td>if <code>true</code>, the validator allows keys and or values to be empty. The default is <code>false</code>.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-proxy-config-record-validation">1.1. Example proxy configuration file</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of the Kroxylicious Proxy runs directly on an operating system, provide the filter configuration in the <code>filterDefinitions</code> list of your proxy configuration. Here’s a complete example of a <code>filterDefinitions</code> entry configured for record validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">filterDefinitions</span>:
+  - <span class="string"><span class="content">name: my-record-validation</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">RecordValidation</span></span>
+    <span class="key">config</span>:
+        <span class="key">rules</span>:
+        - <span class="string"><span class="content">topicNames:                                                  </span><span class="content"><i class="conum" data-value="1"></i><b>(1)</b>
+            - &lt;topic name&gt;</span></span>
+          <span class="key">keyRule</span>:
+            <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="2"></i><b>(2)</b>
+          <span class="key">valueRule</span>:
+            <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="key">defaultRule</span>:                                                   <i class="conum" data-value="4"></i><b>(4)</b>
+          <span class="key">keyRule</span>:
+            <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="2"></i><b>(2)</b>
+          <span class="key">valueRule</span>:
+            <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>List of topic names to which the validation rules will be applied.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td>Validation rules that are applied to the record’s key.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Validation rules that are applied to the record’s value.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>(Optional) Default rule that is applied to any topics for which there is no explict rule defined.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> for more information about configuring the proxy.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-kafkaprotocolfilter-resource-record-validation">1.2. Example <code>KafkaProtocolFilter</code> resource</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of Kroxylicious runs on Kubernetes, you must use a <code>KafkaProcotolFilter</code> resource to contain the filter configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>KafkaProtocolFilter</code> resource configured for record validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>KafkaProtocolFilter</code> resource for record validation
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kind</span>: <span class="string"><span class="content">KafkaProtocolFilter</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">my-validation-filter</span></span>
+<span class="key">spec</span>:
+  <span class="key">type</span>: <span class="string"><span class="content">RecordValidation</span></span>
+  <span class="key">configTemplate</span>:
+    <span class="key">rules</span>:
+    - <span class="string"><span class="content">topicNames:                                                  </span><span class="content"><i class="conum" data-value="1"></i><b>(1)</b>
+        - &lt;topic name&gt;</span></span>
+      <span class="key">keyRule</span>:
+        <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="key">valueRule</span>:
+        <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="key">defaultRule</span>:                                                   <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="key">keyRule</span>:
+        <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="key">valueRule</span>:
+        <span class="error">&lt;rule definition&gt;                                          </span><i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>List of topic names to which the validation rules will be applied.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="2"></i><b>2</b></td>
+         <td>Validation rules that are applied to the record’s key.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="3"></i><b>3</b></td>
+         <td>Validation rules that are applied to the record’s value.</td>
+        </tr>
+        <tr>
+         <td><i class="conum" data-value="4"></i><b>4</b></td>
+         <td>(Optional) Default rule that is applied to any topics for which there is no explict rule defined.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a> for more information about configuration on Kubernetes.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="trademark_notice">2. Trademark notice</h2>
+   <div class="sectionbody">
+    <div class="ulist _abstract">
+     <ul>
+      <li>
+       <p>Apache Kafka is a registered trademark of The Apache Software Foundation.</p>
+      </li>
+      <li>
+       <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Strimzi is a trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Hashicorp Vault is a registered trademark of HashiCorp, Inc.</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service is a trademark of Amazon.com, Inc. or its affiliates.</p>
+      </li>
+      <li>
+       <p>Fortanix and Data Security Manager are trademarks of Fortanix, Inc.</p>
+      </li>
+     </ul>
+    </div>
+   </div>
+  </div>
+ </body>
+</html>
+{% endraw %}
