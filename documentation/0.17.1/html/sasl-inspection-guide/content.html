@@ -1,0 +1,261 @@
+{% raw %}
+<html>
+ <head></head>
+ <body>
+  <div id="preamble">
+   <div class="sectionbody">
+    <h2 id="con-about-sasl-inspection-guide-sasl-inspection" class="discrete">About this guide</h2>
+    <div class="paragraph _abstract">
+     <p>This guide covers using the <strong>Kroxylicious SASL Inspection Filter</strong>. This filter extracts the authenticated principal from a successful SASL exchange between Kafka Client and Kafka Broker and makes it available to the other filters in the chain.</p>
+    </div>
+    <div class="paragraph">
+     <p>Refer to other Kroxylicious guides for information on running the proxy or for advanced topics such as plugin development.</p>
+    </div>
+    <div class="paragraph _abstract">
+     <p>This filter inspects the SASL exchange between Kafka Client and Broker and extracts the <strong>authenticated principal</strong>. If the client’s authentication with the broker is successful, the filter makes the authenticated principal available to the other filters in the chain, so that they may know on whose behalf they are acting.</p>
+    </div>
+    <div class="admonitionblock note">
+     <table>
+      <tbody>
+       <tr>
+        <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+        <td class="content">The SASL Inspection Filter plays no part in deciding if the authentication is successful or not. That role remains the exclusive responsibility of the broker.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="paragraph">
+     <p>To use this filter, the Kafka Cluster’s listener must be configured to authenticate using SASL, and it must use a SASL mechanism that enabled by this filter. If the Kafka Client is configured to use a SASL mechanism that is not supported by the proxy, or the proxy and Kafka Cluster do not have the same mechanism available the client will be disconnected with an unsupported SASL mechanism error.</p>
+    </div>
+    <div class="paragraph">
+     <p>This filter supports the following SASL mechanisms:</p>
+    </div>
+    <table id="supported-mechansisms-sasl-inspection" class="tableblock frame-all grid-all stretch">
+     <caption class="title">Table 1. Table of supported SASL mechanisms</caption>
+     <colgroup>
+      <col style="width: 50%;">
+      <col style="width: 50%;">
+     </colgroup>
+     <thead>
+      <tr>
+       <th class="tableblock halign-left valign-top">SASL mechanism</th>
+       <th class="tableblock halign-left valign-top">Enabled by default</th>
+      </tr>
+     </thead>
+     <tbody>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://tools.ietf.org/html/rfc4616">PLAIN</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">No</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc7677">SCRAM-SHA-256</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha-512-00">SCRAM-SHA-512</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc7628">OAUTHBEARER</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+     </tbody>
+    </table>
+    <div class="paragraph">
+     <p>Mechanisms that transmit credentials in plain text are disabled by default. This is done to avoid the plain-text passwords existing in the proxy’s memory. To use such a mechanism, you must enable it in the filter’s configuration.</p>
+    </div>
+    <div class="paragraph">
+     <p>For the <code>OAUTHBEARER</code> inspection, only JWT tokens that use using signatures (JWS) are supported. JWT tokens that use encryption (JWE) are not supported. Unsigned JWT tokens are supported but not recommended for production use.</p>
+    </div>
+    <div class="paragraph">
+     <p>If an attempted is made to use a unsupported token type, the authentication will fail with a SASL error.</p>
+    </div>
+    <div class="imageblock">
+     <div class="content">
+      <img src="../images/sasl-inspection-seq.svg" alt="Sequence diagram showing SASL inspection.">
+     </div>
+     <div class="title">Figure 1. Sequence diagram showing the SASL inspection filter extracting an authenticated principal from an SASL negotiation.</div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-configuring-sasl-inspection-filter-sasl-inspection">1. Configuring the SASL inspection filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This procedure describes how to set up the SASL Inspection Filter by configuring it in Kroxylicious.</p>
+    </div>
+    <div class="ulist">
+     <div class="title">Prerequisites</div>
+     <ul>
+      <li>
+       <p>An instance of Kroxylicious. For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+      </li>
+     </ul>
+    </div>
+    <div class="olist arabic">
+     <div class="title">Procedure</div>
+     <ol class="arabic">
+      <li>
+       <p>Configure a <code>SaslInspection</code> type filter.</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p>In a standalone proxy deployment. See <a href="#con-example-proxy-config-sasl-inspection">Example proxy configuration file</a></p>
+         </li>
+         <li>
+          <p>In a Kubernetes deployment using a <code>KafkaProcotolFilter</code> resource. See <a href="#con-example-kafkaprotocolfilter-resource-sasl-inspection">Example <code>KafkaProtocolFilter</code> resource</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+     </ol>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-proxy-config-sasl-inspection">1.1. Example proxy configuration file</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of the Kroxylicious Proxy runs directly on an operating system, provide the filter configuration in the <code>filterDefinitions</code> list of your proxy configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>filterDefinitions</code> entry configured for Oauth Bearer validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>filterDefinitions</code> configuration
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">filterDefinitions</span>:
+  - <span class="string"><span class="content">name: my-sasl-inspection-filter</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">SaslInspection</span></span>
+    <span class="key">config</span>:
+      <span class="key">enabledMechanisms</span>: <span class="string"><span class="content">[ "OAUTHBEARER" ] </span></span><i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Restricts the filter to the given SASL mechanism(s). Refer to SASL mechanism by its name given in the <a href="#supported-mechansisms-sasl-inspection">supported mechanisms</a> table. If omitted, the SASL mechanisms <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code> and <code>OAUTHBEARER</code> will be enabled by default.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> for more information about configuring the proxy.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-kafkaprotocolfilter-resource-sasl-inspection">1.2. Example <code>KafkaProtocolFilter</code> resource</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of Kroxylicious runs on Kubernetes, you must use a <code>KafkaProcotolFilter</code> resource to contain the filter configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>KafkaProtocolFilter</code> resource configured for Oauth Bearer validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>KafkaProtocolFilter</code> resource for record validation
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kind</span>: <span class="string"><span class="content">KafkaProtocolFilter</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">my-sasl-inspection-filter</span></span>
+<span class="key">spec</span>:
+  <span class="key">type</span>: <span class="string"><span class="content">SaslInspection</span></span>
+  <span class="key">configTemplate</span>:
+      <span class="key">enabledMechanisms</span>: <span class="string"><span class="content">[ "OAUTHBEARER" ] </span></span><i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+      </div>
+     </div>
+     <div class="colist arabic">
+      <table>
+       <tbody>
+        <tr>
+         <td><i class="conum" data-value="1"></i><b>1</b></td>
+         <td>Restricts the filter to the given SASL mechanism(s). Refer to SASL mechanism by its name given in the <a href="#supported-mechansisms-sasl-inspection">supported mechanisms</a> table. If omitted, the SASL mechanisms <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code> and <code>OAUTHBEARER</code> will be enabled by default.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a> for more information about configuration on Kubernetes.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="trademark_notice">2. Trademark notice</h2>
+   <div class="sectionbody">
+    <div class="ulist _abstract">
+     <ul>
+      <li>
+       <p>Apache Kafka is a registered trademark of The Apache Software Foundation.</p>
+      </li>
+      <li>
+       <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Strimzi is a trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Hashicorp Vault is a registered trademark of HashiCorp, Inc.</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service is a trademark of Amazon.com, Inc. or its affiliates.</p>
+      </li>
+      <li>
+       <p>Fortanix and Data Security Manager are trademarks of Fortanix, Inc.</p>
+      </li>
+     </ul>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="glossary">3. Glossary</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>Glossary of terms used in the SASL Inspection guide.</p>
+    </div>
+    <div class="dlist">
+     <dl>
+      <dt class="hdlist1">JWE</dt>
+      <dd>
+       <p>JSON Web Encryption is an IETF <a href="https://datatracker.ietf.org/doc/html/rfc7516">standard</a> for exchanging encrypted data using JSON.</p>
+      </dd>
+      <dt class="hdlist1">JWT</dt>
+      <dd>
+       <p>JSON Web Token is an IETF <a href="https://datatracker.ietf.org/doc/html/rfc8259">standard</a> for securely transmitting information between parties as a JSON object.</p>
+      </dd>
+      <dt class="hdlist1">JWS</dt>
+      <dd>
+       <p>JSON Web Signature is an IETF-proposed <a href="https://datatracker.ietf.org/doc/html/rfc7515">standard</a> for signing arbitrary data.</p>
+      </dd>
+      <dt class="hdlist1">SASL</dt>
+      <dd>
+       <p>Simple Authentication and Security Layer, a framework for handling authentication.</p>
+      </dd>
+     </dl>
+    </div>
+   </div>
+  </div>
+ </body>
+</html>
+{% endraw %}
