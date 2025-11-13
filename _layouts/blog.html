@@ -34,12 +34,14 @@ layout: default
                         {% else %}
                             <div class="col-md align-self-center">
                         {% endif %}
-                            <div class="card-body mx-3 my-2">
+                            <div class="card-header">
                                 <h2 class="card-title fs-4">
-                                    <a class="page-link" href="{{ post.url | absolute_url }}">
+                                    <a href="{{ post.url | absolute_url }}">
                                         {{ post.title | escape }}
                                     </a>
                                 </h2>
+                            </div>
+                            <div class="card-body mx-3 my-2">
                                 <p class="card-text">{{ post.excerpt | markdownify }}</p>
                                 <p class="card-text text-end"><small class="text-secondary">{{ post.date | date: date_format }}</small></p>
                             </div>
