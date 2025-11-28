@@ -96,7 +96,7 @@ title: Join Us!
             <div class="card-header"><h2 class="card-title fs-4">Contribute to the docs</h2></div>
             <div class="card-body mx-3 my-2">
               <p>Fix typos, improve clarity or write new content.</p>
-              <p>We use the "documentation" label on issues and PRs for things related to documentation.</p>
+              <p>We use the "documentation" label on issues and PRs for things related to documentation</p>
             </div>
             <div class="card-footer text-center">
               <a href="https://github.com/kroxylicious/kroxylicious/issues?q=is%3Aissue%20state%3Aopen%20label%3Adocumentation" class="btn btn-primary">Documentation issues</a>

@@ -13,7 +13,7 @@ docs:
     path: html/kroxylicious-proxy
   - title: Record Encryption quickstart
     description: Shows how to use the proxy to provide an encryption at rest solution
-      for Apache Kafka.
+      for Apache Kafka
     tags:
       - record-encryption
       - encryption-at-rest
@@ -21,7 +21,7 @@ docs:
     path: html/record-encryption-quickstart
   - title: Kroxylicious Operator for Kubernetes
     description: Describes how to deploy and run the Proxy in a Kubernetes environment
-      using the Kroxylicious Operator.
+      using the Kroxylicious Operator
     tags:
       - kubernetes
     rank: '020'
@@ -64,7 +64,7 @@ docs:
     rank: '031'
     path: html/developer-quick-start
   - title: Kroxylicious Developer guide
-    description: Covers writing plugins for the proxy in the Java programming language.
+    description: Covers writing plugins for the proxy in the Java programming language
     tags:
       - developer
     rank: '032'
