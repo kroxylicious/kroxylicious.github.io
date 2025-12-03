@@ -34,3 +34,4 @@ BUILD_COMMAND='eval "$(rbenv init -)" && cp -r /css/_sass/bootstrap /site/_sass/
 RUN_ARGS+=(bash -c "${BUILD_COMMAND}")
 echo "${RUN_ARGS[@]}"
 ${CONTAINER_ENGINE} run "${RUN_ARGS[@]}"
+./test.sh

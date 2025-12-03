@@ -1,5 +1,5 @@
 <!doctype html>
-{% assign absolute_target = page.target | absolute_url %}
+{% assign absolute_target = page.target | replace: '$$LATEST_RELEASE$$', site.data.kroxylicious.latestRelease | absolute_url %}
 <html lang="en">
 <head>
     <meta charset="utf-8">
