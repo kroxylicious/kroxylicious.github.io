@@ -68,7 +68,7 @@ even if producing applications are misconfigured.
 
 The filter currently supports two modes of operation:
 
-1. Schema validation[^3] validates the content of the record against a schema. Use this for topics which have an entry in
+1. Schema validation[^1] validates the content of the record against a schema. Use this for topics which have an entry in
    the Schema Registry.
 2. SyntacticallyCorrectJson validation ensures the producer is producing messages that contain syntactically valid JSON.
    Use for topics which do not have registered schemas.
