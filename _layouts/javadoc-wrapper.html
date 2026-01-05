@@ -28,7 +28,7 @@ layout: default
                     // Construct the new URL by removing the '.raw' part of the path
                     const currentUrl = new URL(window.location.href);
                     const newUrl = new URL(href, iframe.src);
-                    window.top.location.href = newUrl.href.replace('/{{ RAW_SUBDIR }}/', '/');
+                    window.top.location.href = newUrl.href.replace('/raw/', '/');
                 };
             }
         }
