@@ -1,3 +1,4 @@
 # The version number of the latest release
 latestRelease: 0.18.0
-
+# The sub-path at which the raw Javadoc files can be found.
+javadocRawSubdir: raw
