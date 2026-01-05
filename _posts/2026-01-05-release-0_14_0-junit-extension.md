@@ -9,7 +9,7 @@ categories:  releases junit5-extension
 
 The Kroxylicious project is very pleased to announce the [0.14.0](https://github.com/kroxylicious/kroxylicious-junit5-extension/releases/tag/v0.14.0) release of our Junit5 Extension.
 The main change in this release is the upgrade of [Testcontainers]https://testcontainers.com/ dependency from 1.x to 2.x.
-The Junit 5 Extension uses Testcontainers to create broker instances for your Junit tests (when you choose `container` mode).
+The Junit 5 Extension uses Testcontainers to create broker instances for your Junit tests (when you choose [container-based provisioning](https://github.com/kroxylicious/kroxylicious-junit5-extension?tab=readme-ov-file#provisioning-mechanisms}).
 As a user of the Junit 5 Extension, the changes should be completely transparent to you.
 
 ### Feedback
