@@ -1,0 +1,36 @@
+---
+layout: default
+---
+<div class="container-fluid p-0">
+    <iframe id="javadoc-frame"
+            src="{{ page.raw_path | relative_url }}"
+            style="width: 100%; height: calc(100vh - 60px); border: none;"
+            title="Javadoc Content">
+    </iframe>
+</div>
+
+<script>
+    // This script forces links clicked inside the iframe to
+    // navigate the PARENT window to the correct Jekyll URI.
+    const iframe = document.getElementById('javadoc-frame');
+
+    iframe.onload = function() {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const links = iframeDoc.getElementsByTagName('a');
+
+        for (let link of links) {
+            // Only intercept internal relative links
+            if (link.href && link.getAttribute('href').indexOf('http') !== 0) {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    const href = link.getAttribute('href');
+
+                    // Construct the new URL by removing the '.raw' part of the path
+                    const currentUrl = new URL(window.location.href);
+                    const newUrl = new URL(href, iframe.src);
+                    window.top.location.href = newUrl.href.replace('/{{ RAW_SUBDIR }}/', '/');
+                };
+            }
+        }
+    };
+</script>
