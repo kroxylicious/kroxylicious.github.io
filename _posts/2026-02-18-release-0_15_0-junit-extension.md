@@ -2,8 +2,8 @@
 layout: post
 title:  "kroxylicious-junit5-extension release 0.15.0"
 date:   2026-02-18 00:00:00 +0000
-author: "Robert Young"
-author_url: "https://github.com/robobario"
+author: "Keith Wall"
+author_url: "https://github.com/k-wall"
 categories:  releases junit5-extension
 ---
 
