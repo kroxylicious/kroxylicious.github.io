@@ -7,6 +7,8 @@ toc: true
 
 This page provides an overview of how Kroxylicious works.  For more details, please refer to the [documentation]({{ '/documentation/' | absolute_url }}).
 
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/xLOjKScpJ3Q?si=awi7JDIPsn4sGdqM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 # What is Kroxylicious?
 
 Kroxylicious is an Apache Kafka&#174; protocol-aware proxy.  It can be used to layer uniform behaviours onto a
