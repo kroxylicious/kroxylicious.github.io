@@ -1,0 +1,41 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Kroxylicious Community Call//Event Feed 1.0//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Kroxylicious Community Call
+X-WR-TIMEZONE:UTC
+BEGIN:VEVENT
+UID:morning-series@kroxylicious.io
+DTSTAMP:20260326T100000Z
+DTSTART:20260326T080000Z
+DTEND:20260326T084500Z
+RRULE:FREQ=WEEKLY;INTERVAL=4;BYDAY=TH
+EXDATE:20261231T080000Z
+SUMMARY:Kroxylicious Community Call
+DESCRIPTION:This is the UK morning slot of our bi-weekly rotation.\n
+ Click to join: 
+ https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588 \n
+URL:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588
+LOCATION:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588
+END:VEVENT
+BEGIN:VEVENT
+UID:evening-series@kroxylicious.io
+DTSTAMP:20260311T100000Z
+DTSTART:20260311T200000Z
+DTEND:20260311T204500Z
+RRULE:FREQ=WEEKLY;INTERVAL=4;BYDAY=WE
+SUMMARY:Kroxylicious Community Call
+DESCRIPTION:This is the UK evening slot of our bi-weekly rotation.\n
+ Click to join: 
+ https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588 \n
+URL:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588
+LOCATION:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
+ bbb8aef920c240112935c2d4742c3b1b38a34588
+END:VEVENT
+END:VCALENDAR

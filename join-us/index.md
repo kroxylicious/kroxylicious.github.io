@@ -54,11 +54,16 @@ title: Join Us!
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Join our monthly Office Hours</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Join our fortnightly Office Hours</h2></div>
             <div class="card-body mx-3 my-2">
               <p>Sometimes it's just easier to talk face-to-face. 
-              We have a meeting every month that's open to anyone to come along.</p>
-              <p>The date and time is advertised on the <a href="https://kroxylicious.slack.com/archives/C050RNMQW8G">#general</a> Slack channel.</p>
+              We have a meeting every two weeks that's open to anyone to come along.
+              The time alternates to accomodate people from different parts of the world, 
+              so check the next-but-one if the next meeting is in the middle of your night.
+              </p>
+            </div>
+            <div class="card-footer text-center">
+               <a href="webcal://kroxylicious.io/join-us/community-call.ics" class="btn btn-primary">Subscribe in my calendar</a>
             </div>
           </div>
         </div>
