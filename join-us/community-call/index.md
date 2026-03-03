@@ -32,7 +32,7 @@ title: Community call
          <p>Meetings are recorded and shared on <a href="https://www.youtube.com/@kroxylicious-io">our YouTube channel</a>.</p>
        </div>
        <p>If your browser knows about your calendar app you should be able to subscribe in your calendar app by clicking the button below.</p>
-       <div><a href="webcal://{{ site.hostname }}/join-us/community-call/community-call.ics" class="btn btn-primary">Subscribe</a></div>
+       <div><a href="{{ '/join-us/community-call/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}" class="btn btn-primary">Subscribe</a></div>
      </div>
      <div>
        <h2>Upcoming events</h2>
