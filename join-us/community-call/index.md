@@ -37,24 +37,25 @@ title: Community call
      <div>
        <h2>Upcoming events</h2>
        <div>Times are shown in your browser's local timezone, <span id="tz-display"></span>.</div>
-      <div id="calendar"/>
+       <div id="calendar"/>
+     </div>
   </div>
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      document.getElementById('tz-display').textContent = userTimeZone;
+document.addEventListener('DOMContentLoaded', function() {
+  const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('tz-display').textContent = userTimeZone;
     
-      var calendarEl = document.getElementById('calendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'listMonth',
-        // This tells the calendar where to find your "Source of Truth"
-        events: {
-          url: 'community-call.ics', 
-          format: 'ics'
-        },
-        themeSystem: 'bootstrap5'
-      });
-      calendar.render();
-    });
-  </script>
+  var calendarEl = document.getElementById('calendar');
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'listMonth',
+    // This tells the calendar where to find your "Source of Truth"
+    events: {
+      url: 'community-call.ics', 
+      format: 'ics'
+    },
+    themeSystem: 'bootstrap5'
+  });
+  calendar.render();
+});
+</script>
