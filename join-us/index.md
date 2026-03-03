@@ -32,41 +32,41 @@ title: Join Us!
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Follow us on Bluesky</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Join our fortnightly Office Hours</h2></div>
             <div class="card-body mx-3 my-2">
-              <p>Follow us on Bluesky, and share your Kroxylicious story.</p>
+              <p>Sometimes it's just easier to talk face-to-face. 
+              We have a virtual meeting every two weeks that's open to anyone to come along.
+              </p>
             </div>
             <div class="card-footer text-center">
-              <a href="https://bsky.app/profile/kroxylicious.io" class="btn btn-primary">Follow on Bluesky</a>
+               <a href="community-call/" class="btn btn-primary">More info</a>
             </div>
           </div>
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Follow on X</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Follow us on social media</h2></div>
             <div class="card-body mx-3 my-2">
-              <p>Follow us on X, and share your Kroxylicious story.</p>
+              <p>Follow us on social media, and share your Kroxylicious story.</p>
             </div>
             <div class="card-footer text-center">
+              <a href="https://bsky.app/profile/kroxylicious.io" class="btn btn-primary">Follow on Bluesky</a>
               <a href="https://x.com/kroxylicious" class="btn btn-primary">Follow on X</a>
             </div>
           </div>
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Join our fortnightly Office Hours</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Watch on Youtube</h2></div>
             <div class="card-body mx-3 my-2">
-              <p>Sometimes it's just easier to talk face-to-face. 
-              We have a meeting every two weeks that's open to anyone to come along.
-              The time alternates to accomodate people from different parts of the world, 
-              so check the next-but-one if the next meeting is in the middle of your night.
-              </p>
+              <p>You can subscribe for demos and highlights of new features in releases.</p>
             </div>
             <div class="card-footer text-center">
-               <a href="webcal://kroxylicious.io/join-us/community-call.ics" class="btn btn-primary">Subscribe in my calendar</a>
+              <a href="https://www.youtube.com/@kroxylicious-io" class="btn btn-primary">Our Youtube channel</a>
             </div>
           </div>
         </div>
+        
       </div>
     </div>
     <hr class="section-divider"/>
