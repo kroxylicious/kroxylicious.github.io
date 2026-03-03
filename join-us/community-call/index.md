@@ -46,7 +46,7 @@ title: Community call
               <i class="bi bi-apple me-2 text-dark"></i> Apple Calendar</a>
           </li>
           <li>
-            <a class="dropdown-item d-flex align-items-center" href="https://www.google.com/calendar/render?cid={{ '/community-call.ics' | absolute_url }}" target="_blank">
+            <a class="dropdown-item d-flex align-items-center" href="https://www.google.com/calendar/render?cid={{ '/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}" target="_blank">
               <i class="bi bi-google me-2 text-danger"></i> Google Calendar (Web)</a>
           </li>
           <li>
