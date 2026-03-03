@@ -34,7 +34,7 @@ title: Community call
          <p>Meetings are recorded and shared on our youtube channel.</p>
        </div>
        <p>If your browser knows about your calendar app you should be able to subscribe in your calendar app by clicking the button below.</p>
-       <div><a href="webcal://kroxylicious.io/join-us/community-call.ics" class="btn btn-primary">Subscribe</a></div>
+       <div><a href="webcal://{{ site.hostname }}/join-us/community-call/community-call.ics" class="btn btn-primary">Subscribe</a></div>
      </div>
      <div>
        <h3>Upcoming events</h3>

@@ -24,6 +24,7 @@ tagline: "An open-source network proxy framework for Apache Kafka&#174;."
 logo: "/images/kroxylicious_logo_rgb_vert_default.svg"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://kroxylicious.io" # the base hostname & protocol for your site, e.g. http://example.com
+hostname: kroxylicious.io
 github_username:  kroxylicious
 
 # Build settings
