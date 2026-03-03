@@ -42,15 +42,15 @@ title: Community call
         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="calendarDropdown" style="min-width: 300px;">
           <li><h6 class="dropdown-header">Subscribe via App</h6></li>
           <li>
-            <a class="dropdown-item d-flex align-items-center" href="{{ '/join-us/community-call/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
+            <a class="dropdown-item d-flex align-items-center" href="{{ '/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
               <i class="bi bi-apple me-2 text-dark"></i> Apple Calendar</a>
           </li>
           <li>
-            <a class="dropdown-item d-flex align-items-center" href="https://www.google.com/calendar/render?cid={{ '/join-us/community-call/community-call.ics' | absolute_url }}" target="_blank">
+            <a class="dropdown-item d-flex align-items-center" href="https://www.google.com/calendar/render?cid={{ '/community-call.ics' | absolute_url }}" target="_blank">
               <i class="bi bi-google me-2 text-danger"></i> Google Calendar (Web)</a>
           </li>
           <li>
-            <a class="dropdown-item d-flex align-items-center" href="{{ '/join-us/community-call/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
+            <a class="dropdown-item d-flex align-items-center" href="{{ '/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
               <i class="bi bi-microsoft me-2 text-dark"></i> Outlook (not Web)</a>
           </li>
           <li><hr class="dropdown-divider"></li>
@@ -58,7 +58,7 @@ title: Community call
           <li class="px-3 py-2">
             <label for="calLink" class="form-label small text-muted">Copy Subscription URL:</label>
             <div class="input-group input-group-sm">
-              <input type="text" class="form-control" value="{{ '/join-us/community-call/community-call.ics' | absolute_url }}" id="calLink" readonly>
+              <input type="text" class="form-control" value="{{ '/community-call.ics' | absolute_url }}" id="calLink" readonly>
               <button class="btn btn-outline-secondary" type="button" onclick="copyCalLink()" id="copyBtn">
                 <i class="bi bi-clipboard"></i></button>
             </div>
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initialView: 'listMonth',
     // This tells the calendar where to find your "Source of Truth"
     events: {
-      url: 'community-call.ics', 
+      url: '/community-call.ics', 
       format: 'ics'
     },
     themeSystem: 'bootstrap5'
