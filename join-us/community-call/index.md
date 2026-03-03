@@ -43,11 +43,15 @@ title: Community call
           <li><h6 class="dropdown-header">Subscribe via App</h6></li>
           <li>
             <a class="dropdown-item d-flex align-items-center" href="{{ '/join-us/community-call/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
-              <i class="bi bi-apple me-2 text-dark"></i> Apple Calendar / Outlook</a>
+              <i class="bi bi-apple me-2 text-dark"></i> Apple Calendar</a>
           </li>
           <li>
             <a class="dropdown-item d-flex align-items-center" href="https://www.google.com/calendar/render?cid={{ '/join-us/community-call/community-call.ics' | absolute_url }}" target="_blank">
               <i class="bi bi-google me-2 text-danger"></i> Google Calendar (Web)</a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center" href="{{ '/join-us/community-call/community-call.ics' | absolute_url | replace: 'http://', 'webcal://' | replace: 'https://', 'webcal://' }}">
+              <i class="bi bi-microsoft me-2 text-dark"></i> Outlook (not Web)</a>
           </li>
           <li><hr class="dropdown-divider"></li>
           <li><h6 class="dropdown-header">Manual Setup</h6></li>
@@ -58,6 +62,7 @@ title: Community call
               <button class="btn btn-outline-secondary" type="button" onclick="copyCalLink()" id="copyBtn">
                 <i class="bi bi-clipboard"></i></button>
             </div>
+            <div class="small">Using Outlook Web? Copy the link above, then in Outlook go to 'Add Calendar' &gt; 'Subscribe from web' and paste the link.</div>
             <div id="copyFeedback" class="small text-success mt-1 d-none">Link copied!</div>
           </li>
         </ul>
