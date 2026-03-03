@@ -7,6 +7,7 @@ title: Community call
 <script src='https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.10/index.global.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.10/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.10/index.global.min.js'></script>
 
 
 <div class="row align-items-start justify-content-center my-5">
@@ -51,7 +52,8 @@ title: Community call
         events: {
           url: 'community-call.ics', 
           format: 'ics'
-        }
+        },
+        themeSystem: 'bootstrap5'
       });
       calendar.render();
     });
