@@ -29,7 +29,7 @@ title: Community call
        </p>
        <div class="alert alert-warning" role="alert">
          <h4 class="alert-heading">Meetings are public (and recorded!)</h4>
-         <p>Meetings are recorded and shared on our youtube channel.</p>
+         <p>Meetings are recorded and shared on <a href="https://www.youtube.com/@kroxylicious-io">our YouTube channel</a>.</p>
        </div>
        <p>If your browser knows about your calendar app you should be able to subscribe in your calendar app by clicking the button below.</p>
        <div><a href="webcal://{{ site.hostname }}/join-us/community-call/community-call.ics" class="btn btn-primary">Subscribe</a></div>

@@ -32,7 +32,7 @@ title: Join Us!
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Join our fortnightly Community Call</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Join our Community Call</h2></div>
             <div class="card-body mx-3 my-2">
               <p>Sometimes it's just easier to talk face-to-face. 
               We have a virtual meeting every two weeks that's open to anyone to come along.
@@ -57,12 +57,12 @@ title: Join Us!
         </div>
         <div class="col">
           <div class="card shadow mb-2 mx-2 h-100">
-            <div class="card-header"><h2 class="card-title fs-4">Watch on Youtube</h2></div>
+            <div class="card-header"><h2 class="card-title fs-4">Watch on YouTube</h2></div>
             <div class="card-body mx-3 my-2">
               <p>You can subscribe for demos and highlights of new features in releases.</p>
             </div>
             <div class="card-footer text-center">
-              <a href="https://www.youtube.com/@kroxylicious-io" class="btn btn-primary">Our Youtube channel</a>
+              <a href="https://www.youtube.com/@kroxylicious-io" class="btn btn-primary">Our YouTube channel</a>
             </div>
           </div>
         </div>
