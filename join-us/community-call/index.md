@@ -7,10 +7,7 @@ title: Community call
 <script src='https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.10/index.global.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.10/index.global.min.js'></script>
-<style>
-  body { font-family: -apple-system, sans-serif; padding: 40px; background: #f4f4f9; }
-  #calendar { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-</style>
+
 
 <div class="row align-items-start justify-content-center my-5">
   <div class="col-lg-3 mb-5" role="complementary" aria-labelledby="page-title">
@@ -37,7 +34,7 @@ title: Community call
        <div><a href="webcal://{{ site.hostname }}/join-us/community-call/community-call.ics" class="btn btn-primary">Subscribe</a></div>
      </div>
      <div>
-       <h3>Upcoming events</h3>
+       <h2>Upcoming events</h2>
        <div>Times are shown in your browser's local timezone, <span id="tz-display"></span>.</div>
       <div id="calendar"/>
   </div>
