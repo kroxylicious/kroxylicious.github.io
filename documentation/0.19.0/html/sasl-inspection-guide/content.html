@@ -1,0 +1,406 @@
+{% raw %}
+<html>
+ <head></head>
+ <body>
+  <div id="preamble">
+   <div class="sectionbody">
+    <h2 id="con-about-sasl-inspection-guide-sasl-inspection" class="discrete">About this guide</h2>
+    <div class="paragraph _abstract">
+     <p>This guide covers using the <strong>Kroxylicious SASL Inspection Filter</strong>. This filter extracts the authenticated principal from a successful SASL exchange between Kafka Client and Kafka Broker and makes it available to the other filters in the chain.</p>
+    </div>
+    <div class="paragraph">
+     <p>Refer to other Kroxylicious guides for information on running the proxy or for advanced topics such as plugin development.</p>
+    </div>
+    <div class="paragraph _abstract">
+     <p>This filter inspects the SASL exchange between Kafka Client and Broker and extracts the authorization ID. If the client’s authentication with the broker is successful, the filter uses the SASL subject builder to construct an authenticated subject. The subject is made available to the other filters in the chain, so that they may know on whose behalf they are acting.</p>
+    </div>
+    <div class="admonitionblock note">
+     <table>
+      <tbody>
+       <tr>
+        <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+        <td class="content">The SASL Inspection Filter plays no part in deciding if the authentication is successful or not. That role remains the exclusive responsibility of the broker.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="paragraph">
+     <p>To use this filter, the Kafka Cluster’s listener must be configured to authenticate using SASL, and it must use a SASL mechanism that is enabled by this filter. If the Kafka Client is configured to use a SASL mechanism that is not supported by the proxy, or the proxy and Kafka Cluster do not have the same mechanism available, the client will be disconnected with an unsupported SASL mechanism error.</p>
+    </div>
+    <div class="paragraph">
+     <p>This filter supports the following SASL mechanisms:</p>
+    </div>
+    <table id="supported-mechanisms-sasl-inspection" class="tableblock frame-all grid-all stretch">
+     <caption class="title">Table 1. Table of supported SASL mechanisms</caption>
+     <colgroup>
+      <col style="width: 50%;">
+      <col style="width: 50%;">
+     </colgroup>
+     <thead>
+      <tr>
+       <th class="tableblock halign-left valign-top">SASL mechanism</th>
+       <th class="tableblock halign-left valign-top">Enabled by default</th>
+      </tr>
+     </thead>
+     <tbody>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://tools.ietf.org/html/rfc4616">PLAIN</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">No</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc7677">SCRAM-SHA-256</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha-512-00">SCRAM-SHA-512</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+      <tr>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc7628">OAUTHBEARER</a></p>
+       </td>
+       <td class="tableblock halign-left valign-top">
+        <p class="tableblock">Yes</p>
+       </td>
+      </tr>
+     </tbody>
+    </table>
+    <div class="paragraph">
+     <p>Mechanisms that transmit credentials in plain text are disabled by default. This is done to avoid the plain-text passwords existing in the proxy’s memory. To use such a mechanism, you must enable it in the filter’s configuration.</p>
+    </div>
+    <div class="paragraph">
+     <p>For the <code>OAUTHBEARER</code> inspection, only JWT tokens that use signatures (JWS) are supported. JWT tokens that use encryption (JWE) are not supported. Unsigned JWT tokens are supported but not recommended for production use.</p>
+    </div>
+    <div class="paragraph">
+     <p>If an attempt is made to use an unsupported token type, the authentication will fail with a SASL error.</p>
+    </div>
+    <div class="imageblock">
+     <div class="content">
+      <img src="../images/sasl-inspection-seq.svg" alt="Sequence diagram showing SASL inspection.">
+     </div>
+     <div class="title">Figure 1. Sequence diagram showing the SASL inspection filter extracting an authenticated principal from an SASL negotiation.</div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-configuring-sasl-inspection-filter-sasl-inspection">1. Configuring the SASL inspection filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This procedure describes how to set up the SASL Inspection filter by configuring it in Kroxylicious.</p>
+    </div>
+    <div class="ulist">
+     <div class="title">Prerequisites</div>
+     <ul>
+      <li>
+       <p>An instance of Kroxylicious. For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+      </li>
+     </ul>
+    </div>
+    <div class="olist arabic">
+     <div class="title">Procedure</div>
+     <ol class="arabic">
+      <li>
+       <p>Configure a <code>SaslInspection</code> type filter.</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p>In a standalone proxy deployment. See <a href="#con-example-proxy-config-sasl-inspection">Example proxy configuration file</a></p>
+         </li>
+         <li>
+          <p>In a Kubernetes deployment using a <code>KafkaProtocolFilter</code> resource. See <a href="#con-example-kafkaprotocolfilter-resource-sasl-inspection">Example <code>KafkaProtocolFilter</code> resource</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+     </ol>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-proxy-config-sasl-inspection">1.1. Example proxy configuration file</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of the Kroxylicious Proxy runs directly on an operating system, provide the filter configuration in the <code>filterDefinitions</code> list of your proxy configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>filterDefinitions</code> entry configured for SASL inspection:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">filterDefinitions</span>:
+  - <span class="string"><span class="content">name: my-sasl-inspection-filter</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">SaslInspection</span></span>
+    <span class="key">config</span>:
+      <span class="key">enabledMechanisms</span>: <span class="string"><span class="content">[ "OAUTHBEARER" ]</span></span>
+      <span class="key">requireAuthentication</span>: <span class="string"><span class="content">true</span></span>
+      <span class="key">subjectBuilder</span>: <span class="string"><span class="content">&lt;class name&gt;</span></span>
+      <span class="key">subjectBuilderConfig</span>: <span class="string"><span class="content">&lt;object providing configuration for the subject builder&gt;</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>enabledMechanisms</code> restricts the filter to the given SASL mechanism(s). Refer to SASL mechanism by its name given in the <a href="#supported-mechanisms-sasl-inspection">supported mechanisms</a> table. If omitted, the SASL mechanisms <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code> and <code>OAUTHBEARER</code> will be enabled by default.</p>
+       </li>
+       <li>
+        <p>if <code>requireAuthentication</code> is true, a successful authentication is required before the filter forwards any requests other than those strictly required to perform SASL authentication. If false then the filter will forward all requests regardless of whether SASL authentication has been attempted or was successful. Defaults to false.</p>
+       </li>
+       <li>
+        <p><code>subjectBuilder</code> is the name of a plugin class implementing <code>io.kroxylicious.proxy.authentication.SaslSubjectBuilderService</code>. If omitted, a default subject builder creates a principal with name matching the SASL authorized ID.</p>
+       </li>
+       <li>
+        <p><code>subjectBuilderConfig</code> provides subject builder configuration.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> for more information about configuring the proxy.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-kafkaprotocolfilter-resource-sasl-inspection">1.2. Example <code>KafkaProtocolFilter</code> resource</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of Kroxylicious runs on Kubernetes, you must use a <code>KafkaProtocolFilter</code> resource to contain the filter configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>KafkaProtocolFilter</code> resource configured for SASL inspection:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kind</span>: <span class="string"><span class="content">KafkaProtocolFilter</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">my-sasl-inspection-filter</span></span>
+<span class="key">spec</span>:
+  <span class="key">type</span>: <span class="string"><span class="content">SaslInspection</span></span>
+  <span class="key">configTemplate</span>:
+    <span class="key">enabledMechanisms</span>: <span class="string"><span class="content">[ "OAUTHBEARER" ]</span></span>
+    <span class="key">requireAuthentication</span>: <span class="string"><span class="content">true</span></span>
+    <span class="key">subjectBuilder</span>: <span class="string"><span class="content">&lt;class name&gt;</span></span>
+    <span class="key">subjectBuilderConfig</span>: <span class="string"><span class="content">&lt;object providing configuration for the subject builder&gt;</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>enabledMechanisms</code> restricts the filter to the given SASL mechanism(s). Refer to SASL mechanism by its name given in the <a href="#supported-mechanisms-sasl-inspection">supported mechanisms</a> table. If omitted, the SASL mechanisms <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code> and <code>OAUTHBEARER</code> will be enabled by default.</p>
+       </li>
+       <li>
+        <p>if <code>requireAuthentication</code> is true, a successful authentication is required before the filter forwards any requests other than those strictly required to perform SASL authentication. If false then the filter will forward all requests regardless of whether SASL authentication has been attempted or was successful. Defaults to false.</p>
+       </li>
+       <li>
+        <p><code>subjectBuilder</code> is the name of a plugin class implementing <code>io.kroxylicious.proxy.authentication.SaslSubjectBuilderService</code>. If omitted, a default subject builder creates a principal with name matching the SASL authorized ID.</p>
+       </li>
+       <li>
+        <p><code>subjectBuilderConfig</code> provides subject builder configuration.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a> for more information about configuration on Kubernetes.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="con-configuring-sasl-subject-builder-sasl-inspection">2. Configuring SASL subject builder</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>By default, the SASL Inspection filter creates an authenticated subject with a principal that contains the SASL authorized ID. You can change this behavior by providing an alternative subject builder configuration.</p>
+    </div>
+    <div class="sect2">
+     <h3 id="configuration">2.1. Configuration</h3>
+     <div class="paragraph">
+      <p>The following example shows configuration for the SASL subject builder:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="comment"># ...</span>
+<span class="key">subjectBuilder</span>: <span class="string"><span class="content">DefaultSaslSubjectBuilderService</span></span>
+<span class="key">subjectBuilderConfig</span>:
+    <span class="key">addPrincipals</span>:
+      - <span class="string"><span class="content">from: &lt;field name&gt;</span></span>
+        <span class="key">map</span>:
+          - <span class="string"><span class="content">replaceMatch: &lt;match replace flags 1&gt;</span></span>
+          - <span class="comment"># ...</span>
+          - <span class="string"><span class="content">replaceMatch: &lt;match replace flags n&gt;</span></span>
+          - <span class="string"><span class="content">else: identity|anonymous</span></span>
+        <span class="key">principalFactory</span>: <span class="string"><span class="content">&lt;principal factory&gt;</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>&lt;field name&gt;</code> identifies the field to extract. Valid field names are listed in the <strong>Supported fields</strong> table.</p>
+       </li>
+       <li>
+        <p><code>&lt;match replace flags 1&gt;</code>…​<code>&lt;match replace flags n&gt;</code> define a set of replacement matchers used to match and transform the field value.</p>
+       </li>
+       <li>
+        <p><code>else</code> defines the behavior when none of the replacement matchers match the field value. <code>identity</code> generates a principal based on the original (unmapped) field value. <code>anonymous</code> generates an anonymous principal.</p>
+       </li>
+       <li>
+        <p><code>&lt;principal factory&gt;</code> the name of a <code>PrincipalFactory</code> implementation. Currently, only <code>UserFactory</code> is supported.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Field values are tested against the replacement matchers in the order they are configured. The first matcher that matches the field value generates the principal. After a successful match, remaining matchers for that field are ignored.</p>
+     </div>
+     <div class="paragraph">
+      <p>If no matcher matches, the outcome is defined by the <code>else</code> clause. If there is no match and no <code>else</code> cause is provided, no principal is generated for this field.</p>
+     </div>
+     <div class="admonitionblock note">
+      <table>
+       <tbody>
+        <tr>
+         <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+         <td class="content">Currently, the subject builder is restricted to producing a subject containing at most one user principal.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="supported_fields">2.2. Supported fields</h3>
+     <table class="tableblock frame-all grid-all stretch">
+      <colgroup>
+       <col style="width: 50%;">
+       <col style="width: 50%;">
+      </colgroup>
+      <thead>
+       <tr>
+        <th class="tableblock halign-left valign-top">Field name</th>
+        <th class="tableblock halign-left valign-top">Description</th>
+       </tr>
+      </thead>
+      <tbody>
+       <tr>
+        <td class="tableblock halign-left valign-top">
+         <p class="tableblock">saslAuthorizedId</p>
+        </td>
+        <td class="tableblock halign-left valign-top">
+         <p class="tableblock">The SASL authorized ID returned by the SASL authentication exchange.</p>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="sect2">
+     <h3 id="replacement_matchers">2.3. Replacement matchers</h3>
+     <div class="paragraph">
+      <p>Replacement matchers control how field values are matched and transformed. A replacement matcher is defined using this format:</p>
+     </div>
+     <div class="listingblock">
+      <div class="content">
+       <pre class="CodeRay highlight"><code>/&lt;matching regular expression&gt;/&lt;replacement&gt;/&lt;flags&gt;</code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>&lt;matching regular expression&gt;</code> is the regular expression used to test the field value.</p>
+       </li>
+       <li>
+        <p><code>&lt;replacement&gt;</code> defines the replacement value to use when the regular expression is matched. The replacement can use back references (<code>$1</code> etc) to refer to capturing groups defined within the regular expression.</p>
+       </li>
+       <li>
+        <p><code>&lt;flags&gt;</code> (optional) can be either <code>L</code> or <code>U</code> for lower or upper-casing respectively. The case transformation is applied to the replacement value after any back reference resolution.</p>
+       </li>
+      </ul>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="trademark_notice">3. Trademark notice</h2>
+   <div class="sectionbody">
+    <div class="ulist _abstract">
+     <ul>
+      <li>
+       <p>Apache Kafka is a registered trademark of The Apache Software Foundation.</p>
+      </li>
+      <li>
+       <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Strimzi is a trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Hashicorp Vault is a registered trademark of HashiCorp, Inc.</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service is a trademark of Amazon.com, Inc. or its affiliates.</p>
+      </li>
+      <li>
+       <p>Microsoft, Azure, and Microsoft Entra are trademarks of the Microsoft group of companies.</p>
+      </li>
+      <li>
+       <p>Fortanix and Data Security Manager are trademarks of Fortanix, Inc.</p>
+      </li>
+     </ul>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="glossary">4. Glossary</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>Glossary of terms used in the SASL Inspection guide.</p>
+    </div>
+    <div class="dlist">
+     <dl>
+      <dt class="hdlist1">JWE</dt>
+      <dd>
+       <p>JSON Web Encryption is an <a href="https://datatracker.ietf.org/doc/html/rfc7516">IETF standard</a> for exchanging encrypted data using JSON.</p>
+      </dd>
+      <dt class="hdlist1">JWT</dt>
+      <dd>
+       <p>JSON Web Token is an <a href="https://datatracker.ietf.org/doc/html/rfc8259">IETF standard</a> for securely transmitting information between parties as a JSON object.</p>
+      </dd>
+      <dt class="hdlist1">JWS</dt>
+      <dd>
+       <p>JSON Web Signature is an <a href="https://datatracker.ietf.org/doc/html/rfc7515">IETF-proposed standard</a> for signing arbitrary data.</p>
+      </dd>
+      <dt class="hdlist1">Principal</dt>
+      <dd>
+       <p>A principal is a component of a subject.</p>
+      </dd>
+      <dt class="hdlist1">SASL</dt>
+      <dd>
+       <p>Simple Authentication and Security Layer is an <a href="https://datatracker.ietf.org/doc/html/rfc4422">IETF framework</a> for handling authentication.</p>
+      </dd>
+      <dt class="hdlist1">Subject</dt>
+      <dd>
+       <p>A subject is the authenticated identity of a client.</p>
+      </dd>
+     </dl>
+    </div>
+   </div>
+  </div>
+ </body>
+</html>
+{% endraw %}
