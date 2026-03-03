@@ -18,9 +18,9 @@ title: Community call
       <div class="card-body">
         <h1 id="page-title" class="fs-3">{{ page.title }}</h1>
         <p>Sometimes it's just easier to talk face-to-face. 
-        We have a meeting every two weeks that's open to anyone to come along.</p>
+        We have a virtual meeting every two weeks that's open to anyone to come along.</p>
         <p>The time alternates to try to accomodate people from different parts of the world, 
-        so check the next-but-one if the next meeting is in the middle of your night. </p>
+        so check the next-but-one if the next meeting is in the middle of your night.</p>
       </div>
     </div>
   </div>
@@ -29,7 +29,6 @@ title: Community call
        <p>We're using <a href="https://meet.jit.si/">Jitsi</a>, a free and open source video conferencing service.
        You don't need an account to join. 
        </p>
-       <div class="bd-callout bd-callout-warning"> <p></p> </div>
        <div class="alert alert-warning" role="alert">
          <h4 class="alert-heading">Meetings are public (and recorded!)</h4>
          <p>Meetings are recorded and shared on our youtube channel.</p>
