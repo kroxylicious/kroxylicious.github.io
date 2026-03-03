@@ -38,11 +38,15 @@ title: Community call
      </div>
      <div>
        <h3>Upcoming events</h3>
+       <div>Times are shown in your browser's local timezone, <span id="tz-display"></span>.</div>
       <div id="calendar"/>
   </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.getElementById('tz-display').textContent = userTimeZone;
+    
       var calendarEl = document.getElementById('calendar');
       var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'listMonth',
