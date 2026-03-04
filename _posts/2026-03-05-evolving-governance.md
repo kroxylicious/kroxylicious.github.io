@@ -1,13 +1,13 @@
 ---
 layout: post
 title:  "Scaling for the Future: Evolving Kroxylicious Governance"
-date:   2026-03-04 00:00:00 +0000
+date:   2026-03-05 00:00:00 +1300
 author: "Tom Bentley"
 author_url: "https://github.com/tombentley"
 categories: 
 ---
 
-Hot on the heels of [the release of Kroxylicious 0.19.0](../2026-03-04-release-0_19_0/) we have some other news to share.
+Hot on the heels of [the release of Kroxylicious 0.19.0]({{ '/blog/kroxylicious-proxy/releases/2026/03/04/release-0_19_0.html' | absolute_url}}) we have some other news to share.
 We are excited to announce a shift in how we manage the project, partly based on the proven model used by the Apache Software Foundation.
 
 We’ve always believed that open-source success is built on transparency, community trust, and a shared vision. 
@@ -40,12 +40,53 @@ This reduces the friction of managing complex ownership files and avoids the pit
 
 ## Strengthening Our Organizational Memory
 
-As we grow, we need to ensure that important technical decisions aren't lost in the temporary nature of our Slack channels.
+The 90 day history we have on our free Slack workspace is starting to hurt.
+As we grow, we need to ensure that important technical decisions aren't lost.
 
-While Slack remains our home for quick, day-to-day conversation, we’ve decided that mailing lists are the least worst way to share and record formal technical discussions and voting. 
-This ensures that our decision-making process is archived, searchable, and – most importantly – publicly verifiable.
+We think that, even in 2026, mailing lists are the least-worst way to share and record formal technical discussions and voting.
 
-The `kroxylicious-dev` list will be our primary channel for development discussions, open to all contributors and committers.
+* The barrier to entry is low
+* Everyone gets their own copy of the history, but there's a public archive too
+* Everyone can use familiar tools to organise and search history
+
+These features should ensure our decision-making process is archived, searchable, and publicly verifiable.
+
+So we'd like the [`kroxylicious-dev`][kroxylicious-dev] list to be our primary channel for development discussions, open to all contributors and committers.
+Meanwhile, Slack remains our home for quick, day-to-day conversation.
+
+
+<div class="container mt-4">
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
+      <thead class="table-primary">
+        <tr>
+          <th scope="col" class="w-50">Use <strong>Slack</strong> for...</th>
+          <th scope="col" class="w-50">Use <strong>Mailing Lists</strong> for...</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Quick check-ins</strong> and status updates.</td>
+          <td><strong>Formal technical discussions</strong> and proposals.</td>
+        </tr>
+        <tr>
+          <td><strong>Real-time coordination</strong> on active tasks.</td>
+          <td><strong>Voting</strong> on technical decisions.</td>
+        </tr>
+        <tr>
+          <td><strong>Informal brainstorming</strong> and team culture.</td>
+          <td><strong>Summaries</strong> of major decisions made in Slack.</td>
+        </tr>
+        <tr>
+          <td><strong>Urgent alerts</strong> that need an immediate response.</td>
+          <td><strong>Long-form information</strong> that should be searchable.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+So how do you join the [`kroxylicious-dev`][kroxylicious-dev] list?
 
 * You can read and subscribe to the list on [google groups](https://groups.google.com/d/forum/kroxylicious-dev). 
 * Alternatively, you can subscribe by sending an empty email to [kroxylicious-dev+subscribe@googlegroups.com](mailto:kroxylicious-dev+subscribe@googlegroups.com), 
@@ -73,4 +114,4 @@ You can see the time of upcoming meetings [on the website](https://kroxylicious.
 We’re excited to continue building Kroxylicious in an environment that is open, inclusive, and built to last. 
 Check out the updated docs and let us know what you think!
 
-
+[kroxylicious-dev]: https://groups.google.com/d/forum/kroxylicious-dev
