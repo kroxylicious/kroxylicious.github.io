@@ -31,6 +31,9 @@ It creates a clearer pathway for contributors to take on leadership roles based 
 
 These changes are already reflected in our updated [`GOVERNANCE.md`](https://github.com/kroxylicious/.github/blob/main/GOVERNANCE.md).
 
+The initial [`COMMITTERS.md`](https://github.com/kroxylicious/.github/blob/main/COMMITTERS.md) and [`PMs.md`](https://github.com/kroxylicious/.github/blob/main/PMs.md) are the same people who were previously code owners and project admins. 
+This revised governance model has not changed anyone's access.
+
 ## Moving Beyond `CODEOWNERS`
 
 We are also moving away from using the GitHub `CODEOWNERS` file to enforce directory-level restrictions. 
