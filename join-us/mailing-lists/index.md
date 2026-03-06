@@ -34,6 +34,14 @@ title: Mailing Lists
       <li>You can unsubscribe by sending an empty email to <a href="mailto:kroxylicious-dev+unsubscribe@googlegroups.com">kroxylicious-dev+unsubscribe@googlegroups.com</a></li>
     </ul>
     </div>
+     <hr class="section-divider"/>
+<h3 style="display: flex; align-items: center; gap: 0.5em;">How to Post</h3>
+    <div>
+     <ul>
+      <li>Once you are subscribed, you can send messages to the Group by sending emails to <a href="mailto:kroxylicious-dev@googlegroups.com">kroxylicious-dev@googlegroups.com</a>. Note that your first post will be delayed for moderation.</li>
+      <li>Alternatively, if you have a Google Account, you can post from <a href="https://groups.google.com/g/kroxylicious-dev">here</a></li>
+    </ul>
+    </div>
     <hr class="section-divider"/>
 <h3 style="display: flex; align-items: center; gap: 0.5em;">Contact Us</h3>
 <div>
