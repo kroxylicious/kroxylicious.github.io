@@ -77,10 +77,12 @@ jobs:
           for post in _posts/*.md; do
             filename=$(basename "$post")
             file_date=$(echo "$filename" | grep -oP '^\d{4}-\d{2}-\d{2}')
-            front_matter_date=$(grep -oP '^date:\s*\K\d{4}-\d{2}-\d{2}' "$post" || true)
-            # Use whichever date is later
-            if [[ -n "$front_matter_date" && "$front_matter_date" > "$file_date" ]]; then
-              post_date="$front_matter_date"
+            # Extract the full front matter date value (may include time and timezone offset)
+            # and convert to a UTC date so that e.g. "2026-03-05 00:00:00 +1300" is
+            # correctly treated as 2026-03-04 in UTC (matching Jekyll's behaviour).
+            front_matter_raw=$(grep -oP '^date:\s*\K.+' "$post" | xargs 2>/dev/null || true)
+            if [[ -n "$front_matter_raw" ]]; then
+              post_date=$(date -u -d "$front_matter_raw" +%Y-%m-%d 2>/dev/null || echo "$file_date")
             else
               post_date="$file_date"
             fi
