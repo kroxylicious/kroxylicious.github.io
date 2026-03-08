@@ -39,7 +39,7 @@ title: Mailing Lists
     <div>
      <ul>
       <li>Once you are subscribed, you can send messages to the Group by sending emails to <a href="mailto:kroxylicious-dev@googlegroups.com">kroxylicious-dev@googlegroups.com</a>. Note that your first post will be delayed for moderation.</li>
-      <li>Alternatively, if you have a Google Account, you can post from <a href="https://groups.google.com/g/kroxylicious-dev">here</a></li>
+      <li>Alternatively, if you have a Google Account, you can post from the <a href="https://groups.google.com/g/kroxylicious-dev">Kroxylicious Dev Google Group</a></li>
     </ul>
     </div>
     <hr class="section-divider"/>
