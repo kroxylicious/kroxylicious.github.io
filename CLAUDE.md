@@ -18,3 +18,5 @@ You can use the `gh` tool to interact with GitHub PRs.
 Note that we do not use the website repo for issues. 
 Instead, issues for the website are held in the main Kroxylicious repo `https://github.com/kroxylicious/kroxylicious`.
 So if you need to interact with website issues you can use the `-R kroxylicious/kroxylicious` option, for example: `gh issue list -R kroxylicious/kroxylicious`.
+
+When making commits, use the `Assisted-by:` trailer to attribute changes to AI tooling, rather than `Coauthored-by:`.
