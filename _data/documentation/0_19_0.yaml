@@ -79,5 +79,5 @@ docs:
     description: The Java API documentation.
     tags:
       - developer
-    path: "https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/${project.version}/index.html"
+    path: https://javadoc.io/doc/io.kroxylicious/kroxylicious-api/0.19.0/index.html
     rank: '033'
