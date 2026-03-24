@@ -51,6 +51,7 @@ exclude:
   - run.sh
   - bootstrap_setup.sh
   - README.md
+  - CLAUDE.md
 #   - .sass-cache/
 #   - .jekyll-cache/
 #   - gemfiles/
