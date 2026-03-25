@@ -418,6 +418,14 @@ b.conum * {
     border-bottom-color: rgba($code-color, 0.3);
   }
 
+  &.doctag-security .card-header {
+    border-bottom-color: rgba($kroxy-light-green, 0.3);
+  }
+
+  &.doctag-governance .card-header {
+    border-bottom-color: rgba($kroxy-mid-green, 0.3);
+  }
+
   .badge {
     font-size: 0.7rem;
     padding: 0.25rem 0.5rem;
