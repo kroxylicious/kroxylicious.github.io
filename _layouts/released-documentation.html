@@ -35,8 +35,26 @@ layout: default
     </div>
   </div>
   <div class="col-lg-6" role="main">
-    <div class="row row-cols-1 row-cols-md-2 g-4">
 {%- assign docs_for_release = site.data.documentation[underscored_version].docs | sort: "rank" -%}
+    <!-- Documentation filters -->
+    <div class="doc-filters mb-4" role="toolbar" aria-label="Documentation filters">
+      <button class="btn btn-sm btn-outline-secondary active" data-filter="all">
+        All <span class="badge">{{ docs_for_release | size }}</span>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-filter="proxy">
+        <i class="bi bi-cpu"></i> Proxy
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-filter="filter">
+        <i class="bi bi-puzzle"></i> Filters
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-filter="kubernetes">
+        <i class="bi bi-boxes"></i> Kubernetes
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-filter="developer">
+        <i class="bi bi-code-slash"></i> Developer
+      </button>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 g-4">
 {%- for doc in docs_for_release -%}
 {%- assign first1 = doc.path | slice: 0, 1 -%}
 {%- assign first7 = doc.path | slice: 0, 7 -%}
@@ -49,12 +67,21 @@ layout: default
 {%- assign linkTemplate = "/documentation/" | append: version | append: "/" | append: doc.path | absolute_url -%}
 {%- endif -%}
       <div class="col">
-        <div class="card shadow mb-2 h-100 mx-2 {%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}">
-          <div class="card-header">
-            <h2 class="card-title fs-4"><a href='{{ linkTemplate | replace: "$(VERSION)", version}}'>{{ doc.title }}</a></h2>
+        <div class="card shadow mb-2 h-100 mx-2 doc-card{%- for tag in doc.tags %} doctag-{{tag}}{%- endfor -%}" data-categories="{{ doc.tags | join: ' ' }}">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <h2 class="card-title fs-4 mb-0 flex-grow-1">
+              <a href='{{ linkTemplate | replace: "$(VERSION)", version}}'>{{ doc.title }}</a>
+            </h2>
+{%- assign primary_tag = doc.tags[0] -%}
+            <i class="bi bi-{% if primary_tag == 'proxy' %}cpu{% elsif primary_tag == 'filter' %}puzzle{% elsif primary_tag == 'kubernetes' %}boxes{% elsif primary_tag == 'developer' %}code-slash{% elsif primary_tag == 'record-encryption' or primary_tag == 'encryption-at-rest' %}shield-lock{% else %}file-text{% endif %} text-secondary ms-2" aria-hidden="true"></i>
           </div>
           <div class="card-body mx-3 my-2">
 {{ doc.description }}
+            <div class="mt-2">
+{%- for tag in doc.tags -%}
+              <span class="badge bg-light text-dark border me-1">{{ tag }}</span>
+{%- endfor -%}
+            </div>
           </div>
         </div>
       </div>
@@ -63,3 +90,4 @@ layout: default
   </div>
 </div>
 
+<script src="{{ '/assets/scripts/doc-filter.js' | absolute_url }}"></script>
