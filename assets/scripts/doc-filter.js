@@ -39,7 +39,6 @@
     });
 
     // Filter cards
-    let visibleCount = 0;
     cards.forEach(card => {
       const categories = card.getAttribute('data-categories') || '';
       const shouldShow = filter === 'all' || categories.includes(filter);
@@ -47,19 +46,9 @@
 
       if (shouldShow) {
         if (colWrapper) colWrapper.classList.remove('hidden');
-        visibleCount++;
       } else {
         if (colWrapper) colWrapper.classList.add('hidden');
       }
     });
-
-    // Update badge count on "All" button
-    const allButton = document.querySelector('.doc-filters button[data-filter="all"]');
-    if (allButton) {
-      const badge = allButton.querySelector('.badge');
-      if (badge && filter !== 'all') {
-        badge.textContent = visibleCount;
-      }
-    }
   }
 })();
