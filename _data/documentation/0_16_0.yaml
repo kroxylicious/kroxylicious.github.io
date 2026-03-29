@@ -9,14 +9,14 @@ docs:
     description: "Covers using the proxy, including configuration, security and operation."
     tags:
       - proxy
+      - security
     rank: '010'
     path: html/kroxylicious-proxy
   - title: Record Encryption quickstart
     description: Shows how to use the proxy to provide an encryption at rest solution
       for Apache Kafka
     tags:
-      - record-encryption
-      - encryption-at-rest
+      - security
     rank: '011'
     path: html/record-encryption-quickstart
   - title: Kroxylicious Operator for Kubernetes
@@ -31,12 +31,14 @@ docs:
       \ security and operation."
     tags:
       - filter
+      - security
     rank: '020'
     path: html/record-encryption-guide
   - title: Record Validation Guide
     description: Covers using the record validation filter.
     tags:
       - filter
+      - governance
     rank: '021'
     path: html/record-validation-guide
   - title: Multi-tenancy Guide
@@ -49,6 +51,7 @@ docs:
     description: Covers using the Oauth Bearer validation filter.
     tags:
       - filter
+      - security
     rank: '023'
     path: html/oauth-bearer-validation
   - title: Developer Quick Start
