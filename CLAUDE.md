@@ -23,23 +23,23 @@ When making commits, use the `Assisted-by:` trailer to attribute changes to AI t
 
 ## Documentation Filtering System
 
-The documentation index pages (`/documentation/` and `/documentation/{version}/`) use a client-side filtering system to help visitors find relevant guides.
+The documentation index pages (`/documentation/` and `/documentation/{version}/`) use client-side filtering to help visitors find relevant guides.
 
 ### Structure
 
 1. **Metadata**: Each version has a YAML file in `_data/documentation/` (e.g., `0_19_0.yaml`) containing guide metadata:
    - `title`, `description`, `path`: Basic guide information
    - `tags`: Array of category tags (e.g., `[filter, security]`)
-   - `rank`: String for sort order (e.g., '000', '010')
+   - `rank`: String to control sort order (e.g., '000', '010')
 
 2. **Layout**: `_layouts/released-documentation.html` renders:
    - Filter buttons (All, Proxy, Filters, Kubernetes, Developer, Security, Governance)
    - Card grid with icons and tag badges
-   - Cards include `data-categories` attribute for JavaScript filtering
+   - Cards include a `data-categories` attribute for JavaScript filtering
 
 3. **Filtering**: `assets/scripts/doc-filter.js` provides vanilla JavaScript filtering
    - Progressive enhancement: works without JavaScript
-   - Filters by matching tags in `data-categories` attribute
+   - Filters by matching tags in the `data-categories` attribute
 
 4. **Styling**: `_sass/kroxylicious.scss` provides:
    - Filter button styles with active states
@@ -57,7 +57,7 @@ The documentation index pages (`/documentation/` and `/documentation/{version}/`
 
 ### Adding New Categories
 
-When adding a new filter category:
+To add a new filter category:
 
 1. Update YAML files in `_data/documentation/` for relevant versions
 2. Add filter button in `_layouts/released-documentation.html` with Bootstrap Icon
