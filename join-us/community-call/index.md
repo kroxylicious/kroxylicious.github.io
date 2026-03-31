@@ -28,6 +28,9 @@ title: Community call
       You don't need an account to join.</p>
       <div class="alert alert-warning" role="alert">
         <h4 class="alert-heading">Meetings are public (and recorded!)</h4>
+        <p><a href="https://docs.google.com/document/d/1Kaqe8QZMYlzu72lPCUzlzSLHs7gSSbo44UPOOPqsP4k/edit?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="Community Call Agenda and Minutes (Google Doc)">
+  Community Call Agenda and Minutes
+</a> (read-only).</p>
         <p>Meetings are recorded and shared on <a href="https://www.youtube.com/@kroxylicious-io">our YouTube channel</a>.</p>
       </div>
     </div>
