@@ -24,4 +24,5 @@ cd ${KROXYLICIOUS_DIR}
 mvn -P dist clean package -pl :kroxylicious-docs
 cp -r kroxylicious-docs/target/web/* ${SCRIPT_DIR}
 cd ${SCRIPT_DIR}
+export JEKYLL_SERVE_ARGS=--future
 exec ./run.sh

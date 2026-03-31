@@ -45,4 +45,4 @@ RUN mkdir /site/
 WORKDIR /site/
 EXPOSE 4000
 # Note --incremental mode is ineffective on the Mac owing to https://github.com/containers/podman/issues/22343.  Use force_regenerate.sh to trigger the incremental reload after changing the file on the host.
-CMD [ "bash", "-c", "eval \"$(rbenv init -)\" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site"]
+CMD [ "bash", "-c", "eval \"$(rbenv init -)\" && cp -r /css/_sass/bootstrap /site/_sass/ && bundle exec jekyll serve ${JEKYLL_SERVE_ARGS} --host ${JEKYLL_SERVE_BIND} --incremental --disable-disk-cache --destination /tmp/site"]
