@@ -15,12 +15,16 @@ else
    RUN_ARGS+=(--net host)
 fi
 
+if [ -n "${JEKYLL_SERVE_ARGS}" ]; then
+   RUN_ARGS+=(--env JEKYLL_SERVE_ARGS="${JEKYLL_SERVE_ARGS}")
+fi
+
 if [ "$CONTAINER_ENGINE" = 'podman' ]; then
    RUN_ARGS+=(-v $(pwd):/site/:Z)
 fi
 
 RUN_ARGS+=(--rm --name jekll_serve -it kroxylicious-website)
 
-${CONTAINER_ENGINE} build . -t kroxylicious-website 
+${CONTAINER_ENGINE} build . -t kroxylicious-website
 
 ${CONTAINER_ENGINE} run "${RUN_ARGS[@]}"
