@@ -14,13 +14,9 @@ RRULE:FREQ=WEEKLY;INTERVAL=4;BYDAY=TH
 EXDATE:20261231T080000Z
 SUMMARY:Kroxylicious Community Call
 DESCRIPTION:An opportunity to talk about Kroxylicious with the people working on it.\n
- Click to join: 
- https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588 \n
-URL:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588
-LOCATION:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588
+ Click to join: https://meet.google.com/qsi-htyr-phq \n
+URL:https://meet.google.com/qsi-htyr-phq
+LOCATION:https://meet.google.com/qsi-htyr-phq
 END:VEVENT
 BEGIN:VEVENT
 UID:evening-series@kroxylicious.io
@@ -30,12 +26,8 @@ DTEND:20260311T204500Z
 RRULE:FREQ=WEEKLY;INTERVAL=4;BYDAY=WE
 SUMMARY:Kroxylicious Community Call
 DESCRIPTION:An opportunity to talk about Kroxylicious with the people working on it.\n
- Click to join: 
- https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588 \n
-URL:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588
-LOCATION:https://meet.jit.si/moderated/87697d32deaa8cbd8b3b96e1
- bbb8aef920c240112935c2d4742c3b1b38a34588
+ Click to join: https://meet.google.com/txh-iuir-jdd \n
+URL:https://meet.google.com/txh-iuir-jdd
+LOCATION:https://meet.google.com/txh-iuir-jdd
 END:VEVENT
 END:VCALENDAR
