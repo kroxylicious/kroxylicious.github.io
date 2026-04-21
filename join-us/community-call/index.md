@@ -24,14 +24,14 @@ title: Community call
   </div>
   <div class="col-lg-6" role="main">
     <div>
-      <p>We're using <a href="https://meet.jit.si/">Jitsi</a>, a free and open source video conferencing service.
-      You don't need an account to join.</p>
+      <p>We're using Google Meet for our community calls.
+      You don't need a Google account to join - you'll be admitted from the waiting room when the moderator starts the call.</p>
       <div class="alert alert-warning" role="alert">
         <h4 class="alert-heading">Meetings are public (and recorded!)</h4>
         <p><a href="https://docs.google.com/document/d/1Kaqe8QZMYlzu72lPCUzlzSLHs7gSSbo44UPOOPqsP4k/edit?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="Community Call Agenda and Minutes (Google Doc)">
   Community Call Agenda and Minutes
 </a> (read-only).</p>
-        <p>Meetings are live streamed and the recordings are shared on <a href="https://www.youtube.com/@kroxylicious-io/streams">our YouTube channel</a>.</p>
+        <p>Meeting recordings are shared on <a href="https://www.youtube.com/@kroxylicious-io/streams">our YouTube channel</a>.</p>
       </div>
     </div>
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
