@@ -4,11 +4,11 @@ title: Proxy quick start
 version: 0.13.0
 ---
 
-This quick start will guide you through deploying the proxy.
+This quick start will guide you through deploying the proxy, either locally on your machine, or in a container via Docker Compose.
 
 Kroxylicious is a Java application based on [Netty](https://netty.io/), which means it will run anywhere you can run a JVM.
 
-# Getting started
+# Running Kroxylicious locally
 
 ## Prerequisites
 
@@ -152,3 +152,117 @@ kaf -b $KROXYLICIOUS_BOOTSTRAP consume my_topic
 [//]: # (====================================================================)
 [//]: # (END - Use Section Examples Tabbed Card)
 [//]: # (====================================================================)
+
+# Running Kroxylicious via Docker Compose
+
+## Prerequisites
+
+Make sure to have either [Docker Compose](https://docs.docker.com/compose/) or [Podman Compose](https://docs.podman.io/en/stable/markdown/podman-compose.1.html) installed.
+
+## Step 1: Create the Compose file
+
+Create a file named _docker-compose.yaml_ with the following contents:
+
+```yaml
+services:
+  # from https://github.com/apache/kafka/blob/trunk/docker/examples/docker-compose-files/single-node/plaintext/docker-compose.yml
+  kafka:
+    image: apache/kafka:4.0.0
+    ports:
+      - '9092:9092'
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT_HOST://localhost:9092,PLAINTEXT://kafka:19092'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+    networks:
+      - my-network
+  kroxylicious:
+    image: quay.io/kroxylicious/kroxylicious:{{ page.version }}
+    ports:
+      - 9192:9192
+      - 9193:9193
+    volumes:
+      - ./proxy-config.yaml:/opt/kroxylicious/config/proxy-config.yaml
+    command: --config=/opt/kroxylicious/config/proxy-config.yaml
+    networks:
+      - my-network
+networks:
+  my-network:
+    name: kroxylicious-network
+```
+
+This will start a single node Apache Kafka cluster as well as Kroxylicious.
+
+## Step 2: Configure the proxy
+
+Create a file named _proxy-config.yaml_ with the following contents:
+
+```yaml
+management:
+  endpoints:
+    prometheus: {}
+virtualClusters:
+  - name: demo
+    targetCluster:
+      bootstrapServers: kafka:9092
+    gateways:
+    - name: mygateway
+      portIdentifiesNode:
+        bootstrapAddress: kroxylicious:9192
+        nodeIdRanges:
+        - name: mixed
+          start: 1
+          end: 1
+    logNetwork: false
+    logFrames: false
+```
+
+This lets you access the upstream Kafka cluster from _within_ the Docker network under the address `kroxylicious:9192`.
+Alternatively, if you want to access the cluster from your _host_ system instead, replace the `bootstrapAddress` with `localhost:9192`.
+
+## Step 3: Start the proxy
+
+In the directory with both the _docker-compose.yaml_ file and the _proxy-config.yaml_ file, run the following command:
+
+```shell
+docker compose up
+```
+
+Or, when using Podman:
+
+```shell
+podman compose up
+```
+
+## Step 4: Access Kafka through Kroxylicious
+
+### i. Create a topic via the proxy
+Create a topic called "my_topic" using the `kafka-topics.sh` command line client:
+```shell
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic my_topic --bootstrap-server kroxylicious:9192
+```
+
+### ii. Produce a string to your topic via the proxy
+Produce the string "hello world" to your new topic using the `kafka-console-producer.sh` command line client:
+```shell
+docker compose exec kafka  sh -c "echo 'hello world' | /opt/kafka/bin/kafka-console-producer.sh --topic my_topic --bootstrap-server kroxylicious:9192"
+```
+
+### iii. Consume your string from your topic via the proxy
+Consume your string ("hello world") from your topic ("my_topic") using the `kafka-console-consumer.sh` command line client:
+```shell
+docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-server kroxylicious:9192
+```
