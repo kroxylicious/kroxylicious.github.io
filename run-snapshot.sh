@@ -21,7 +21,7 @@ if [ ! -f "${TEST_FILE}" ]; then
 fi
 
 cd ${KROXYLICIOUS_DIR}
-mvn -P dist clean package -pl :kroxylicious-docs
+mvn -P dist clean package -pl :kroxylicious-docs -am -Dquick
 cp -r kroxylicious-docs/target/web/* ${SCRIPT_DIR}
 cd ${SCRIPT_DIR}
 export JEKYLL_SERVE_ARGS=--future
