@@ -34,17 +34,33 @@ So we just fire up OMB and get some numbers, right? Errr no. OMB just does the m
 
 So now all of that lives in [`kroxylicious-openmessaging-benchmarks`](https://github.com/kroxylicious/kroxylicious/tree/main/kroxylicious-openmessaging-benchmarks) in the main tree (mono repo FTW).
 
-### Helm chart
+So we have a tool and we think Kroxylicious is fast — but how do we turn that into something we can actually show management? "Fast" is shorthand for "low impact", and the impact of a proxy shows up along two dimensions:
 
-A Helm chart (`helm/kroxylicious-benchmark/`) deploys the full benchmark stack into Kubernetes:
+- **Latency**: how much extra time does this additional hop add?
+- **Throughput**: how much does routing traffic through the proxy cost my topic throughput?
 
-- OMB coordinator and worker pods
-- A Strimzi Kafka cluster - deploying Kafka on K8s what else are you going to use? (answers to /dev/null)
-- The Kroxylicious operator
-- The Kroxylicious proxy
-- HashiCorp Vault (for the KMS in the encryption scenario). Importantly if you have your own KMS (and you will run this yourself for your workload, right?!) you can plug that in instead.
+Two dimensions, two questions — and it turns out they need quite different experimental approaches to answer.
 
-Scenario-specific configuration lives in `helm/kroxylicious-benchmark/scenarios/` as YAML overrides:
+**Rate sweep — where does latency start to bite?**
+`scripts/rate-sweep.sh` holds the connection count fixed and steps the producer rate up in fixed increments, letting the cluster stabilise at each step. We defined saturation as the sustained throughput dropping more than 5% below the target rate. The rate sweep tells you where the cliff edge is and what latency looks like as you approach it.
+
+**Connection sweep — is the ceiling per-connection or per-pod?**
+`scripts/connection-sweep.sh` holds the per-producer rate fixed and steps up the number of producers (1, 2, 4, 8, 16 by default) — consumers scale to match. This tells you the aggregate throughput ceiling of a single proxy pod (need more? help out!): the point where adding more connections stops increasing total throughput.
+
+Both sweeps use `scripts/run-benchmark.sh` under the hood, which:
+
+1. Deploys the Helm chart for the requested scenario
+2. Waits for the OMB Job to complete
+3. Collects results: OMB JSON, a JFR recording, an async-profiler flamegraph, and a Prometheus metrics snapshot
+4. Tears down
+
+The `--skip-deploy` flag lets you re-run a probe against an already-deployed cluster — both sweep scripts deploy once and probe many times.
+
+### Banishing click-ops
+
+Coming from Red Hat, my instinct is to reach for an operator — but operators are great at managing cohesive things. The stack we needed to deploy is anything but cohesive: an OMB coordinator, worker pods, a Strimzi-managed Kafka cluster, the Kroxylicious operator, the proxy itself, and HashiCorp Vault for the KMS. It's less "managed application" and more *all your ~~base~~ CRs belong to us*.
+
+We could have dumped some YAML in a directory and used `kustomize apply`. But I am lazy, and that's a lot of typing. Helm handles this beautifully — one chart, scenario-specific overrides, and a single command to deploy the whole thing. Scenario-specific configuration lives in `helm/kroxylicious-benchmark/scenarios/` as YAML overrides — the base chart stays stable and each scenario adds only what it needs:
 
 | Scenario file | What it deploys |
 |---------------|-----------------|
@@ -53,30 +69,17 @@ Scenario-specific configuration lives in `helm/kroxylicious-benchmark/scenarios/
 | `encryption-values.yaml` | Proxy with AES-256-GCM encryption and Vault |
 | `rate-sweep-values.yaml` | Extended run profiles for sweep experiments |
 
-Separating scenarios into override files means the base chart stays stable while each scenario adds only what it needs. Switching between scenarios doesn't require touching the chart itself.
+If you have your own KMS — and you will run this on your own infrastructure, right?! — you can swap Vault out without touching the base chart.
 
-### Orchestration scripts
+### JSON always comes in megabytes
 
-**`scripts/run-benchmark.sh`** orchestrates a single benchmark run:
+Each benchmark run produces a blob of structured JSON. Useful in principle; a wall of noise in practice. Three [JBang](https://www.jbang.dev/)-runnable Java programs (I'm a died in the wool java dev, sue me) pull out the signal:
 
-1. Deploys the Helm chart for the requested scenario
-2. Waits for the OMB Job to complete
-3. Collects results: OMB JSON, a JFR recording, an async-profiler flamegraph, and a Prometheus metrics snapshot
-4. Tears down
+- **`RunMetadata`**: captures the run context — git commit, timestamp, cluster node specs (architecture, CPU, RAM), and on OpenShift, NIC speed read from the host via the MachineConfigDaemon pod. Generates `run-metadata.json` alongside each result so you can always tell what conditions produced a number. This is what makes run-to-run comparisons meaningful — and when a run takes 12 hours, trust me, you don't want to re-run it without good reason.
+- **`ResultComparator`**: answers "did this change hurt?" — reads two scenario result directories and produces a markdown comparison table. Baseline vs encryption is the obvious use, but the tool is generic. Already running a proxy? proxy-no-filters vs encryption tells you the cost of the filter itself, not the proxy hop. Building your own filter? That's your comparison — measure the chain with and without it.
+- **`ResultSummariser`**: answers "where does it fall over?" — reads a rate-sweep result directory and prints a summary table: target rate, achieved rate, p99, and whether the probe saturated. Where ResultComparator compares two scenarios at a fixed rate, ResultSummariser tracks one scenario across a range of rates.
 
-The `--skip-deploy` flag lets you re-run a probe against an already-deployed cluster — essential for rate sweeps where you want to deploy once and probe many times.
-
-**`scripts/rate-sweep.sh`** wraps `run-benchmark.sh` to drive parametric sweeps. It takes `--min-rate`, `--max-rate`, `--step-percent`, and one or more `--scenario` flags. The first probe deploys; subsequent probes use `--skip-deploy`.
-
-### Result processing
-
-Three JBang-runnable Java programs handle result analysis:
-
-- **`RunMetadata.java`**: generates `run-metadata.json` alongside each result. Captures git commit, timestamp, cluster node specs (architecture, CPU, RAM), and — on OpenShift — NIC speed read from the host via the MachineConfigDaemon pod.
-- **`ResultComparator.java`**: reads two scenario result directories and produces a markdown comparison table.
-- **`ResultSummariser.java`**: reads a rate-sweep result directory and prints a saturation table: target rate, achieved rate, p99, and whether the probe saturated.
-
-Getting NIC speed from a Kubernetes node turned out to be non-trivial — you need host filesystem access to read `/sys/class/net/<iface>/speed`. On OpenShift, the MachineConfigDaemon pods mount the host at `/rootfs`, so we `kubectl exec` into the MCD pod and `chroot /rootfs` to read the speed file without creating any new privileged resources.
+Getting NIC speed from a Kubernetes node turned out to be non-trivial — you need host filesystem access to read `/sys/class/net/<iface>/speed`. On OpenShift, the MachineConfigDaemon pods mount the host at `/rootfs`, so we `kubectl exec` into the MCD pod and `chroot /rootfs` to read the speed file without creating any new privileged resources. Fiddly, but worth it — knowing your NIC speed is the difference between "the ceiling was the NIC" and "the ceiling wasn't the NIC".
 
 ## Workload design
 
@@ -157,21 +160,29 @@ If you wanted to optimise this, the highest-impact areas would be: reducing buff
 
 ## Following the ceiling
 
-### A problem with the workload
+We had a rate-sweep result. On our test cluster, the encryption scenario hit a ceiling — the proxy was saturating around 37k msg/sec. We'd maxed out the proxy, right?
 
-The single-producer rate sweep hit a ceiling at ~37k msg/sec. Before drawing conclusions, we had to ask whether that was actually a proxy CPU ceiling — or something else.
+Well. The proxy had spare CPU cycles.
 
-Our initial sweeps ran with replication factor 3, the standard production default. At RF=3, every message the Kafka leader receives goes out to 2 follower replicas. With 1 KB messages and 37k msg/sec, that's ~37 MB/s inbound to the leader and ~111 MB/s total replication traffic outbound — and the Fyre cluster nodes had 10 GbE NICs, so the ceiling wasn't the NIC. But RF=3 does create a real per-partition I/O ceiling on the Kafka leader, and it sits right around where we were measuring.
+That's interesting. If the proxy isn't CPU-saturated, then whatever we hit isn't the proxy's ceiling — it's something else's. Time to work out what.
 
-The fix: RF=1, 10-topic workload. Dropping to RF=1 removes replication overhead; spreading across 10 partitions distributes load so no single partition hits its ceiling. We validated the fix with the passthrough proxy scenario: at 160k msg/sec total (16k per topic), proxy-no-filters matched baseline — Kafka was not the bottleneck. The sweep scaled to 640k msg/sec before hitting some uninvestigated ceiling well above where encryption constrains anything.
+### What were we actually hitting?
 
-### Is the encryption ceiling per-pod or per-connection?
+Our initial sweeps ran with replication factor 3 — the standard production default, and for good reason. But RF=3 means every message the Kafka leader receives gets replicated to 2 followers. At 37k msg/sec with 1 KB messages, that's ~111 MB/s of replication traffic outbound from the leader alone. The Fyre nodes have 10 GbE NICs so the network wasn't saturated, but RF=3 creates a real per-partition I/O ceiling on the Kafka leader — and it sits right around where we were measuring.
 
-With a clean workload that isolates proxy CPU, we re-examined the ~37k figure. Running the same workload with 4 producers: proxy CPU had headroom to spare, and Kafka's partition became the bottleneck first. So the single-producer ceiling is not the pod ceiling.
+The ceiling on our hardware wasn't the proxy. It was Kafka.
 
-### The coefficient
+The fix: RF=1, 10-topic workload. Drop replication overhead; spread load across 10 partitions so no single partition hits its ceiling. We validated it with the passthrough proxy: at 160k msg/sec total the proxy matched baseline, and the sweep scaled past 640k before hitting some uninvestigated ceiling far above where encryption constrains anything.
 
-With the workload isolation in place, we swept encryption across CPU allocations. The throughput ceiling scaled linearly:
+### We maxed out the proxy, right?
+
+With a clean workload that actually isolates proxy CPU, we looked again. The connection sweep answered the question: with 4 producers at a fixed per-producer rate, aggregate throughput climbed well past the single-producer ceiling — and proxy CPU still had headroom. Kafka's partition ran out first.
+
+So the single-producer ceiling on our cluster isn't the pod ceiling. It's what one connection could push on that hardware. The proxy had more to give.
+
+### How much more?
+
+We swept the CPU limit: 1000m, 2000m, 4000m. The throughput ceiling scaled linearly with the CPU budget:
 
 | CPU limit | Encryption ceiling |
 |-----------|-------------------|
@@ -179,7 +190,9 @@ With the workload isolation in place, we swept encryption across CPU allocations
 | 2000m | ~80k msg/sec |
 | 4000m | ~160k msg/sec |
 
-From the 4-core sweep: safe at 160k msg/sec (p99: 447 ms), catastrophic at 320k msg/sec (p99: 537,000 ms). The saturation point is predictably between those two steps.
+At 4000m: comfortable at 160k msg/sec (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
+
+One thing we noticed along the way: the proxy ran 4 Netty event loop threads regardless of CPU limit. The throughput scaling isn't explained by thread count changing — it doesn't. What changes is the CPU time budget available to those threads. The relationship between CPU limit, thread scheduling, and throughput ceiling is more subtle than a simple thread-count model; what we can say empirically is that throughput scales linearly with the CPU limit.
 
 Deriving the coefficient: at 4000m and 160k msg/sec with 1 KB messages —
 
@@ -190,13 +203,11 @@ With matched consumer load: 160 MB/s encrypt + 160 MB/s decrypt
 → equivalently: 4000 mc / 160 MB/s produce ≈ 25 mc per MB/s produce
 ```
 
-We measured the coefficient at mid-utilisation (80k msg/sec, 2000m) at ~10 mc/MB/s bidirectional — lower, because of fixed per-connection overhead that's amortised at higher load. The operator-facing formula uses 20 mc/MB/s of produce throughput (= 10 bidirectional × 2 for produce+consume), which sits between mid-utilisation and saturation and provides inherent conservatism.
-
-One thing we observed: the proxy had 4 Netty event loop threads regardless of CPU limit. The throughput scaling isn't explained by thread count changing — it doesn't. What changes is the CPU time budget available to those threads. The detailed relationship between CPU limit, thread scheduling, and throughput ceiling is more subtle than a simple thread-count model; what we can say empirically is that throughput scales linearly with the CPU limit, and the formula holds.
+We measured the coefficient at mid-utilisation (80k msg/sec, 2000m) at ~10 mc/MB/s bidirectional — lower, because fixed per-connection overhead gets amortised at higher load. The operator-facing formula uses 20 mc/MB/s of produce throughput, which sits between mid-utilisation and saturation and gives inherent conservatism.
 
 ### The prediction
 
-Rather than just reporting the 4-core result, we used the 1-core ceiling to make a falsifiable prediction: if the ceiling scales linearly, a 2-core pod should saturate at ~80k msg/sec.
+Rather than just report the results, we used the 1-core ceiling to make a falsifiable prediction: if the ceiling scales linearly with CPU budget, a 2-core pod should saturate at ~80k msg/sec.
 
 The 2-core sweep:
 
@@ -208,9 +219,7 @@ The 2-core sweep:
 
 The prediction held. The ceiling is real, linear, and predictable — which is exactly what you want from a sizing model.
 
-Setting `requests` equal to `limits` makes this predictability practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. With `requests == limits`, the CPU budget is fixed, the ceiling is fixed, and your capacity planning can rely on the coefficient.
-
-Worth noting: with RF=3 in production, every message the Kafka leader receives goes out to 2 follower replicas. At 50k msg/sec with 1 KB messages that's ~1.2 Gbps outbound from the leader alone — confirming why the Fyre cluster nodes need 10 GbE NICs, and why the replication ceiling matters for the benchmarking workload design.
+Setting `requests` equal to `limits` is what makes this practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. With `requests == limits`, the CPU budget is fixed, the ceiling is fixed, and your capacity planning can rely on the coefficient.
 
 ## Bugs we found in our own tooling
 
