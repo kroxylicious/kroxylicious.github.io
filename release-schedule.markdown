@@ -21,18 +21,21 @@ permalink: /release-schedule/
             </tr>
           </thead>
           <tbody>
+            {%- for release in site.data.release-schedule.releases -%}
+            {%- assign underscored_version = release.version | replace: '.', '_' -%}
             <tr>
-              <td>Kroxylicious 0.21.0</td>
-              <td>May 15, 2026</td>
-              <td><a href="https://github.com/kroxylicious/kroxylicious/milestone/27">0.21.0</a></td>
-              <td><span class="badge bg-primary">Planned</span></td>
+              <td>Kroxylicious {{ release.version }}</td>
+              <td>{{ release.plannedDate }}</td>
+              <td><a href="{{ release.milestoneUrl }}">{{ release.version }}</a></td>
+              <td>
+                {%- if site.data.release[underscored_version] -%}
+                <span class="badge bg-success">Released</span>
+                {%- else -%}
+                <span class="badge bg-info">Planned</span>
+                {%- endif -%}
+              </td>
             </tr>
-            <tr>
-              <td>Kroxylicious 0.22.0</td>
-              <td>July 3, 2026</td>
-              <td><a href="https://github.com/kroxylicious/kroxylicious/milestone/10">0.22.0</a></td>
-              <td><span class="badge bg-primary">Planned</span></td>
-            </tr>
+            {%- endfor -%}
           </tbody>
         </table>
       </div>
