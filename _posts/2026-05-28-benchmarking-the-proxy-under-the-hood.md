@@ -83,11 +83,16 @@ Getting NIC speed from a Kubernetes node turned out to be non-trivial — you ne
 
 ## Workload design
 
-The primary workload used **1 topic, 1 partition, 1 KB messages**. This is deliberate. Concentrating all traffic on a single partition pushes things to their limits at lower absolute rates, which makes the proxy overhead easier to isolate: when the system saturates, it's the proxy, not a spread-out broker fleet.
+Benchmarks are artificial constructs. Your traffic patterns are never stable — message sizes vary, topic counts grow, producers burst — so there's always a tension between numbers that are *representative* and numbers that are actually *repeatable*. We leaned towards repeatable.
 
-Multi-topic workloads (10 topics, 100 topics) were used to verify that the overhead characteristics hold when load is distributed. At 5,000 msg/s per topic across 10 topics, every topic-partition pair is well below any saturation point — so what you're measuring is steady-state overhead, not ceiling behaviour.
+The primary workload will make Kafka experts wince *(I had to squirm to type it)* — **1 topic, 1 partition, 1 KB messages**. Concentrating everything onto a single TopicPartition means we hit the limits earlier, at lower absolute volumes, which makes the proxy's contribution easier to isolate. Isolating the proxy is, after all, the goal.
 
-For throughput ceiling testing we used rate sweeps: start at 34,000 msg/s, step up by 5% until achieved rate drops below 95% of target. The knee of that curve is the saturation point.
+But Kafka is often described as a distributed append-only log, and we can't ignore the word "distributed" when it comes to latency. With RF=1, the proxy doubles the sequential hops in the critical path: one becomes two. That's not wrong, but it's not a fair picture either — nobody runs RF=1 in production. With RF=3, the leader waits for ISR acknowledgements before confirming the produce, so there's already replication latency in the critical path. The proxy adds a real, sequential hop — we're not trying to bury that — but it lands alongside a cost that's already there. One extra hop on top of a multi-hop round trip is a different picture from doubling a single-hop one. Three brokers, hot partition replicated across all of them.
+
+We leaned towards repeatable — but we didn't abandon representative entirely. The multi-topic runs (10 and 100 topics) are the reconnection point: load spread across more topics, closer to what production actually looks like, at rates well below any saturation point. You're measuring the proxy's baseline tax — the cost you always pay, not just the cost when you're pushing hard. It holds.
+
+
+That covers the first dimension — the proxy's latency tax at normal load. For the second, throughput, the question is: how much does routing through the proxy reduce your maximum sustainable rate? That needs a different approach. We used rate sweeps: hold the connection count fixed, step the rate up incrementally, and watch what happens. Below the ceiling, achieved throughput tracks the target — the system keeps up. Above it, it can't, and falls behind. The point where achieved throughput diverges from the target rate — where we defined that as dropping below 95% — is the saturation point. That's the knee of the curve, and that's what we were hunting.
 
 ## The flamegraph: where the CPU actually goes
 
