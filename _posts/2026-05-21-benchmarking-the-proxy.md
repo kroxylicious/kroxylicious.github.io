@@ -45,7 +45,7 @@ One important caveat: this Kafka cluster is deliberately untuned. We're not tryi
 
 Good news first. The proxy itself — with no filter chain, just routing traffic — adds almost nothing.
 
-**10 topics, 1 KB messages (5,000 msg/sec per topic):**
+**10 topics, 1 KB messages (5,000 msg/s per topic):**
 
 | Metric | Baseline | Proxy | Delta |
 |--------|----------|-------|-------|
@@ -55,7 +55,7 @@ Good news first. The proxy itself — with no filter chain, just routing traffic
 | E2E latency p99 | 185.00 ms | 186.00 ms | +1.00 ms (+0.5%) |
 | Publish rate | 5,002 msg/s | 5,002 msg/s | 0 |
 
-**100 topics, 1 KB messages (500 msg/sec per topic):**
+**100 topics, 1 KB messages (500 msg/s per topic):**
 
 | Metric | Baseline | Proxy | Delta |
 |--------|----------|-------|-------|
@@ -101,19 +101,19 @@ A rate-sweep is exactly what it sounds like: pick a starting rate, let OMB run l
 
 We started at 34k (right where the latency table started getting interesting) and stepped up in 5% increments. The results:
 
-- **Baseline**: sustained up to ~50,000–52,000 msg/sec (the ceiling we observed on our test cluster)
-- **Encryption**: sustained up to **~37,200 msg/sec**, then started intermittently saturating
+- **Baseline**: sustained up to ~50,000–52,000 msg/s (the ceiling we observed on our test cluster)
+- **Encryption**: sustained up to **~37,200 msg/s**, then started intermittently saturating
 - **Cost: approximately 26% fewer messages per second per partition**
 
-The transition wasn't a clean cliff edge — between 37,600 and 42,000 msg/sec the proxy alternated between sustaining and saturating. That pattern is characteristic of running right at a limit: it's not that it suddenly falls over, it's that small fluctuations (GC pauses, scheduling jitter) are enough to tip it either way. Above ~39,000 msg/sec, p99 latency regularly spiked above 1,700 ms. Stay below 37k and you're fine. Creep above it and you'll notice. The numbers are not absolute — they are just what we measured on our cluster; your mileage **will vary**.
+The transition wasn't a clean cliff edge — between 37,600 and 42,000 msg/s the proxy alternated between sustaining and saturating. That pattern is characteristic of running right at a limit: it's not that it suddenly falls over, it's that small fluctuations (GC pauses, scheduling jitter) are enough to tip it either way. Above ~39,000 msg/s, p99 latency regularly spiked above 1,700 ms. Stay below 37k and you're fine. Creep above it and you'll notice. The numbers are not absolute — they are just what we measured on our cluster; your mileage **will vary**.
 
 ### The ceiling scales with CPU budget
 
 The fact the proxy is low latency didn't surprise me, but this did — and it matters when we think about scaling. We maxed out a single connection, but that didn't mean we'd maxed out the proxy.
 
-Once we had the single-producer encryption ceiling at ~37k msg/sec, the obvious question was: is that the limit for the whole proxy pod, or just for one connection? We ran the same test with 4 producers. With 4 connections the proxy sustained well past the single-producer ceiling — proxy CPU had headroom to spare, and Kafka's partition became the bottleneck first.
+Once we had the single-producer encryption ceiling at ~37k msg/s, the obvious question was: is that the limit for the whole proxy pod, or just for one connection? We ran the same test with 4 producers. With 4 connections the proxy sustained well past the single-producer ceiling — proxy CPU had headroom to spare, and Kafka's partition became the bottleneck first.
 
-Going further: we swept the same workload at 1000m, 2000m, and 4000m CPU. The throughput ceiling scaled linearly with the CPU budget — 1000m at ~40k msg/sec, 2000m at ~80k, 4000m at ~160k. The proxy isn't hitting a fixed architectural wall; it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
+Going further: we swept the same workload at 1000m, 2000m, and 4000m CPU. The throughput ceiling scaled linearly with the CPU budget — 1000m at ~40k msg/s, 2000m at ~80k, 4000m at ~160k. The proxy isn't hitting a fixed architectural wall; it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
 
 **The practical implication**: the throughput ceiling is not a fixed number — it's a function of the CPU you allocate. Set `requests` equal to `limits` in your pod spec; this makes the CPU budget deterministic and the ceiling predictable. The companion engineering post has the full story of how we found this, including the workload design choices needed to isolate proxy CPU from Kafka's own limits.
 

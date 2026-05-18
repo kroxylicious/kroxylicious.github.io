@@ -85,13 +85,13 @@ Getting NIC speed from a Kubernetes node turned out to be non-trivial — you ne
 
 The primary workload used **1 topic, 1 partition, 1 KB messages**. This is deliberate. Concentrating all traffic on a single partition pushes things to their limits at lower absolute rates, which makes the proxy overhead easier to isolate: when the system saturates, it's the proxy, not a spread-out broker fleet.
 
-Multi-topic workloads (10 topics, 100 topics) were used to verify that the overhead characteristics hold when load is distributed. At 5,000 msg/sec per topic across 10 topics, every topic-partition pair is well below any saturation point — so what you're measuring is steady-state overhead, not ceiling behaviour.
+Multi-topic workloads (10 topics, 100 topics) were used to verify that the overhead characteristics hold when load is distributed. At 5,000 msg/s per topic across 10 topics, every topic-partition pair is well below any saturation point — so what you're measuring is steady-state overhead, not ceiling behaviour.
 
-For throughput ceiling testing we used rate sweeps: start at 34,000 msg/sec, step up by 5% until achieved rate drops below 95% of target. The knee of that curve is the saturation point.
+For throughput ceiling testing we used rate sweeps: start at 34,000 msg/s, step up by 5% until achieved rate drops below 95% of target. The knee of that curve is the saturation point.
 
 ## The flamegraph: where the CPU actually goes
 
-We captured CPU profiles using async-profiler attached to the proxy JVM via `jcmd JVMTI.agent_load`, during the steady-state measurement phase at 36,000 msg/sec. These are self-time percentages — where the CPU is actually spending cycles, not inclusive call-tree time.
+We captured CPU profiles using async-profiler attached to the proxy JVM via `jcmd JVMTI.agent_load`, during the steady-state measurement phase at 36,000 msg/s. These are self-time percentages — where the CPU is actually spending cycles, not inclusive call-tree time.
 
 The flamegraphs below are fully interactive: hover over a frame to see its name and percentage, click to zoom in, Ctrl+F to search. Scroll within the frame to explore the full stack depth.
 
@@ -101,9 +101,9 @@ The flamegraphs below are fully interactive: hover over a frame to see its name 
 <iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: no-filter proxy at 36,000 msg/sec">
+        title="CPU flamegraph: no-filter proxy at 36,000 msg/s">
 </iframe>
-<figcaption>CPU flamegraph — passthrough proxy (no filters), 36,000 msg/sec, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — passthrough proxy (no filters), 36,000 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | CPU share |
@@ -122,15 +122,15 @@ Kroxylicious decodes Kafka RPCs selectively: each filter declares which API keys
 
 The 1.4% is the cost of a proxy that is *selectively* L7: doing real Kafka protocol work where it matters, and treating the hot path like a TCP relay where it doesn't. That's not a side-effect — it's what the decode predicate design is for, and this flamegraph validates it.
 
-### Encryption proxy (same 36,000 msg/sec rate)
+### Encryption proxy (same 36,000 msg/s rate)
 
 <figure>
 <iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-36k.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: encryption proxy at 36,000 msg/sec">
+        title="CPU flamegraph: encryption proxy at 36,000 msg/s">
 </iframe>
-<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), 36,000 msg/sec, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-36k.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), 36,000 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-36k.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | No-filters | Encryption | Delta |
@@ -160,7 +160,7 @@ If you wanted to optimise this, the highest-impact areas would be: reducing buff
 
 ## Following the ceiling
 
-We had a rate-sweep result. On our test cluster, the encryption scenario hit a ceiling — the proxy was saturating around 37k msg/sec. We'd maxed out the proxy, right?
+We had a rate-sweep result. On our test cluster, the encryption scenario hit a ceiling — the proxy was saturating around 37k msg/s. We'd maxed out the proxy, right?
 
 Well. The proxy had spare CPU cycles.
 
@@ -168,11 +168,11 @@ That's interesting. If the proxy isn't CPU-saturated, then whatever we hit isn't
 
 ### What were we actually hitting?
 
-Our initial sweeps ran with replication factor 3 — the standard production default, and for good reason. But RF=3 means every message the Kafka leader receives gets replicated to 2 followers. At 37k msg/sec with 1 KB messages, that's ~111 MB/s of replication traffic outbound from the leader alone. The Fyre nodes have 10 GbE NICs so the network wasn't saturated, but RF=3 creates a real per-partition I/O ceiling on the Kafka leader — and it sits right around where we were measuring.
+Our initial sweeps ran with replication factor 3 — the standard production default, and for good reason. But RF=3 means every message the Kafka leader receives gets replicated to 2 followers. At 37k msg/s with 1 KB messages, that's ~111 MB/s of replication traffic outbound from the leader alone. The Fyre nodes have 10 GbE NICs so the network wasn't saturated, but RF=3 creates a real per-partition I/O ceiling on the Kafka leader — and it sits right around where we were measuring.
 
 The ceiling on our hardware wasn't the proxy. It was Kafka.
 
-The fix: RF=1, 10-topic workload. Drop replication overhead; spread load across 10 partitions so no single partition hits its ceiling. We validated it with the passthrough proxy: at 160k msg/sec total the proxy matched baseline, and the sweep scaled past 640k before hitting some uninvestigated ceiling far above where encryption constrains anything.
+The fix: RF=1, 10-topic workload. Drop replication overhead; spread load across 10 partitions so no single partition hits its ceiling. We validated it with the passthrough proxy: at 160k msg/s total the proxy matched baseline, and the sweep scaled past 640k before hitting some uninvestigated ceiling far above where encryption constrains anything.
 
 ### We maxed out the proxy, right?
 
@@ -186,15 +186,15 @@ We swept the CPU limit: 1000m, 2000m, 4000m. The throughput ceiling scaled linea
 
 | CPU limit | Encryption ceiling |
 |-----------|-------------------|
-| 1000m | ~40k msg/sec |
-| 2000m | ~80k msg/sec |
-| 4000m | ~160k msg/sec |
+| 1000m | ~40k msg/s |
+| 2000m | ~80k msg/s |
+| 4000m | ~160k msg/s |
 
-At 4000m: comfortable at 160k msg/sec (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
+At 4000m: comfortable at 160k msg/s (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
 
 One thing we noticed along the way: the proxy ran 4 Netty event loop threads regardless of CPU limit. The throughput scaling isn't explained by thread count changing — it doesn't. What changes is the CPU time budget available to those threads. The relationship between CPU limit, thread scheduling, and throughput ceiling is more subtle than a simple thread-count model; what we can say empirically is that throughput scales linearly with the CPU limit.
 
-Deriving the coefficient: at 4000m and 160k msg/sec with 1 KB messages —
+Deriving the coefficient: at 4000m and 160k msg/s with 1 KB messages —
 
 ```
 160k msg/s × 1 KB = 160 MB/s produce throughput
@@ -203,19 +203,19 @@ With matched consumer load: 160 MB/s encrypt + 160 MB/s decrypt
 → equivalently: 4000 mc / 160 MB/s produce ≈ 25 mc per MB/s produce
 ```
 
-We measured the coefficient at mid-utilisation (80k msg/sec, 2000m) at ~10 mc/MB/s bidirectional — lower, because fixed per-connection overhead gets amortised at higher load. The operator-facing formula uses 20 mc/MB/s of produce throughput, which sits between mid-utilisation and saturation and gives inherent conservatism.
+We measured the coefficient at mid-utilisation (80k msg/s, 2000m) at ~10 mc/MB/s bidirectional — lower, because fixed per-connection overhead gets amortised at higher load. The operator-facing formula uses 20 mc/MB/s of produce throughput, which sits between mid-utilisation and saturation and gives inherent conservatism.
 
 ### The prediction
 
-Rather than just report the results, we used the 1-core ceiling to make a falsifiable prediction: if the ceiling scales linearly with CPU budget, a 2-core pod should saturate at ~80k msg/sec.
+Rather than just report the results, we used the 1-core ceiling to make a falsifiable prediction: if the ceiling scales linearly with CPU budget, a 2-core pod should saturate at ~80k msg/s.
 
 The 2-core sweep:
 
 | Rate | p99 | Verdict |
 |------|-----|---------|
-| 40k msg/sec | 626 ms | Comfortable |
-| 80k msg/sec | 1,660 ms | Elevated — right at predicted ceiling |
-| 160k msg/sec | 175,277 ms | Catastrophic |
+| 40k msg/s | 626 ms | Comfortable |
+| 80k msg/s | 1,660 ms | Elevated — right at predicted ceiling |
+| 160k msg/s | 175,277 ms | Catastrophic |
 
 The prediction held. The ceiling is real, linear, and predictable — which is exactly what you want from a sizing model.
 

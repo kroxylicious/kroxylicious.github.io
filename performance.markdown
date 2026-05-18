@@ -25,7 +25,7 @@ All primary results used 1 KB messages on a single partition. Multi-topic worklo
 
 The proxy layer itself adds negligible overhead. At sub-saturation rates the additional latency is sub-millisecond on average, with no measurable throughput impact.
 
-**10 topics, 1 KB messages (5,000 msg/sec per topic):**
+**10 topics, 1 KB messages (5,000 msg/s per topic):**
 
 | Metric | Baseline | Proxy | Delta |
 |--------|----------|-------|-------|
@@ -34,7 +34,7 @@ The proxy layer itself adds negligible overhead. At sub-saturation rates the add
 | E2E latency avg | 94.87 ms | 95.34 ms | +0.47 ms (+0.5%) |
 | Publish rate | 5,002 msg/s | 5,002 msg/s | no change |
 
-**100 topics, 1 KB messages (500 msg/sec per topic):**
+**100 topics, 1 KB messages (500 msg/s per topic):**
 
 | Metric | Baseline | Proxy | Delta |
 |--------|----------|-------|-------|
@@ -65,8 +65,8 @@ Encryption adds measurable but predictable overhead. The cost scales with produc
 
 | Scenario | Throughput ceiling (1 topic, 1 KB, 1 partition) |
 |----------|------------------------------------------------|
-| Baseline (direct Kafka) | ~50,000–52,000 msg/sec |
-| Encryption (proxy + AES-256-GCM) | ~37,200 msg/sec |
+| Baseline (direct Kafka) | ~50,000–52,000 msg/s |
+| Encryption (proxy + AES-256-GCM) | ~37,200 msg/s |
 | **Cost** | **~26% fewer messages per second per partition** |
 
 ---
