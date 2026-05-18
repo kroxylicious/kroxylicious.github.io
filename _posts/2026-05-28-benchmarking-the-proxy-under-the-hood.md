@@ -20,19 +20,19 @@ Kafka ships with `kafka-producer-perf-test` and `kafka-consumer-perf-test`. We'd
 - **Too noisy**: individual runs produced widely varying results depending on JVM warm-up, scheduling jitter, and GC behaviour. Results were hard to trust and harder to compare across scenarios.
 - **Producer-only view**: `kafka-producer-perf-test` gives you publish latency, but nothing about the consumer side. You can't see end-to-end latency — which is something operators actually care about.
 - **Awkward to sweep**: running parametric rate sweeps requires scripting around these tools, and comparing results across scenarios requires manual work.
-- Coordinated omission: under load, kafka-producer-perf-test only measures requests it actually sends! So when things start loading up and applying back pressure the send rate drops and the latency stays looking nice and healthy. Only it's not healthy in reality, things are queuing up in your producer. 
+- **Coordinated omission**: under load, kafka-producer-perf-test only measures requests it actually sends! So when things start loading up and applying back pressure the send rate drops and the latency stays looking nice and healthy. Only it's not healthy in reality, things are queuing up in your producer. 
 
 And critically, it's never heard of Kroxylicious... You have though, you're here!
 
-[OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) is a better fit. It's an industry-standard tool used by Confluent, the Pulsar team, and others for their published performance comparisons - so who am I to argue? OMB coordinates producers and consumers across separate worker pods, runs a configurable warmup phase before taking measurements, takes its latency tracking seriously by tracking coordinated omission, and outputs structured JSON that's straightforward to process programmatically. What's not to like? 
+[OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) is a better fit. It's an industry-standard tool used by Confluent, the Pulsar team, and others for their published performance comparisons - so who am I to argue? OMB coordinates producers and consumers across separate worker pods, runs a configurable warmup phase before taking measurements, takes latency tracking seriously — correcting for coordinated omission, and outputs structured JSON that's straightforward to process programmatically. What's not to like? 
 
 Using OMB also means our methodology is directly comparable to other published Kafka benchmarks. The numbers aren't comparable of course it's not the same hardware, network conditions or phase of the moon. 
 
 ## What we built on top of OMB
 
-So we just fire up OMB and get some numbers, right? Errr no. OMB just does the measurement part. I work really hard at being lazy, I hate clicking things with a mouse and I knew these tests needed to be repeatable. So we scripted deployment (of all the things) teardown (for isolation), diagnostic collection (WHAT BROKE NOW??), and last but not least result processing (what does this wall of JSON mean?)
+So we just fire up OMB and get some numbers, right? Errr no. OMB just does the measurement part. I work really hard at being lazy, I hate clicking things with a mouse and I knew these tests needed to be repeatable. So we scripted deployment (of all the things) teardown (for isolation), diagnostic collection *(WHAT BROKE NOW??)*, and last but not least result processing (what does this wall of JSON mean?)
 
-So now all of that lives in [`kroxylicious-openmessaging-benchmarks`](https://github.com/kroxylicious/kroxylicious/tree/main/kroxylicious-openmessaging-benchmarks) in the main tree (mono repo FTW).
+So now all of that lives in [`kroxylicious-openmessaging-benchmarks`](https://github.com/kroxylicious/kroxylicious/tree/main/kroxylicious-openmessaging-benchmarks) in the main tree *(mono repo FTW)*.
 
 So we have a tool and we think Kroxylicious is fast — but how do we turn that into something we can actually show management? "Fast" is shorthand for "low impact", and the impact of a proxy shows up along two dimensions:
 
@@ -45,7 +45,7 @@ Two dimensions, two questions — and it turns out they need quite different exp
 `scripts/rate-sweep.sh` holds the connection count fixed and steps the producer rate up in fixed increments, letting the cluster stabilise at each step. We defined saturation as the sustained throughput dropping more than 5% below the target rate. The rate sweep tells you where the cliff edge is and what latency looks like as you approach it.
 
 **Connection sweep — is the ceiling per-connection or per-pod?**
-`scripts/connection-sweep.sh` holds the per-producer rate fixed and steps up the number of producers (1, 2, 4, 8, 16 by default) — consumers scale to match. This tells you the aggregate throughput ceiling of a single proxy pod (need more? help out!): the point where adding more connections stops increasing total throughput.
+`scripts/connection-sweep.sh` holds the per-producer rate fixed and steps up the number of producers (1, 2, 4, 8, 16 by default) — consumers scale to match. This tells you the aggregate throughput ceiling of a single proxy pod *(need more? help out!)*: the point where adding more connections stops increasing total throughput.
 
 Both sweeps use `scripts/run-benchmark.sh` under the hood, which:
 
@@ -73,7 +73,7 @@ If you have your own KMS — and you will run this on your own infrastructure, r
 
 ### JSON always comes in megabytes
 
-Each benchmark run produces a blob of structured JSON. Useful in principle; a wall of noise in practice. Three [JBang](https://www.jbang.dev/)-runnable Java programs (I'm a died in the wool java dev, sue me) pull out the signal:
+Each benchmark run produces a blob of structured JSON. Useful in principle; a wall of noise in practice. Three [JBang](https://www.jbang.dev/)-runnable Java programs *(I'm a died in the wool java dev, sue me)* pull out the signal:
 
 - **`RunMetadata`**: captures the run context — git commit, timestamp, cluster node specs (architecture, CPU, RAM), and on OpenShift, NIC speed read from the host via the MachineConfigDaemon pod. Generates `run-metadata.json` alongside each result so you can always tell what conditions produced a number. This is what makes run-to-run comparisons meaningful — and when a run takes 12 hours, trust me, you don't want to re-run it without good reason.
 - **`ResultComparator`**: answers "did this change hurt?" — reads two scenario result directories and produces a markdown comparison table. Baseline vs encryption is the obvious use, but the tool is generic. Already running a proxy? proxy-no-filters vs encryption tells you the cost of the filter itself, not the proxy hop. Building your own filter? That's your comparison — measure the chain with and without it.
