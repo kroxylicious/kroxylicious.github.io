@@ -67,8 +67,11 @@ Good news first. The proxy itself — with no filter chain, just routing traffic
 
 **The headline: ~0.2 ms additional average publish latency. Throughput is unaffected.**
 
-What did I take away from this entirely unsurprising result? Not much, honestly — without filters the proxy is little more than a couple of hops through the TCP stack, but we now have data rather than a hunch.      
-The end-to-end (E2E) p99 figure is dominated by the Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
+What did I take away from this entirely unsurprising result? Not much, honestly — without filters the proxy boils the latency-sensitive path down to little more than a couple of hops through the TCP stack. We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7.
+
+The overhead holding across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. A Kafka broker juggles disk I/O, partition leaders, and replication across everything it manages; the proxy treats each connection independently. Topics don't contend for shared resources: throughput scales linearly across them, and the connection sweep validates it.
+
+The end-to-end p99 figure is dominated by Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
 
 ---
 
