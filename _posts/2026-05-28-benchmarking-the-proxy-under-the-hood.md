@@ -94,6 +94,90 @@ We leaned towards repeatable — but we didn't abandon representative entirely. 
 
 That covers the first dimension — the proxy's latency tax at normal load. For the second, throughput, the question is: how much does routing through the proxy reduce your maximum sustainable rate? That needs a different approach. We used rate sweeps: hold the connection count fixed, step the rate up incrementally, and watch what happens. Below the ceiling, achieved throughput tracks the target — the system keeps up. Above it, it can't, and falls behind. The point where achieved throughput diverges from the target rate — where we defined that as dropping below 95% — is the saturation point. That's the knee of the curve, and that's what we were hunting.
 
+## False summit
+
+The rate-sweep result was in: the encryption scenario hit a ceiling on our original cluster at around 37k msg/s. Summit reached.
+
+Except — the proxy had spare CPU cycles. Not a little: meaningful headroom. If the proxy isn't CPU-saturated, whatever we hit isn't the proxy's ceiling.
+
+**Was it the NIC?** At 37k msg/s and 1 KB messages, produce traffic alone is 37 MB/s. Add RF=3 replication: the leader ships two copies outbound, ~74 MB/s more. 111 MB/s total — fine for 10 GbE, obviously broken for 1 GbE. If the NICs had been gigabit, replication traffic would have saturated them long before we got to 37k. Network eliminated.
+
+**Was it the proxy pod, or just one connection?** The rate sweep runs with a single producer. We ran four at the same per-producer rate. Aggregate throughput climbed higher than one producer alone could push — the pod had headroom the single connection wasn't using. We checked proxy metrics: back pressure was minimal. The proxy wasn't the constraint. Whatever was limiting one connection, it wasn't us.
+
+### We tried anti-affinity
+
+Then a curveball: could it be node saturation? The original cluster had three worker nodes — and three Kafka brokers. Strimzi, being sensible, spreads brokers evenly: one per node. If the proxy had landed on the same node as a busy broker, that node could be the bottleneck rather than the proxy pod itself.
+
+We added a hard anti-affinity rule to keep the proxy off broker nodes. It wouldn't schedule.
+
+The penny drops: three worker nodes, three brokers, one per node — there is nowhere for the proxy to go that isn't already co-located with a broker. Obvious in hindsight. We needed a bigger cluster.
+
+We provisioned one: five workers, three masters, 16 vCPU per node.
+
+### The baseline shock
+
+Baseline first. Direct Kafka, no proxy.
+
+~17,000 msg/s. The original cluster had been sustaining ~50,000.
+
+The proxy wasn't in the picture. We checked the obvious suspects: disk I/O — fine, local and unsaturated. OMB worker scaling — correct. Broker CPU: ~1.2 vCPU. Nothing was at a limit.
+
+The answer was in the pipeline arithmetic. A Kafka producer has a maximum number of in-flight requests — batches sent but not yet acknowledged. With real round-trip times between nodes, that in-flight window bounds throughput. We measured: 0.87 ms between worker nodes, with three replication hops before the leader can confirm a produce at RF=3 — roughly 3–4 ms total. Five in-flight requests across that round trip gives a ceiling that matched ~17k msg/s almost exactly.
+
+On the original cluster, those nodes were almost certainly co-located on the same physical host. Inter-node RTTs at that scale are sub-millisecond — effectively free. The original cluster's 50k baseline wasn't what a 3-broker Kafka cluster does. It was what a 3-broker Kafka cluster does when the network is a memcpy.
+
+The new cluster was genuinely distributed. Real latency, real pipeline limits, real Kafka — and the cluster we used for everything from here.
+
+*(The ~37k ceiling is the only figure in this post from the original cluster. Everything that follows — the coefficient, the CPU sweep, the prediction — was measured on the new cluster. The physics are part of what makes those numbers honest.)*
+
+Another penny dropped. We'd had the same scheduling problem with OMB all along. The producer and consumer worker pods were landing on broker nodes — and when pods share a node, the SDN detects that traffic doesn't need to leave the node and bypasses the NIC entirely. The producers and consumers weren't paying for network transit at all.
+
+The proxy pod was on a different node, but on a 3-node cluster where every node already had a broker, the odds of those nodes sharing a physical host on Fyre were high. Almost certainly getting the same benefit, just one layer down.
+
+### Now push harder
+
+The new cluster had an honest baseline — but RF=3 pipeline limits meant we couldn't push a single topic past ~17k msg/s. There was no room to find the proxy's CPU ceiling when Kafka's pipeline hits the wall first.
+
+RF=1, 10 topics. With no replication hops, the round-trip drops to producer→leader only: 0.87 ms. Spread across 10 partitions, no single one becomes the bottleneck before the proxy does. We validated the workload with the passthrough proxy: throughput scaled well past anything encryption constrains. The ceiling we were now measuring was proxy CPU.
+
+### How much more?
+
+The initial RF=1 run at 1000m CPU gave us a ceiling: ~40k msg/s. From that one measurement we could derive the coefficient:
+
+```
+40k msg/s × 1 KB = 40 MB/s produce
+Matched consumer load: 40 MB/s encrypt + 40 MB/s decrypt = 80 MB/s bidirectional
+1000m / 80 MB/s ≈ 12.5 mc per MB/s bidirectional
+→ operator formula: ~20 mc per MB/s of produce throughput (conservative margin between mid-load and saturation)
+```
+
+If the ceiling scales linearly with CPU, a 4-core pod should give ~160k msg/s. We ran it.
+
+| CPU limit | Encryption ceiling |
+|-----------|-------------------|
+| 1000m     | ~40k msg/s        |
+| 4000m     | ~160k msg/s       |
+
+Linear. At 4000m: comfortable at 160k (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
+
+*(The proxy ran 4 Netty event loop threads regardless of CPU limit. Thread count doesn't change — what changes is the CPU time budget available to those threads. Empirically linear, even if the thread-scheduling mechanics are more subtle.)*
+
+### The prediction
+
+One validated data point isn't a sizing model. We used the coefficient to make a falsifiable prediction: a 2-core pod should saturate at ~80k msg/s.
+
+The 2-core sweep:
+
+| Rate       | p99        | Verdict                               |
+|------------|------------|---------------------------------------|
+| 40k msg/s  | 626 ms     | Comfortable                           |
+| 80k msg/s  | 1,660 ms   | Elevated — right at predicted ceiling |
+| 160k msg/s | 175,277 ms | Catastrophic                          |
+
+Held. The ceiling is real, linear, and predictable — which is exactly what you want from a sizing model.
+
+Setting `requests` equal to `limits` makes this practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. Fix the CPU budget; fix the ceiling.
+
 ## The flamegraph: where the CPU actually goes
 
 We captured CPU profiles using async-profiler attached to the proxy JVM via `jcmd JVMTI.agent_load`, during the steady-state measurement phase at 36,000 msg/s. These are self-time percentages — where the CPU is actually spending cycles, not inclusive call-tree time.
@@ -162,69 +246,6 @@ The direct crypto cost is 13.3% (11.3% AES-GCM + 2.0% Kroxylicious filter logic)
 Total additional CPU: ~33%. This aligns closely with the ~26% throughput reduction.
 
 If you wanted to optimise this, the highest-impact areas would be: reducing buffer copies (encrypt in-place or use composite buffers), pooling encryption buffers to reduce GC pressure, and caching `Cipher` instances to reduce per-record JDK security overhead.
-
-## Following the ceiling
-
-We had a rate-sweep result. On our test cluster, the encryption scenario hit a ceiling — the proxy was saturating around 37k msg/s. We'd maxed out the proxy, right?
-
-Well. The proxy had spare CPU cycles.
-
-That's interesting. If the proxy isn't CPU-saturated, then whatever we hit isn't the proxy's ceiling — it's something else's. Time to work out what.
-
-### What were we actually hitting?
-
-Our initial sweeps ran with replication factor 3 — the standard production default, and for good reason. But RF=3 means every message the Kafka leader receives gets replicated to 2 followers. At 37k msg/s with 1 KB messages, that's ~111 MB/s of replication traffic outbound from the leader alone. The Fyre nodes have 10 GbE NICs so the network wasn't saturated, but RF=3 creates a real per-partition I/O ceiling on the Kafka leader — and it sits right around where we were measuring.
-
-The ceiling on our hardware wasn't the proxy. It was Kafka.
-
-The fix: RF=1, 10-topic workload. Drop replication overhead; spread load across 10 partitions so no single partition hits its ceiling. We validated it with the passthrough proxy: at 160k msg/s total the proxy matched baseline, and the sweep scaled past 640k before hitting some uninvestigated ceiling far above where encryption constrains anything.
-
-### We maxed out the proxy, right?
-
-With a clean workload that actually isolates proxy CPU, we looked again. The connection sweep answered the question: with 4 producers at a fixed per-producer rate, aggregate throughput climbed well past the single-producer ceiling — and proxy CPU still had headroom. Kafka's partition ran out first.
-
-So the single-producer ceiling on our cluster isn't the pod ceiling. It's what one connection could push on that hardware. The proxy had more to give.
-
-### How much more?
-
-We swept the CPU limit: 1000m, 2000m, 4000m. The throughput ceiling scaled linearly with the CPU budget:
-
-| CPU limit | Encryption ceiling |
-|-----------|-------------------|
-| 1000m | ~40k msg/s |
-| 2000m | ~80k msg/s |
-| 4000m | ~160k msg/s |
-
-At 4000m: comfortable at 160k msg/s (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
-
-One thing we noticed along the way: the proxy ran 4 Netty event loop threads regardless of CPU limit. The throughput scaling isn't explained by thread count changing — it doesn't. What changes is the CPU time budget available to those threads. The relationship between CPU limit, thread scheduling, and throughput ceiling is more subtle than a simple thread-count model; what we can say empirically is that throughput scales linearly with the CPU limit.
-
-Deriving the coefficient: at 4000m and 160k msg/s with 1 KB messages —
-
-```
-160k msg/s × 1 KB = 160 MB/s produce throughput
-With matched consumer load: 160 MB/s encrypt + 160 MB/s decrypt
-→ 4000 mc / 320 MB/s bidirectional ≈ 12–13 mc per MB/s bidirectional
-→ equivalently: 4000 mc / 160 MB/s produce ≈ 25 mc per MB/s produce
-```
-
-We measured the coefficient at mid-utilisation (80k msg/s, 2000m) at ~10 mc/MB/s bidirectional — lower, because fixed per-connection overhead gets amortised at higher load. The operator-facing formula uses 20 mc/MB/s of produce throughput, which sits between mid-utilisation and saturation and gives inherent conservatism.
-
-### The prediction
-
-Rather than just report the results, we used the 1-core ceiling to make a falsifiable prediction: if the ceiling scales linearly with CPU budget, a 2-core pod should saturate at ~80k msg/s.
-
-The 2-core sweep:
-
-| Rate | p99 | Verdict |
-|------|-----|---------|
-| 40k msg/s | 626 ms | Comfortable |
-| 80k msg/s | 1,660 ms | Elevated — right at predicted ceiling |
-| 160k msg/s | 175,277 ms | Catastrophic |
-
-The prediction held. The ceiling is real, linear, and predictable — which is exactly what you want from a sizing model.
-
-Setting `requests` equal to `limits` is what makes this practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. With `requests == limits`, the CPU budget is fixed, the ceiling is fixed, and your capacity planning can rely on the coefficient.
 
 ## Bugs we found in our own tooling
 
