@@ -177,7 +177,11 @@ Setting `requests` equal to `limits` makes this practical: a pod that can burst 
 
 ## The flamegraph: where the CPU actually goes
 
-We captured CPU profiles using async-profiler attached to the proxy JVM via `jcmd JVMTI.agent_load`, during the steady-state measurement phase at 36,000 msg/s. These are self-time percentages — where the CPU is actually spending cycles, not inclusive call-tree time.
+I care deeply that the proxy does as little work as possible on the hot path. Optimization is often less about swapping algorithms — if you only ever have five items, who cares how you sort them — and more about realising what work not to do, or finding a better time to do it. [Amdahl's law](https://en.wikipedia.org/wiki/Amdahl%27s_law) governs this: the maximum speedup you can get from optimizing a component is bounded by how much of total execution time that component actually owns. If the proxy accounts for 2% of CPU, you can't optimize your way to a 10% win — not there.
+
+That framing is exactly why flamegraphs matter to me. Not as a debugging tool, but as a way of seeing the shape of the work. I was also hoping to tell a fuller story here — profiles across the full rate sweep, watching the mix shift as the proxy approaches saturation. Getting stable, reproducible numbers turned out to be harder than expected, and the bugs described in the next section cost us more runs than I'd like. So these are two snapshots at a single rate, not the sweep-correlated picture I had in mind. Still enough to see where the CPU goes. I hope to revisit this properly in the future — but right now the proxy's performance is good enough that I'm focused on functionality, and the benchmarking harness itself still has room to mature.
+
+We captured CPU profiles using async-profiler attached to the proxy JVM via `jcmd JVMTI.agent_load`, during the steady-state measurement phase. These are self-time percentages — where the CPU is actually spending cycles, not inclusive call-tree time.
 
 The flamegraphs below are fully interactive: hover over a frame to see its name and percentage, click to zoom in, Ctrl+F to search. Scroll within the frame to explore the full stack depth.
 
@@ -258,7 +262,9 @@ Spotting these required noticing that two different probe flamegraphs were pixel
 
 ## Run it yourself
 
-Everything is in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious). See `QUICKSTART.md` for step-by-step instructions. You'll need a Kubernetes or OpenShift cluster, the Kroxylicious operator installed, and Helm 3. Minikube works for local runs — the quickstart covers recommended CPU and memory settings.
+We're an open source project — we share our workings. The raw OMB result JSON, JFR recordings, and flamegraph files that back this post are available [TODO: link to raw data]. If you want to verify the numbers, reproduce the analysis, or compare against your own runs, everything you need is there.
+
+If you want to run it against your own cluster, everything is in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious). See `QUICKSTART.md` for step-by-step instructions. You'll need a Kubernetes or OpenShift cluster, the Kroxylicious operator installed, and Helm 3. Minikube works for local runs — the quickstart covers recommended CPU and memory settings.
 
 ```bash
 # Run a baseline vs encryption comparison
