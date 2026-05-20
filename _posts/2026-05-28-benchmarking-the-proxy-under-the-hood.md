@@ -26,7 +26,7 @@ And critically, it's never heard of Kroxylicious... You have though, you're here
 
 [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) is a better fit. It's an industry-standard tool used by Confluent, the Pulsar team, and others for their published performance comparisons - so who am I to argue? OMB coordinates producers and consumers across separate worker pods, runs a configurable warmup phase before taking measurements, takes latency tracking seriously — correcting for coordinated omission, and outputs structured JSON that's straightforward to process programmatically. What's not to like? 
 
-Using OMB also means our methodology is directly comparable to other published Kafka benchmarks. The numbers aren't comparable of course it's not the same hardware, network conditions or phase of the moon. 
+Using OMB also means our methodology is directly comparable to other published Kafka benchmarks. The numbers aren't comparable, of course — it's not the same hardware, network conditions or phase of the moon. 
 
 ## What we built on top of OMB
 
@@ -73,7 +73,7 @@ If you have your own KMS — and you will run this on your own infrastructure, r
 
 ### JSON always comes in megabytes
 
-Each benchmark run produces a blob of structured JSON. Useful in principle; a wall of noise in practice. Three [JBang](https://www.jbang.dev/)-runnable Java programs *(I'm a died in the wool java dev, sue me)* pull out the signal:
+Each benchmark run produces a blob of structured JSON. Useful in principle; a wall of noise in practice. Three [JBang](https://www.jbang.dev/)-runnable Java programs *(I'm a dyed in the wool java dev, sue me)* pull out the signal:
 
 - **`RunMetadata`**: captures the run context — git commit, timestamp, cluster node specs (architecture, CPU, RAM), and on OpenShift, NIC speed read from the host via the MachineConfigDaemon pod. Generates `run-metadata.json` alongside each result so you can always tell what conditions produced a number. This is what makes run-to-run comparisons meaningful — and when a run takes 12 hours, trust me, you don't want to re-run it without good reason.
 - **`ResultComparator`**: answers "did this change hurt?" — reads two scenario result directories and produces a markdown comparison table. Baseline vs encryption is the obvious use, but the tool is generic. Already running a proxy? proxy-no-filters vs encryption tells you the cost of the filter itself, not the proxy hop. Building your own filter? That's your comparison — measure the chain with and without it.
@@ -85,11 +85,11 @@ Getting NIC speed from a Kubernetes node turned out to be non-trivial — you ne
 
 Benchmarks are artificial constructs. Your traffic patterns are never stable — message sizes vary, topic counts grow, producers burst — so there's always a tension between numbers that are *representative* and numbers that are actually *repeatable*. We leaned towards repeatable.
 
-The primary workload will make Kafka experts wince *(I had to squirm to type it)* — **1 topic, 1 partition, 1 KB messages**. Concentrating everything onto a single TopicPartition means we hit the limits earlier, at lower absolute volumes, which makes the proxy's contribution easier to isolate. Isolating the proxy is, after all, the goal.
+The primary workload makes Kafka experts wince *(I had to squirm to type it)* — **1 topic, 1 partition, 1 KB messages**. Concentrating everything onto a single TopicPartition means we hit the limits earlier, at lower absolute volumes, which makes the proxy's contribution easier to isolate. Isolating the proxy is, after all, the goal.
 
 But Kafka is often described as a distributed append-only log, and we can't ignore the word "distributed" when it comes to latency. With RF=1, the proxy doubles the sequential hops in the critical path: one becomes two. That's not wrong, but it's not a fair picture either — nobody runs RF=1 in production. With RF=3, the leader waits for ISR acknowledgements before confirming the produce, so there's already replication latency in the critical path. The proxy adds a real, sequential hop — we're not trying to bury that — but it lands alongside a cost that's already there. One extra hop on top of a multi-hop round trip is a different picture from doubling a single-hop one. Three brokers, hot partition replicated across all of them.
 
-We leaned towards repeatable — but we didn't abandon representative entirely. The multi-topic runs (10 and 100 topics) are the reconnection point: load spread across more topics, closer to what production actually looks like, at rates well below any saturation point. You're measuring the proxy's baseline tax — the cost you always pay, not just the cost when you're pushing hard. It holds.
+But we didn't abandon representative entirely. The multi-topic runs (10 and 100 topics) are the reconnection point: load spread across more topics, closer to what production actually looks like, at rates well below any saturation point. You're measuring the proxy's baseline tax — the cost you always pay, not just the cost when you're pushing hard. It holds.
 
 
 That covers the first dimension — the proxy's latency tax at normal load. For the second, throughput, the question is: how much does routing through the proxy reduce your maximum sustainable rate? That needs a different approach. We used rate sweeps: hold the connection count fixed, step the rate up incrementally, and watch what happens. Below the ceiling, achieved throughput tracks the target — the system keeps up. Above it, it can't, and falls behind. The point where achieved throughput diverges from the target rate — where we defined that as dropping below 95% — is the saturation point. That's the knee of the curve, and that's what we were hunting.
@@ -191,9 +191,9 @@ The flamegraphs below are fully interactive: hover over a frame to see its name 
 <iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: no-filter proxy at 36,000 msg/s">
+        title="CPU flamegraph: no-filter proxy at FIXME msg/s">
 </iframe>
-<figcaption>CPU flamegraph — passthrough proxy (no filters), 36,000 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — passthrough proxy (no filters), FIXME msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | CPU share |
@@ -212,15 +212,15 @@ Kroxylicious decodes Kafka RPCs selectively: each filter declares which API keys
 
 The 1.4% is the cost of a proxy that is *selectively* L7: doing real Kafka protocol work where it matters, and treating the hot path like a TCP relay where it doesn't. That's not a side-effect — it's what the decode predicate design is for, and this flamegraph validates it.
 
-### Encryption proxy (same 36,000 msg/s rate)
+### Encryption proxy (same FIXME msg/s rate)
 
 <figure>
-<iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-36k.html' | relative_url }}"
+<iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-FIXME.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: encryption proxy at 36,000 msg/s">
+        title="CPU flamegraph: encryption proxy at FIXME msg/s">
 </iframe>
-<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), 36,000 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-36k.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), FIXME msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-FIXME.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | No-filters | Encryption | Delta |
@@ -247,6 +247,8 @@ The direct crypto cost is 13.3% (11.3% AES-GCM + 2.0% Kroxylicious filter logic)
 Total additional CPU: ~33%. This aligns closely with the ~26% throughput reduction.
 
 If you wanted to optimise this, the highest-impact areas would be: reducing buffer copies (encrypt in-place or use composite buffers), pooling encryption buffers to reduce GC pressure, and caching `Cipher` instances to reduce per-record JDK security overhead.
+
+There are wins inside the proxy we haven't chased yet — serialisation and deserialisation we could avoid, buffer copies imposed by how memory records are structured. Some would be straightforward; others would require rethinking how Kafka records are modelled in memory. We haven't gone after them. But to put it plainly: we can optimise all we like inside the proxy, and we're still not going to make AES faster.
 
 ## Bugs we found in our own tooling
 
