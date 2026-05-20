@@ -7,7 +7,7 @@ author_url: "https://github.com/SamBarker"
 categories: benchmarking performance engineering
 ---
 
-How hard can it be? We started with a laptop, a codebase, and a lot of confidence it was fast. We ended up with a benchmark harness, a six-node cluster, and a much more nuanced answer.
+How hard can it be? We started with a laptop, a codebase, and a lot of confidence it was fast. We ended up with a benchmark harness, an eight-node cluster, and a much more nuanced answer.
 
 Harder than expected. More interesting too.
 
@@ -142,39 +142,36 @@ RF=1, 10 topics. With no replication hops, the round-trip drops to producer→le
 
 ### How much more?
 
-The initial RF=1 run at 1000m CPU gave us a ceiling: ~40k msg/s. From that one measurement we could derive the coefficient:
+The RF=1 10-topic workload spread load across partitions. At 1000m, the run tells us: safe at 80k msg/s (91 ms p99), saturating at around 126k. The coefficient comes from JFR CPU data across the non-saturated probes:
 
 ```
-40k msg/s × 1 KB = 40 MB/s produce
-Matched consumer load: 40 MB/s encrypt + 40 MB/s decrypt = 80 MB/s bidirectional
-1000m / 80 MB/s ≈ 12.5 mc per MB/s bidirectional
-→ operator formula: ~20 mc per MB/s of produce throughput (conservative margin between mid-load and saturation)
+Measured: 9.7 mc per MB/s of total proxy traffic (±6.6 stdev, n=4 non-saturated probes)
+→ operator formula: 10 mc per MB/s of total proxy traffic
+→ for 1:1 produce:consume at 1 KB: 20 mc per MB/s of produce throughput
 ```
 
-If the ceiling scales linearly with CPU, a 4-core pod should give ~160k msg/s. We ran it.
+The mechanism: `cpu: 1000m → availableProcessors()=1 → one Netty event loop thread`. At 4000m that's four threads, each handling its share of connections in parallel. If the ceiling scales linearly with thread count, a 4-core pod should handle roughly four times as much. We ran it.
 
-| CPU limit | Encryption ceiling |
-|-----------|-------------------|
-| 1000m     | ~40k msg/s        |
-| 4000m     | ~160k msg/s       |
+| CPU limit | Rate | p99 | Verdict |
+|-----------|------|-----|---------|
+| 1000m | 80k msg/s | 91 ms | Comfortable |
+| 1000m | ~126k msg/s | — | Saturating |
+| 4000m | 160k msg/s | 247 ms | Comfortable |
+| 4000m | 321k msg/s | 1,706 ms | Elevated |
+| 4000m | above 321k | — | Saturated |
 
-Linear. At 4000m: comfortable at 160k (p99: 447 ms), catastrophic at 320k (p99: 537,000 ms). The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
-
-*(The proxy ran 4 Netty event loop threads regardless of CPU limit. Thread count doesn't change — what changes is the CPU time budget available to those threads. Empirically linear, even if the thread-scheduling mechanics are more subtle.)*
+At 4000m: comfortable at 160k (p99: 247 ms), elevated at 321k (p99: 1,706 ms). Above that — 64 producers matched 32-producer throughput: ceiling reached. The proxy isn't hitting a fixed architectural wall — it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
 
 ### The prediction
 
-One validated data point isn't a sizing model. We used the coefficient to make a falsifiable prediction: a 2-core pod should saturate at ~80k msg/s.
+One validated scaling point isn't a sizing model. The coefficient predicts that 2-core should sustain well past 80k msg/s and not saturate until well above 160k. We ran 2-core next.
 
-The 2-core sweep:
+| Rate       | p99     | Verdict                                          |
+|------------|---------|--------------------------------------------------|
+| 80k msg/s  | 850 ms  | Comfortable                                      |
+| 160k msg/s | 720 ms  | Sustaining — not yet saturated                   |
 
-| Rate       | p99        | Verdict                               |
-|------------|------------|---------------------------------------|
-| 40k msg/s  | 626 ms     | Comfortable                           |
-| 80k msg/s  | 1,660 ms   | Elevated — right at predicted ceiling |
-| 160k msg/s | 175,277 ms | Catastrophic                          |
-
-Held. The ceiling is real, linear, and predictable — which is exactly what you want from a sizing model.
+At 160k across 10 partitions, each partition carries 16k msg/s — well within the budget of a single Netty thread. The 2-core saturation point sits above 160k; the model is consistent.
 
 Setting `requests` equal to `limits` makes this practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. Fix the CPU budget; fix the ceiling.
 

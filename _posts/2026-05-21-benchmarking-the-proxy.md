@@ -25,12 +25,12 @@ We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchma
 
 ## Test environment
 
-No, we didn't run this on a laptop — it's a realistic deployment: a 6-node OpenShift cluster on Fyre, IBM's internal cloud platform — a controlled environment. Kroxylicious ran as a single proxy pod with a 1000m CPU limit.
+No, we didn't run this on a laptop — it's a realistic deployment: an 8-node OpenShift cluster on Fyre (5 workers, 3 masters), IBM's internal cloud platform — a controlled environment. Kroxylicious ran as a single proxy pod with a 1000m CPU limit.
 
 | Component | Details |
 |-----------|---------|
 | CPU | AMD EPYC-Rome, 2 GHz |
-| Cluster | 6-node OpenShift, RHCOS 9.6 |
+| Cluster | 8-node OpenShift (5 workers, 3 masters), RHCOS 9.6 |
 | Kafka | 3-broker Strimzi cluster, replication factor 3 |
 | Kroxylicious | 0.20.0, single proxy pod, 1000m CPU limit |
 | KMS | HashiCorp Vault (in-cluster) |
@@ -104,19 +104,25 @@ A rate-sweep is exactly what it sounds like: pick a starting rate, let OMB run l
 
 We started at 34k (right where the latency table started getting interesting) and stepped up in 5% increments. The results:
 
-- **Baseline**: sustained up to ~50,000–52,000 msg/s (the ceiling we observed on our test cluster)
-- **Encryption**: sustained up to **~37,200 msg/s**, then started intermittently saturating
-- **Cost: approximately 26% fewer messages per second per partition**
+- **Baseline**: sustained up to ~19,400 msg/s (the ceiling at RF=3 on our test cluster)
+- **Encryption**: sustained up to **~14,600 msg/s**, then started intermittently saturating
+- **Cost: approximately 25% fewer messages per second per partition**
 
-The transition wasn't a clean cliff edge — between 37,600 and 42,000 msg/s the proxy alternated between sustaining and saturating. That pattern is characteristic of running right at a limit: it's not that it suddenly falls over, it's that small fluctuations (GC pauses, scheduling jitter) are enough to tip it either way. Above ~39,000 msg/s, p99 latency regularly spiked above 1,700 ms. Stay below 37k and you're fine. Creep above it and you'll notice. The numbers are not absolute — they are just what we measured on our cluster; your mileage **will vary**.
+The transition wasn't a clean cliff edge — the proxy alternated between sustaining and saturating in a narrow band just above the ceiling. That pattern is characteristic of running right at a limit: it's not that it suddenly falls over, it's that small fluctuations (GC pauses, scheduling jitter) are enough to tip it either way. Stay below 14k and you're fine. Creep above it and you'll notice. The numbers are not absolute — they are just what we measured on our cluster; your mileage **will vary**.
 
 ### The ceiling scales with CPU budget
 
 The fact the proxy is low latency didn't surprise me, but this did — and it matters when we think about scaling. We maxed out a single connection, but that didn't mean we'd maxed out the proxy.
 
-Once we had the single-producer encryption ceiling at ~37k msg/s, the obvious question was: is that the limit for the whole proxy pod, or just for one connection? We ran the same test with 4 producers. With 4 connections the proxy sustained well past the single-producer ceiling — proxy CPU had headroom to spare, and Kafka's partition became the bottleneck first.
+The single-producer ceiling at RF=3 is Kafka-limited, not proxy-limited — the ISR replication round-trip caps single-partition throughput regardless of how much CPU the proxy has. The proxy still had meaningful headroom: we ran four producers and aggregate throughput climbed higher, while proxy CPU sat at 570m/1000m. The proxy wasn't the constraint.
 
-Going further: we swept the same workload at 1000m, 2000m, and 4000m CPU. The throughput ceiling scaled linearly with the CPU budget — 1000m at ~40k msg/s, 2000m at ~80k, 4000m at ~160k. The proxy isn't hitting a fixed architectural wall; it's hitting a CPU budget wall, and that wall moves when you give it more CPU.
+To find the proxy's real ceiling, you need a workload that doesn't hit the Kafka partition limit first: RF=1, spread across multiple topics. With that workload, the ceiling is squarely in the proxy — and it scales linearly with CPU. The mechanism: CPU limit controls `availableProcessors()`, which controls how many Netty event loop threads the proxy creates. More threads, more concurrent connections handled in parallel, higher aggregate ceiling.
+
+| CPU limit | Comfortable ceiling | Saturation point |
+|-----------|--------------------|--------------------|
+| 1000m | ~80k msg/s | ~126k msg/s |
+| 2000m | ~80k msg/s | above 160k msg/s |
+| 4000m | ~160k msg/s | above 321k msg/s |
 
 **The practical implication**: the throughput ceiling is not a fixed number — it's a function of the CPU you allocate. Set `requests` equal to `limits` in your pod spec; this makes the CPU budget deterministic and the ceiling predictable. The companion engineering post has the full story of how we found this, including the workload design choices needed to isolate proxy CPU from Kafka's own limits.
 
@@ -132,11 +138,13 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 
 1. **Throughput budget**: encryption imposes a CPU-driven throughput ceiling. As a planning formula:
 
-   > **`proxy CPU (millicores) = 20 × produce throughput (MB/s)`**
+   > **`proxy CPU (millicores) = 10 × total proxy throughput (MB/s)`**
+   >
+   > where *total* = produce MB/s + (each consumer group's consume MB/s independently)
 
-   Add ×1.3 headroom for GC pauses and burst. This assumes matched consumer load (1:1 produce:consume) and was measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your own hardware using the rate sweep.
+   For a single produce:consume pair this simplifies to `20 × produce MB/s`. Fan-out multiplies: 100 MB/s produce to 3 consumer groups = 100 + 300 = 400 MB/s total → 4,000m. Add ×1.3 headroom for GC pauses and burst. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware using the rate sweep.
 
-   Worked example: 100k msg/s at 1 KB = 100 MB/s produce → 100 × 20 = 2000m, plus headroom → ~2600m (~2.6 cores).
+   Worked example: 100k msg/s at 1 KB, 1 consumer group = 100 MB/s produce + 100 MB/s consume = 200 MB/s × 10 = 2,000m, plus headroom → ~2,600m (~2.6 cores).
 
 2. **Latency budget**: well below saturation, expect 0.2–3 ms additional average publish latency and 15–40 ms additional p99. The overhead scales with how hard you're pushing — give yourself headroom and you'll barely notice it.
 

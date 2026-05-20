@@ -5,14 +5,14 @@ permalink: /performance/
 toc: true
 ---
 
-This page summarises the measured performance overhead of Kroxylicious. Numbers come from [benchmarks run on real hardware](/blog/2026/05/21/benchmarking-the-proxy/) using [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark), an industry-standard Kafka performance tool. No, we didn't run this on a laptop — it's a realistic deployment: a 6-node OpenShift cluster on Fyre, IBM's internal cloud platform — a controlled environment.
+This page summarises the measured performance overhead of Kroxylicious. Numbers come from [benchmarks run on real hardware](/blog/2026/05/21/benchmarking-the-proxy/) using [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark), an industry-standard Kafka performance tool. No, we didn't run this on a laptop — it's a realistic deployment: an 8-node OpenShift cluster on Fyre (5 workers, 3 masters), IBM's internal cloud platform — a controlled environment.
 
 ## Test environment
 
 | Component | Details |
 |-----------|---------|
 | CPU | AMD EPYC-Rome, 2 GHz |
-| Cluster | 6-node OpenShift, RHCOS 9.6 |
+| Cluster | 8-node OpenShift (5 workers, 3 masters), RHCOS 9.6 |
 | Kafka | 3-broker Strimzi cluster, replication factor 3 |
 | Kroxylicious | 0.20.0, single proxy pod, 1000m CPU limit |
 | KMS | HashiCorp Vault (in-cluster) |
@@ -65,9 +65,9 @@ Encryption adds measurable but predictable overhead. The cost scales with produc
 
 | Scenario | Throughput ceiling (1 topic, 1 KB, 1 partition) |
 |----------|------------------------------------------------|
-| Baseline (direct Kafka) | ~50,000–52,000 msg/s |
-| Encryption (proxy + AES-256-GCM) | ~37,200 msg/s |
-| **Cost** | **~26% fewer messages per second per partition** |
+| Baseline (direct Kafka) | ~19,400 msg/s |
+| Encryption (proxy + AES-256-GCM) | ~14,600 msg/s |
+| **Cost** | **~25% fewer messages per second per partition** |
 
 ---
 
@@ -79,7 +79,7 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 
 **With record encryption:**
 
-- **Throughput**: use `proxy CPU (millicores) = 20 × produce throughput (MB/s)` as a planning formula, then add ×1.3 headroom. Assumes matched consumer load and AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware. Validated at 1000m, 2000m, and 4000m. Example: 100k msg/s at 1 KB = 100 MB/s produce → 2000m + headroom → ~2600m.
+- **Throughput**: use `CPU (mc) = 10 × total proxy throughput (MB/s)` where total = produce MB/s + each consumer group's consume MB/s. For 1:1 produce:consume this simplifies to `20 × produce MB/s`. Add ×1.3 headroom. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware. Validated at 1000m, 2000m, and 4000m. Example: 100k msg/s at 1 KB, 1 consumer group = 200 MB/s total → 2000m + headroom → ~2600m.
 - **Latency**: expect 0.2–3 ms additional average publish latency and 15–40 ms additional p99, scaling with how close to saturation you operate
 - **Scaling**: set `requests` equal to `limits` in your pod spec to make the CPU budget — and therefore the throughput ceiling — deterministic. Increase the CPU limit to raise throughput; add proxy pods for redundancy.
 - **KMS**: DEK caching means the KMS is not on the hot path. In testing, each benchmark run triggered only 5–19 DEK generation calls — the KMS is not a bottleneck
