@@ -9,12 +9,16 @@ categories: benchmarking performance
 
 Every good benchmarking story starts with a hunch. Mine was that Kroxylicious is cheap to run — I'd stake my career on it, in fact — but it turns out that "trust me, I wrote it" is not a widely accepted unit of measurement. People want proof. Sensibly.
 
-There's a practical question underneath the hunch too. The most common thing operators ask us is some variation of: "How many cores does the proxy need?" Which is really just "is this thing going to slow down my Kafka?" in a polite engineering hat. We'd been giving the classic answer: "it depends on your workload and traffic patterns, so you'll need to test in your environment." Which is true. And also deeply unsatisfying for everyone involved, including us.
+There's a practical question underneath the hunch too. The most common thing opevators ask us is some variation of: "How many cores does the proxy need?" Which is really just "is this thing going to slow down my Kafka?" in a polite engineering hat. We'd been giving the classic answer: "it depends on your workload and traffic patterns, so you'll need to test in your environment." Which is true. And also deeply unsatisfying for everyone involved, including us.
 
 So we stopped saying "it depends", and got off the fence: we built something you can run **yourselves** on your own infrastructure with your own workload, and measured it. Here are some representative numbers from ours.
 
 <!-- FIXME: verify all numbers against final benchmark run before publish -->
-**TL;DR**: A passthrough Kroxylicious proxy adds ~0.2 ms to average publish latency with no throughput impact. Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates. The throughput ceiling scales linearly with CPU: budget 10 millicores per MB/s of total proxy traffic. The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload.
+**TL;DR**:
+- A passthrough proxy adds ~0.2 ms to average publish latency with no throughput impact
+- Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates
+- The throughput ceiling scales linearly with CPU: budget 10 millicores per MB/s of total proxy traffic
+- The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload
 
 ## What we measured
 
@@ -76,7 +80,7 @@ What did I take away from this entirely unsurprising result? Not much, honestly 
 
 The overhead holding across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. Topics don't contend for shared resources: throughput scales linearly across them, and the connection sweep validates it.
 
-The end-to-end p99 figure is dominated by Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
+The end-to-end p99 figure is likely dominated by Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
 
 ---
 
@@ -135,9 +139,9 @@ To find the proxy's real ceiling, you need a workload that doesn't hit the Kafka
 
 Numbers without guidance aren't very useful, so here's how to translate these results into pod specs.
 
-**Passthrough proxy**: size your Kafka cluster as you normally would. The proxy won't be the bottleneck — but if you want to verify that on your own hardware, the rate sweep is exactly the tool for it. Run the baseline and passthrough scenarios back-to-back and you'll have your own numbers.
+**Passthrough proxy**: size your Kafka cluster as you normally would. The proxy won't be the bottleneck — but if you want to verify that on your own hardware, the rate sweep — which steps the producer rate up incrementally until the system can't keep up — is exactly the tool for it. Run the baseline and passthrough scenarios back-to-back and you'll have your own numbers.
 
-**With record encryption:**
+**With filters (record encryption is the representative example here):**
 
 1. **Throughput budget**: encryption imposes a CPU-driven throughput ceiling. As a planning formula:
 
