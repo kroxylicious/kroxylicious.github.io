@@ -150,6 +150,12 @@ Measured: 9.7 mc per MB/s of total proxy traffic (±6.6 stdev, n=4 non-saturated
 → for 1:1 produce:consume at 1 KB: 20 mc per MB/s of produce throughput
 ```
 
+I was proudly showing off some early numbers — baseline vs proxy, looking good — when one of the computer science PhDs on the team asked, "is the difference real?" Best answer I could come up with at the time: "Good question." So I went and added statistical significance testing.
+
+`check-significance.sh` runs Mann-Whitney U at p < 0.05, comparing per-window p99 latency samples between baseline and candidate at each rate step. OMB slices the test phase into time windows and records a p99 per window — ~30 samples per 5-minute run — so MWU has enough data to distinguish real signal from noise. It's not perfect: those per-window samples aren't entirely uncorrelated — a GC pause can drag multiple adjacent windows — but it gives a principled answer to "is this overhead real, or am I chasing noise?"
+
+The coefficient is a different matter. It's derived from JFR CPU data across n=4 non-saturated probes; the ±6.6 stdev reflects measurement noise, not a tested confidence interval. It holds at 1, 2, and 4 cores — the linear scaling claim is consistent — but its validity across message sizes or workload shapes is untested.
+
 The mechanism: `cpu: 1000m → availableProcessors()=1 → one Netty event loop thread`. At 4000m that's four threads, each handling its share of connections in parallel. If the ceiling scales linearly with thread count, a 4-core pod should handle roughly four times as much. We ran it.
 
 | CPU limit | Rate | p99 | Verdict |
