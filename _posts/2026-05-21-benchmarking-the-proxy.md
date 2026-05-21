@@ -7,11 +7,14 @@ author_url: "https://github.com/SamBarker"
 categories: benchmarking performance
 ---
 
-All good benchmarking stories start with a hunch. Mine was that Kroxylicious is cheap to run — I'd stake my career on it, in fact — but it turns out that "trust me, I wrote it" is not a widely accepted unit of measurement. People want proof. Sensibly.
+Every good benchmarking story starts with a hunch. Mine was that Kroxylicious is cheap to run — I'd stake my career on it, in fact — but it turns out that "trust me, I wrote it" is not a widely accepted unit of measurement. People want proof. Sensibly.
 
 There's a practical question underneath the hunch too. The most common thing operators ask us is some variation of: "How many cores does the proxy need?" Which is really just "is this thing going to slow down my Kafka?" in a polite engineering hat. We'd been giving the classic answer: "it depends on your workload and traffic patterns, so you'll need to test in your environment." Which is true. And also deeply unsatisfying for everyone involved, including us.
 
 So we stopped saying "it depends", and got off the fence: we built something you can run **yourselves** on your own infrastructure with your own workload, and measured it. Here are some representative numbers from ours.
+
+<!-- FIXME: verify all numbers against final benchmark run before publish -->
+**TL;DR**: A passthrough Kroxylicious proxy adds ~0.2 ms to average publish latency with no throughput impact. Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates. The throughput ceiling scales linearly with CPU: budget 10 millicores per MB/s of total proxy traffic. The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload.
 
 ## What we measured
 
