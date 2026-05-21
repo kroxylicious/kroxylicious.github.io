@@ -10,3 +10,6 @@ _config-overrides.yml
 .ruby-version
 .DS_Store
 .op/
+_data/documentation/*-SNAPSHOT.yaml
+_data/release/*-SNAPSHOT.yaml
+download/*-SNAPSHOT/
