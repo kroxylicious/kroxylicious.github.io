@@ -5,3 +5,6 @@ releases:
   - version: 0.22.0
     plannedDate: July 3, 2026
     milestoneUrl: https://github.com/kroxylicious/kroxylicious/milestone/10
+  - version: 0.23.0
+    plannedDate: August 20, 2026
+    milestoneUrl: https://github.com/kroxylicious/kroxylicious/milestone/28
