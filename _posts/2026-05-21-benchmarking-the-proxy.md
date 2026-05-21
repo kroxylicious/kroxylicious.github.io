@@ -24,7 +24,7 @@ We ran three scenarios against the same Apache Kafka® cluster on the same hardw
 - **Passthrough proxy** — traffic routed through Kroxylicious with no filter chain configured
 - **Record encryption** — traffic through Kroxylicious with AES-256-GCM record encryption enabled, using HashiCorp Vault as the KMS
 
-We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) rather than Kafka's own `kafka-producer-perf-test`. OMB is an industry-standard tool that coordinates producers and consumers together, measures end-to-end latency (not just publish latency), and produces structured JSON that makes comparison straightforward. More on why we built a whole harness around it in the [companion engineering post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}).
+We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) rather than Kafka's own `kafka-producer-perf-test`. OMB is an industry-standard tool that coordinates producers and consumers together, measures end-to-end latency (not just publish latency), and produces structured JSON that makes comparison straightforward. More on why we built a whole harness around it in a companion engineering post.
 
 ## Test environment
 
@@ -162,9 +162,9 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 These are real results from real hardware, but they don't tell a story for your workload. A few things worth knowing before you put these numbers in a slide deck:
 
 - **Message size**: all results use 1 KB messages. The coefficient is message-size-dependent — encryption overhead as a percentage is likely lower for larger messages.
-- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — the [companion post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}) explains why that matters.
+- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — a companion post explains why that matters.
 - **Horizontal scaling**: linear scaling has been validated across CPU allocations on a single pod; multi-pod horizontal scaling hasn't been measured but is expected to follow the same coefficient.
 
-For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in the [companion post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}).
+For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in a companion post.
 
 The full benchmark suite, quickstart guide, and sizing reference are in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious).
