@@ -1,10 +1,19 @@
-# A proof of concept for Routing
+---
+layout: post
+title: "A proof of concept for Routing"
+date: 2026-05-21 00:00:00 +0000
+author: "Tom Bentley"
+author_url: "https://github.com/tombentley"
+# noinspection YAMLSchemaValidation
+categories: blog kroxylicious-proxy
+tags: [ "kroxylicious-proxy" ]
+---
 
 **tl;dr**: We've built a proof-of-concept (POC) routing capability that allows Kafka clients to produce and consume records to topics in multiple clusters. In other words, clients don't need to know where their topics live.
 
 Here's a demo:
 
-<Video>
+**TODO Video**
 
 You can run this for yourself; check out the [routing POC branch](https://github.com/tombentley/kproxy/tree/routing/) on GitHub.
 
@@ -64,7 +73,7 @@ Nor can we guarantee that we'll eventually be able to handle the full gamut of t
 
 ## So why all the hullabaloo?
 
-We think this is pretty cool, and we wanted to let people know that we're actively working on this. And being open source, we wanted to remind people that they can [join us](https://kroxylicious.io/join-us/) and get involved in any of the following ways:
+We think this is pretty cool, and we wanted to let people know that we're actively working on this. And being open source, we wanted to remind people that they can [join us](/join-us/) and get involved in any of the following ways:
 
 * Tell us how you'd use the Router API: We have some ideas for other routers we want to build, but maybe you have an idea that only makes sense in your company. That's OK — not every router needs to be general-purpose. Kroxylicious is built for exactly that kind of bespoke use case.
 * Tell us how you'd use a topic router. What Kafka features does it need to support? What functionality does it need for operators?
