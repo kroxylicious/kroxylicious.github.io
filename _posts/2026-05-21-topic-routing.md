@@ -10,16 +10,18 @@ tags: [ "kroxylicious-proxy" ]
 ---
 
 **tl;dr**: We've built a proof-of-concept (POC) routing capability that allows Kafka clients to produce and consume records to topics in multiple clusters. In other words, clients don't need to know where their topics live.
+This is roughly the Kafka equivalent of what is often called _Data Virtualization_ for databases.
 
 Here's a demo:
 
-**TODO Video**
+<iframe width="962" height="541" src="https://www.youtube.com/embed/_Ym8ANsftI0" title="Routing Proof of Concept Demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-You can run this for yourself; check out the [routing POC branch](https://github.com/tombentley/kproxy/tree/routing/) on GitHub.
+But feel free to run this for yourself by checking out the [routing POC branch](https://github.com/tombentley/kproxy/tree/routing/) on GitHub.
+In instructions are in [`demo/topic-router/README.md`](https://github.com/tombentley/kproxy/tree/routing/demo/topic-router#readme).
 
 ## What's the backstory?
 
-Nearly a year ago, I had an idea which I wrote up in what's become known as [The Routing Proposal](https://github.com/tombentley/kroxylicious-design/blob/8378acd7ef4c194cce5b60419bf92c8e8c7d8ea3/proposals/004-routing-api.md).
+Nearly a year ago, I had an idea which I wrote up in what's become known as [The Routing Proposal](https://github.com/kroxylicious/design/pull/70/changes) PR.
 (You know something might be important if it gets initial caps).
 While a few people commented and it felt like a good concept, it was also a long way from the reality of the proxy codebase at that time. 
 And anyway, it's not as if this is the only good idea that we had, or the only thing we had to work on.
@@ -30,7 +32,7 @@ However, for this particular idea it was hard to forget about it for long. Engin
 Some of our amazing contributors started the process with some initial refactorings. 
 Now, nearly a year later, we've found the time (and, I admit the tokens) to throw at building a proof of concept.
 
-Right now the proof of concept (POC) branch is an interleaved mishmash of commits in each of these three areas. However, the take-away is that we believe we have an API which is capable of supporting a non-trivial router.
+Right now the proof of concept branch is an interleaved mishmash of commits in each of these three areas. However, the take-away is that we believe we have an API which is capable of supporting a non-trivial router.
 
 The router we've implemented allows clients to talk to multiple clusters. 
 
@@ -59,11 +61,9 @@ This is at a POC stage. This blog post is announcing that we're in the middle ph
 
 The big picture of what we've done breaks down like this:
 
-1. Preparatory internal refactoring to break apart a single state machine into two: One state machine for the client-proxy interaction, and a separate one for the proxy-broker interaction.
+* The work to add the Router API, and implement the runtime support for it.
 
-2. The work to add the Router API, and implement the runtime support for it.
-
-3. The work to implement the Topic Router plugin using that API.
+* The work to implement the Topic Router plugin using that API.
 
 This is where the Kroxylicious community comes in  - turning those three big pieces into something that's actually usable and supportable.
 
