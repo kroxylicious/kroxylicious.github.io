@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "How hard can it be??? Maxing out a Kroxylicious instance"
-date:   2026-05-28 00:00:00 +0000
+date:   2026-06-02 00:00:00 +0000
 author: "Sam Barker"
 author_url: "https://github.com/SamBarker"
 categories: benchmarking performance engineering
@@ -11,7 +11,7 @@ How hard can it be? We started with a laptop, a codebase, and a lot of confidenc
 
 Harder than expected. More interesting too.
 
-We gave everyone [the numbers]({% post_url 2026-05-21-benchmarking-the-proxy %}) in a bland, but slide worthy way, already. This one is the engineering story: how we built the harness, what the flamegraphs actually show, the workload design choices that changed the answers, and the bugs we found in our own tooling.
+We gave everyone [the numbers]({% post_url 2026-05-26-benchmarking-the-proxy %}) in a bland, but slide worthy way, already. This one is the engineering story: how we built the harness, what the flamegraphs actually show, the workload design choices that changed the answers, and the bugs we found in our own tooling.
 
 ## Why not Kafka's own tools?
 

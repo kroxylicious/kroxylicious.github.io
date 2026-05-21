@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Does my proxy look big in this cluster?"
-date:   2026-05-21 00:00:00 +0000
+date:   2026-05-26 00:00:00 +0000
 author: "Sam Barker"
 author_url: "https://github.com/SamBarker"
 categories: benchmarking performance
