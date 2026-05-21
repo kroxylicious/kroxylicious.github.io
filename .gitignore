@@ -8,3 +8,5 @@ vendor
 */bootstrap/
 _config-overrides.yml
 .ruby-version
+.DS_Store
+.op/
