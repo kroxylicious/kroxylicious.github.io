@@ -48,6 +48,8 @@ One important caveat: this Kafka cluster is deliberately untuned. We're not tryi
 
 Good news first. The proxy itself — with no filter chain, just routing traffic — adds almost nothing.
 
+A quick note on percentiles for anyone not steeped in performance benchmarking: p99 latency is the value that 99% of requests complete within — meaning 1 in 100 requests takes longer. Averages flatter; the p99 is what your slowest clients actually experience, and it's usually the number that matters.
+
 **10 topics, 1 KB messages (5,000 msg/s per topic):**
 
 | Metric | Baseline | Proxy | Delta |
@@ -70,9 +72,9 @@ Good news first. The proxy itself — with no filter chain, just routing traffic
 
 **The headline: ~0.2 ms additional average publish latency. Throughput is unaffected.**
 
-What did I take away from this entirely unsurprising result? Not much, honestly — without filters the proxy boils the latency-sensitive path down to little more than a couple of hops through the TCP stack. We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7.
+What did I take away from this entirely unsurprising result? Not much, honestly — without filters the proxy boils the latency-sensitive path down to little more than a couple of hops through the TCP stack. We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7. Most proxies operate on Kafka at Layer 4 — they shuffle bytes without ever understanding what those bytes mean. Kroxylicious works at Layer 7, parsing every Kafka message, yet still adds only 0.2 ms. That's the design working.
 
-The overhead holding across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. A Kafka broker juggles disk I/O, partition leaders, and replication across everything it manages; the proxy treats each connection independently. Topics don't contend for shared resources: throughput scales linearly across them, and the connection sweep validates it.
+The overhead holding across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. Topics don't contend for shared resources: throughput scales linearly across them, and the connection sweep validates it.
 
 The end-to-end p99 figure is dominated by Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
 
@@ -83,8 +85,6 @@ The end-to-end p99 figure is dominated by Kafka consumer fetch timeouts, as it s
 Ok, so let's make the proxy smarter — make it do something people actually care about! [Record encryption](https://kroxylicious.io/documentation/0.20.0/html/record-encryption-guide) uses AES-256-GCM to encrypt each record passing through the proxy. AES-256-GCM is going to ask the CPU to work relatively hard on its own, but it's also going to push the proxy to understand each record it receives, unpack it, copy it, encrypt it, and re-pack it before sending it on to the broker. With all that work going on we expect some impact to latency and throughput. To answer our original question we need to identify two things: the latency when everything is going smoothly, and the reduction in throughput all this work causes. Monitoring latency once we go past the throughput inflection point isn't very helpful — it's dominated by the throughput limits and their erratic impacts on the latency of individual requests (a big hello to batching and buffering effects).
 
 ### Latency at sub-saturation rates
-
-A quick note on percentiles for anyone not steeped in performance benchmarking: p99 latency is the value that 99% of requests complete within — meaning 1 in 100 requests takes longer. Averages flatter; the p99 is what your slowest clients actually experience, and it's usually the number that matters.
 
 So we know encryption is doing a lot of work, but to find out the real impact we need to compare it to a plain Kafka cluster (and yes, people do run Kroxylicious without filters — TLS termination, stable client endpoints, virtual clusters — but that's a different post). The table below tells us that above a certain inflection point the numbers get really, really noisy — especially in the p99 range.
 
@@ -162,7 +162,7 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 These are real results from real hardware, but they don't tell a story for your workload. A few things worth knowing before you put these numbers in a slide deck:
 
 - **Message size**: all results use 1 KB messages. The coefficient is message-size-dependent — encryption overhead as a percentage is likely lower for larger messages.
-- **Replication factor**: the 1-topic rate sweep ran at RF=3. At that replication factor, Kafka's ISR replication traffic creates a per-partition ceiling that sits close to where proxy CPU also saturates — the two limits are entangled in those results. The sizing coefficient was derived from RF=1 multi-topic workloads specifically to isolate proxy CPU. The [companion engineering post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}) has that detail.
+- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — the [companion post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}) explains why that matters.
 - **Horizontal scaling**: linear scaling has been validated across CPU allocations on a single pod; multi-pod horizontal scaling hasn't been measured but is expected to follow the same coefficient.
 
 For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in the [companion post]({% post_url 2026-05-28-benchmarking-the-proxy-under-the-hood %}).
