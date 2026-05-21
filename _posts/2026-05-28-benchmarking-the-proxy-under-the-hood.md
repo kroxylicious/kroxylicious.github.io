@@ -24,7 +24,7 @@ Kafka ships with `kafka-producer-perf-test` and `kafka-consumer-perf-test`. We'd
 
 And critically, it's never heard of Kroxylicious... You have though, you're here!
 
-[OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) is a better fit. It's an industry-standard tool used by Confluent, the Pulsar team, and others for their published performance comparisons - so who am I to argue? OMB coordinates producers and consumers across separate worker pods, runs a configurable warmup phase before taking measurements, takes latency tracking seriously — correcting for coordinated omission, and outputs structured JSON that's straightforward to process programmatically. What's not to like? 
+[OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) is a better fit. It's an industry-standard tool used by Confluent, the Pulsar team, and others for their published performance comparisons — so who am I to argue? OMB coordinates producers and consumers across separate worker pods, runs a configurable warmup phase before taking measurements, takes latency tracking seriously — correcting for coordinated omission, and outputs structured JSON that's straightforward to process programmatically. What's not to like? 
 
 Using OMB also means our methodology is directly comparable to other published Kafka benchmarks. The numbers aren't comparable, of course — it's not the same hardware, network conditions or phase of the moon. 
 
@@ -267,6 +267,8 @@ Spotting these required noticing that two different probe flamegraphs were pixel
 We're an open source project — we share our workings. The raw OMB result JSON, JFR recordings, and flamegraph files that back this post are available [TODO: link to raw data]. If you want to verify the numbers, reproduce the analysis, or compare against your own runs, everything you need is there.
 
 If you want to run it against your own cluster, everything is in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious). See `QUICKSTART.md` for step-by-step instructions. You'll need a Kubernetes or OpenShift cluster, the Kroxylicious operator installed, and Helm 3. Minikube works for local runs — the quickstart covers recommended CPU and memory settings.
+
+I got so bored re-evaluating everything as I explored anti-affinity that I even scripted the whole exercise for this post — but brace yourself, it has about a 18 hour runtime. tmux and a control node or jump host are your friends here. The [full blog post script](https://gist.github.com/SamBarker/19fd06ac9a8614cc6be89b76a90e006a) is available as a gist if you want to reproduce the exact run.
 
 ```bash
 # Run a baseline vs encryption comparison
