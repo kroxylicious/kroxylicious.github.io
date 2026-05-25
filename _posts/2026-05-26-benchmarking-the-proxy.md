@@ -13,11 +13,10 @@ There's a practical question underneath the hunch too. The most common thing ope
 
 So we stopped saying "it depends", and got off the fence: we built something you can run **yourselves** on your own infrastructure with your own workload, and measured it. Here are some representative numbers from ours.
 
-<!-- FIXME: verify all numbers against final benchmark run before publish -->
 **TL;DR**:
-- A passthrough proxy adds ~0.2 ms to average publish latency with no throughput impact
+- A passthrough proxy adds negligible overhead: publish latency impact is below measurement noise, E2E adds ~2 ms at moderate topic rates, throughput unaffected
 - Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates
-- The throughput ceiling scales linearly with CPU: budget 10 millicores per MB/s of total proxy traffic
+- The throughput ceiling scales linearly with CPU: budget ~35 mc per MB/s of total proxy traffic (conservative; the companion post has the full sizing formula)
 - The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload
 
 ## What we measured
@@ -37,10 +36,10 @@ No, we didn't run this on a laptop — it's a realistic deployment: an 8-node Op
 | Component | Details |
 |-----------|---------|
 | CPU | AMD EPYC-Rome, 2 GHz |
-| Cluster | 8-node OpenShift (5 workers, 3 masters), RHCOS 9.6 |
-| Kafka | 3-broker Strimzi cluster, replication factor 3 |
+| Cluster | 8-node OpenShift 4.21 (5 workers, 3 masters), RHCOS 9.6 |
+| Kafka | 3-broker Strimzi 0.51.0 (Kafka 3.9) cluster, replication factor 3 |
 | Kroxylicious | 0.20.0, single proxy pod, 1000m CPU limit |
-| KMS | HashiCorp Vault (in-cluster) |
+| KMS | HashiCorp Vault 2.0.0 (in-cluster) |
 
 The primary workload used 1 topic, 1 partition, 1 KB messages. We chose single-partition deliberately: it concentrates all traffic on one broker, so you hit ceilings quickly and any proxy overhead is easy to isolate. We also ran 10-topic and 100-topic workloads to make sure the results hold when load is spread more realistically across brokers.
 
@@ -50,37 +49,43 @@ One important caveat: this Kafka cluster is deliberately untuned. We're not tryi
 
 ## The passthrough proxy: negligible overhead
 
-Good news first. The proxy itself — with no filter chain, just routing traffic — adds almost nothing.
+Good news first. The proxy itself — with no filter chain, just routing traffic — adds almost nothing. The tables below show all three scenarios side by side.
 
 A quick note on percentiles for anyone not steeped in performance benchmarking: p99 latency is the value that 99% of requests complete within — meaning 1 in 100 requests takes longer. Averages flatter; the p99 is what your slowest clients actually experience, and it's usually the number that matters.
 
-**10 topics, 1 KB messages (5,000 msg/s per topic):**
+**10 topics, 1 KB messages (~5,000 msg/s per topic):**
 
-| Metric | Baseline | Proxy | Delta |
-|--------|----------|-------|-------|
-| Publish latency avg | 2.62 ms | 2.79 ms | +0.17 ms (+7%) |
-| Publish latency p99 | 14.09 ms | 15.17 ms | +1.08 ms (+8%) |
-| E2E latency avg | 94.87 ms | 95.34 ms | +0.47 ms (+0.5%) |
-| E2E latency p99 | 185.00 ms | 186.00 ms | +1.00 ms (+0.5%) |
-| Publish rate | 5,002 msg/s | 5,002 msg/s | 0 |
+| Metric | Baseline | Proxy (no filters) | Encryption |
+|--------|----------|--------------------|------------|
+| Publish latency avg | 4.3 ms | 4.5 ms (+0.2 ms) | 14.3 ms (+10.0 ms) |
+| Publish latency p99 | 22.4 ms | 19.6 ms (−2.7 ms) | 36.3 ms (+13.9 ms) |
+| E2E latency avg | 96.9 ms | 99.0 ms (+2.1 ms) | 97.4 ms (+0.5 ms) |
+| E2E latency p99 | 193 ms | 190 ms (−3 ms) | 182 ms (−11 ms) |
+| Throughput | 5,000 msg/s | 5,000 msg/s | 5,000 msg/s |
 
-**100 topics, 1 KB messages (500 msg/s per topic):**
+*Negative deltas for proxy-no-filters publish latency are within measurement noise — they indicate the proxy is indistinguishable from baseline, not that it improves latency.*
 
-| Metric | Baseline | Proxy | Delta |
-|--------|----------|-------|-------|
-| Publish latency avg | 2.66 ms | 2.82 ms | +0.16 ms (+6%) |
-| Publish latency p99 | 5.54 ms | 6.07 ms | +0.53 ms (+10%) |
-| E2E latency avg | 253.16 ms | 253.76 ms | +0.60 ms (+0.2%) |
-| E2E latency p99 | 499.00 ms | 499.00 ms | 0 |
-| Publish rate | 500 msg/s | 500 msg/s | 0 |
+The passthrough proxy is not adding measurable per-record overhead at this rate. E2E average overhead is +2.1 ms (p<0.001), but practically negligible for any sizing decision.
 
-**The headline: ~0.2 ms additional average publish latency. Throughput is unaffected.**
+Encryption adds significant publish latency (+10 ms avg, +13.9 ms p99, p<0.001), as you'd expect for per-record AES-256-GCM. The E2E result is counterintuitive: both proxy scenarios have *lower* E2E p99 than direct Kafka (−3 ms and −11 ms respectively, both p<0.001). E2E latency includes consumer behaviour — fetch timeouts, batch accumulation, scheduling jitter. At 5k msg/s per topic, the proxy's processing of each record slightly regularises delivery timing, damping the consumer-side spikes that drive tail latency in direct Kafka.
 
-What did I take away from this entirely unsurprising result? Not much, honestly — without filters the proxy boils the latency-sensitive path down to little more than a couple of hops through the TCP stack. We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7. Most proxies operate on Kafka at Layer 4 — they shuffle bytes without ever understanding what those bytes mean. Kroxylicious works at Layer 7, parsing every Kafka message, yet still adds only 0.2 ms. That's the design working.
+**100 topics, 1 KB messages (~500 msg/s per topic):**
 
-The overhead holding across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. Topics don't contend for shared resources: throughput scales linearly across them, and the connection sweep validates it.
+| Metric | Baseline | Proxy (no filters) | Encryption |
+|--------|----------|--------------------|------------|
+| Publish latency avg | 2.9 ms | 4.1 ms (+1.2 ms) | 4.7 ms (+1.8 ms) |
+| Publish latency p99 | 6.4 ms | 8.1 ms (+1.7 ms) | 12.1 ms (+5.7 ms) |
+| E2E latency avg | 256.7 ms | 254.6 ms (−2.1 ms) | 256.3 ms (−0.4 ms) |
+| E2E latency p99 | 502 ms | 501 ms (−1 ms) | 502 ms (≈0) |
+| Throughput | 500 msg/s | 500 msg/s | 500 msg/s |
 
-The end-to-end p99 figure is likely dominated by Kafka consumer fetch timeouts, as it should be. That said, it is reassuring to have a sub-ms impact on the p99.
+Publish latency overhead is statistically significant at 100 topics (proxy-no-filters p99 +27%, encryption p99 +90%, both p<0.001). But publish latency at 500 msg/s per topic is a small fraction of E2E, and the E2E picture is what operators care about: average and p99 differences are within measurement noise.
+
+**The headline: negligible passthrough overhead — throughput unaffected across all three scenarios.**
+
+What did I take away from this? We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7. Most proxies operate on Kafka at Layer 4 — they shuffle bytes without ever understanding what those bytes mean. Kroxylicious works at Layer 7, parsing every Kafka message, yet still adds only a few milliseconds at the E2E average. That's the design working.
+
+The overhead staying flat across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. Topics don't contend for shared resources: throughput scales linearly across them, and this data validates it.
 
 ---
 
@@ -92,24 +97,24 @@ Ok, so let's make the proxy smarter — make it do something people actually car
 
 So we know encryption is doing a lot of work, but to find out the real impact we need to compare it to a plain Kafka cluster (and yes, people do run Kroxylicious without filters — TLS termination, stable client endpoints, virtual clusters — but that's a different post). The table below tells us that above a certain inflection point the numbers get really, really noisy — especially in the p99 range.
 
-**1 topic, 1 KB messages — baseline vs encryption:**
+**1 topic, 1 KB messages — baseline vs encryption (selected rates from rate sweep):**
 
 | Rate | Metric | Baseline | Encryption | Delta |
 |------|--------|----------|------------|-------|
-| 34,000 msg/s | Publish avg | 8.00 ms | 8.19 ms | +0.19 ms (+2%) |
-| 34,000 msg/s | Publish p99 | 48.65 ms | 64.01 ms | +15.35 ms (+32%) |
-| 36,000 msg/s | Publish avg | 9.38 ms | 10.46 ms | +1.08 ms (+12%) |
-| 36,000 msg/s | Publish p99 | 63.92 ms | 88.98 ms | +25.06 ms (+39%) |
-| 37,200 msg/s | Publish avg | 9.12 ms | 12.19 ms | +3.07 ms (+34%) |
-| 37,200 msg/s | Publish p99 | 74.88 ms | 113.15 ms | +38.27 ms (+51%) |
+| 14,300 msg/s | Publish avg | 5.4 ms | 7.6 ms | +2.2 ms (+41%) |
+| 14,300 msg/s | Publish p99 | 16.3 ms | 19.2 ms | +2.9 ms (+18%) |
+| 17,100 msg/s | Publish avg | 6.3 ms | 8.9 ms | +2.6 ms (+41%) |
+| 17,100 msg/s | Publish p99 | 12.5 ms | 21.9 ms | +9.4 ms (+75%) |
+| 18,500 msg/s | Publish avg | 10.5 ms | 13.7 ms | +3.2 ms (+30%) |
+| 18,500 msg/s | Publish p99 | 22.0 ms | 106.0 ms | +84.0 ms (+382%) |
 
-So we know that somewhere above 34k we're hitting a limit. Time to hunt out exactly where — enter the rate-sweep.
+The table shows encryption's p99 spiking sharply at 18,500 msg/s — but that ~18k figure is roughly where the forwarding proxy itself saturates (close to the bare Kafka baseline of ~19,400). Encryption gives out earlier. The rate sweep finds exactly where.
 
 ### Throughput ceiling
 
-A rate-sweep is exactly what it sounds like: pick a starting rate, let OMB run long enough to get a stable measurement, then step up by a fixed percentage and repeat until the system can't keep up. We defined "can't keep up" as the sustained throughput dropping by more than 5% below the target rate — at that point, something has saturated.
+A rate-sweep is exactly what it sounds like: pick a starting rate, let OMB run long enough to get a stable measurement, then step up by a fixed increment and repeat until the system can't keep up. We defined "can't keep up" as the sustained throughput dropping by more than 5% below the target rate — at that point, something has saturated.
 
-We started at 34k (right where the latency table started getting interesting) and stepped up in 5% increments. The results:
+We stepped up from 8k to 22k msg/s in 700 msg/s increments, looking for where throughput drops more than 5% below target. The results:
 
 - **Baseline**: sustained up to ~19,400 msg/s (the ceiling at RF=3 on our test cluster)
 - **Encryption**: sustained up to **~14,600 msg/s**, then started intermittently saturating
@@ -145,15 +150,15 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 
 1. **Throughput budget**: encryption imposes a CPU-driven throughput ceiling. As a planning formula:
 
-   > **`proxy CPU (millicores) = 10 × total proxy throughput (MB/s)`**
+   > **`proxy CPU (millicores) = 35 × total proxy throughput (MB/s)`**
    >
    > where *total* = produce MB/s + (each consumer group's consume MB/s independently)
 
-   For a single produce:consume pair this simplifies to `20 × produce MB/s`. Fan-out multiplies: 100 MB/s produce to 3 consumer groups = 100 + 300 = 400 MB/s total → 4,000m. Add ×1.3 headroom for GC pauses and burst. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware using the rate sweep.
+   This is a conservative estimate derived from single-partition workloads; the companion post has the full derivation and a lower bound for multi-topic workloads. For a single produce:consume pair this simplifies to `70 × produce MB/s`. Fan-out multiplies: 100 MB/s produce to 3 consumer groups = 100 + 300 = 400 MB/s total → 14,000m. Add ×1.3 headroom for GC pauses and burst. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware using the rate sweep.
 
-   Worked example: 100k msg/s at 1 KB, 1 consumer group = 100 MB/s produce + 100 MB/s consume = 200 MB/s × 10 = 2,000m, plus headroom → ~2,600m (~2.6 cores).
+   Worked example: 100k msg/s at 1 KB, 1 consumer group = 100 MB/s produce + 100 MB/s consume = 200 MB/s × 35 = 7,000m, plus headroom → ~9,100m (~9 cores).
 
-2. **Latency budget**: well below saturation, expect 0.2–3 ms additional average publish latency and 15–40 ms additional p99. The overhead scales with how hard you're pushing — give yourself headroom and you'll barely notice it.
+2. **Latency budget**: well below saturation, expect 2–3 ms additional average publish latency and up to ~15 ms additional p99. The overhead scales with how hard you're pushing — give yourself headroom and you'll barely notice it.
 
 3. **Scaling**: set `requests` equal to `limits` in your pod spec — this makes the CPU budget deterministic, which makes the throughput ceiling predictable. To increase throughput, raise the CPU limit. For redundancy, add proxy pods.
 
