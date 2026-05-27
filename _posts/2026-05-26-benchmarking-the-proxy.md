@@ -16,7 +16,7 @@ So we stopped saying "it depends", and got off the fence: we built something you
 **TL;DR**:
 - A passthrough proxy adds negligible overhead: publish latency impact is below measurement noise, E2E adds ~2 ms at moderate topic rates, throughput unaffected
 - Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates
-- The throughput ceiling scales linearly with CPU: budget ~35 mc per MB/s of total proxy traffic (conservative; the companion post has the full sizing formula)
+- The throughput ceiling scales linearly with CPU: budget ~35 mc per MB/s of total proxy traffic (conservative; a companion post, coming soon, has the full sizing formula)
 - The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload
 
 ## What we measured
@@ -27,7 +27,7 @@ We ran three scenarios against the same Apache Kafka® cluster on the same hardw
 - **Passthrough proxy** — traffic routed through Kroxylicious with no filter chain configured
 - **Record encryption** — traffic through Kroxylicious with AES-256-GCM record encryption enabled, using HashiCorp Vault as the KMS
 
-We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) rather than Kafka's own `kafka-producer-perf-test`. OMB is an industry-standard tool that coordinates producers and consumers together, measures end-to-end latency (not just publish latency), and produces structured JSON that makes comparison straightforward. More on why we built a whole harness around it in a companion engineering post.
+We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchmark) rather than Kafka's own `kafka-producer-perf-test`. OMB is an industry-standard tool that coordinates producers and consumers together, measures end-to-end latency (not just publish latency), and produces structured JSON that makes comparison straightforward. More on why we built a whole harness around it in a companion engineering post, coming soon.
 
 ## Test environment
 
@@ -136,7 +136,7 @@ To find the proxy's real ceiling, you need a workload that doesn't hit the Kafka
 | 2000m | ~80k msg/s | above 160k msg/s |
 | 4000m | ~160k msg/s | above 321k msg/s |
 
-**The practical implication**: the throughput ceiling is not a fixed number — it's a function of the CPU you allocate. Set `requests` equal to `limits` in your pod spec; this makes the CPU budget deterministic and the ceiling predictable. The companion engineering post has the full story of how we found this, including the workload design choices needed to isolate proxy CPU from Kafka's own limits.
+**The practical implication**: the throughput ceiling is not a fixed number — it's a function of the CPU you allocate. Set `requests` equal to `limits` in your pod spec; this makes the CPU budget deterministic and the ceiling predictable. A companion engineering post, coming soon, has the full story of how we found this, including the workload design choices needed to isolate proxy CPU from Kafka's own limits.
 
 ---
 
@@ -154,7 +154,7 @@ Numbers without guidance aren't very useful, so here's how to translate these re
    >
    > where *total* = produce MB/s + (each consumer group's consume MB/s independently)
 
-   This is a conservative estimate derived from single-partition workloads; the companion post has the full derivation and a lower bound for multi-topic workloads. For a single produce:consume pair this simplifies to `70 × produce MB/s`. Fan-out multiplies: 100 MB/s produce to 3 consumer groups = 100 + 300 = 400 MB/s total → 14,000m. Add ×1.3 headroom for GC pauses and burst. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware using the rate sweep.
+   This is a conservative estimate derived from single-partition workloads; the companion post (coming soon) has the full derivation and a lower bound for multi-topic workloads. For a single produce:consume pair this simplifies to `70 × produce MB/s`. Fan-out multiplies: 100 MB/s produce to 3 consumer groups = 100 + 300 = 400 MB/s total → 14,000m. Add ×1.3 headroom for GC pauses and burst. Measured on AMD EPYC-Rome 2 GHz with AES-NI — calibrate on your hardware using the rate sweep.
 
    Worked example: 100k msg/s at 1 KB, 1 consumer group = 100 MB/s produce + 100 MB/s consume = 200 MB/s × 35 = 7,000m, plus headroom → ~9,100m (~9 cores).
 
@@ -171,9 +171,9 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 These are real results from real hardware, but they don't tell a story for your workload. A few things worth knowing before you put these numbers in a slide deck:
 
 - **Message size**: all results use 1 KB messages. The coefficient is message-size-dependent — encryption overhead as a percentage is likely lower for larger messages.
-- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — a companion post explains why that matters.
+- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — a companion post, coming soon, explains why that matters.
 - **Horizontal scaling**: linear scaling has been validated across CPU allocations on a single pod; multi-pod horizontal scaling hasn't been measured but is expected to follow the same coefficient.
 
-For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in a companion post.
+For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in a companion post, coming soon.
 
 The full benchmark suite, quickstart guide, and sizing reference are in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious).
