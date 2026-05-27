@@ -9,9 +9,9 @@ categories: benchmarking performance
 
 Every good benchmarking story starts with a hunch. Mine was that Kroxylicious is cheap to run — I'd stake my career on it, in fact — but it turns out that "trust me, I wrote it" is not a widely accepted unit of measurement. People want proof. Sensibly.
 
-There's a practical question underneath the hunch too. The most common thing operators ask us is some variation of: "How many cores does the proxy need?" Which is really just "is this thing going to slow down my Kafka?" in a polite engineering hat. We'd been giving the classic answer: "it depends on your workload and traffic patterns, so you'll need to test in your environment." Which is true. And also deeply unsatisfying for everyone involved, including us.
+There's a practical question underneath the hunch too. The most common thing operators ask us is some variation of: "How many cores does the proxy need?" Which translates, from polite engineering into plain English, as: "is this thing going to slow down my Kafka?" We'd been giving the classic answer: "it depends on your workload and traffic patterns, so you'll need to test in your environment." Which is true. And also deeply unsatisfying for everyone involved, including us.
 
-So we stopped saying "it depends", and got off the fence: we built something you can run **yourselves** on your own infrastructure with your own workload, and measured it. Here are some representative numbers from ours.
+So we stopped saying "it depends" — we built something you can run **yourselves** on your own infrastructure with your own workload, and measured it. Here are some representative numbers from ours.
 
 **TL;DR**:
 - A passthrough proxy adds negligible overhead: publish latency impact is below measurement noise, E2E adds ~2 ms at moderate topic rates, throughput unaffected
@@ -91,7 +91,7 @@ The overhead staying flat across 10 and 100 topics makes sense for the same reas
 
 ## Record encryption: now we're doing real work
 
-Ok, so let's make the proxy smarter — make it do something people actually care about! [Record encryption](https://kroxylicious.io/documentation/0.20.0/html/record-encryption-guide) uses AES-256-GCM to encrypt each record passing through the proxy. AES-256-GCM is going to ask the CPU to work relatively hard on its own, but it's also going to push the proxy to understand each record it receives, unpack it, copy it, encrypt it, and re-pack it before sending it on to the broker. With all that work going on we expect some impact to latency and throughput. To answer our original question we need to identify two things: the latency when everything is going smoothly, and the reduction in throughput all this work causes. Monitoring latency once we go past the throughput inflection point isn't very helpful — it's dominated by the throughput limits and their erratic impacts on the latency of individual requests (a big hello to batching and buffering effects).
+Ok, so let's make the proxy smarter — make it do something people actually care about! [Record encryption](https://kroxylicious.io/documentation/0.20.0/html/record-encryption-guide) uses AES-256-GCM to encrypt each record passing through the proxy. AES-256-GCM is going to ask the CPU to work relatively hard on its own, but it's also going to push the proxy to parse each record it receives, unpack it, copy it, encrypt it, and re-pack it before sending it on to the broker. With all that work going on we expect some impact to latency and throughput. To answer our original question we need to identify two things: the latency when everything is going smoothly, and the reduction in throughput all this work causes. Monitoring latency once we go past the throughput inflection point isn't very helpful — it's dominated by the throughput limits and their erratic impacts on the latency of individual requests (a big hello to batching and buffering effects).
 
 ### Latency at sub-saturation rates
 
