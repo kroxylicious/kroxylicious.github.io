@@ -53,6 +53,8 @@ Good news first. The proxy itself — with no filter chain, just routing traffic
 
 A quick note on percentiles for anyone not steeped in performance benchmarking: p99 latency is the value that 99% of requests complete within — meaning 1 in 100 requests takes longer. Averages flatter; the p99 is what your slowest clients actually experience, and it's usually the number that matters.
 
+Two latency metrics appear in the tables. **Publish latency** is measured from the record's intended send time — as dictated by the target producer rate — to when the producer receives the broker's acknowledgement. That means it captures any producer-side delay (backpressure, client queuing, batch accumulation) alongside the network round-trip and ISR replication (we run with `acks=all`). **End-to-end (E2E) latency** is measured from that same intended send time to when the consumer receives the record, adding consumer-side fetch batching on top of everything publish latency already covers.
+
 **10 topics, 1 KB messages (~5,000 msg/s per topic):**
 
 | Metric | Baseline | Proxy (no filters) | Encryption |
@@ -173,6 +175,7 @@ These are real results from real hardware, but they don't tell a story for your 
 - **Message size**: all results use 1 KB messages. The coefficient is message-size-dependent — encryption overhead as a percentage is likely lower for larger messages.
 - **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — a companion post, coming soon, explains why that matters.
 - **Horizontal scaling**: linear scaling has been validated across CPU allocations on a single pod; multi-pod horizontal scaling hasn't been measured but is expected to follow the same coefficient.
+- **Memory**: the workloads tested here are CPU-bound before they become memory-bound — we kept container memory settings consistent across all runs (2 Gi request / 4 Gi limit at the pod level) and it was never the constraint. If you're running larger messages or larger batches, revisit this assumption.
 
 For the engineering story — why we built a custom harness on top of OMB, what the CPU flamegraphs actually show, and the bugs we found in our own tooling along the way — that's in a companion post, coming soon.
 
