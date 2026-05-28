@@ -185,8 +185,8 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 
 These are real results from real hardware, but they don't tell a story for your workload. A few things worth knowing before you put these numbers in a slide deck:
 
+- **Sub-saturation assumed**: all results assume the system is operating below its throughput ceiling — both the proxy's and Kafka's own replication limits. Above either, queueing and batching effects dominate and the numbers in this post no longer apply. A companion post, coming soon, explains how to identify where those ceilings are.
 - **Message size**: all results use 1 KB messages. The coefficient is message-size-dependent — encryption overhead as a percentage is likely lower for larger messages.
-- **Replication factor**: the encryption numbers assume traffic isn't already hitting Kafka's own replication limits — a companion post, coming soon, explains why that matters.
 - **Horizontal scaling**: linear scaling has been validated across CPU allocations on a single pod; multi-pod horizontal scaling hasn't been measured but is expected to follow the same coefficient.
 - **Memory**: the workloads tested here are CPU-bound before they become memory-bound — we kept container memory settings consistent across all runs (2 Gi request / 4 Gi limit at the pod level) and it was never the constraint. If you're running larger messages or larger batches, revisit this assumption.
 
