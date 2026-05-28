@@ -132,12 +132,6 @@ The single-producer ceiling at RF=3 is Kafka-limited, not proxy-limited — the 
 
 To find the proxy's real ceiling, you need a workload that doesn't hit the Kafka partition limit first: RF=1, spread across multiple topics. With that workload, the ceiling is squarely in the proxy — and it scales linearly with CPU. The mechanism: CPU limit controls `availableProcessors()`, which controls how many Netty event loop threads the proxy creates. More threads, more concurrent connections handled in parallel, higher aggregate ceiling.
 
-| CPU limit | Comfortable ceiling | Saturation point |
-|-----------|--------------------|--------------------|
-| 1000m | ~80k msg/s | ~126k msg/s |
-| 2000m | ~80k msg/s | above 160k msg/s |
-| 4000m | ~160k msg/s | above 321k msg/s |
-
 **The practical implication**: the throughput ceiling is not a fixed number — it's a function of the CPU you allocate. Set `requests` equal to `limits` in your pod spec; this makes the CPU budget deterministic and the ceiling predictable. A companion engineering post, coming soon, has the full story of how we found this, including the workload design choices needed to isolate proxy CPU from Kafka's own limits.
 
 ---
