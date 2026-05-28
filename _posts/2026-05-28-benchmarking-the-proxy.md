@@ -163,13 +163,15 @@ Numbers without guidance aren't very useful, so here's how to translate these re
 
    > **`CPU (mc) = k × (P + N × C)`**
    >
-   > where *k* = sizing coefficient (mc/MB/s), *P* = produce throughput (MB/s), *N* = number of consumer groups, *C* = consume throughput per group (MB/s)
+   > where *mc* = millicores (the Kubernetes CPU scheduling unit; 1,000 mc = 1 core per second), *k* = sizing coefficient (mc/MB/s), *P* = produce throughput (MB/s), *N* = number of consumer groups, *C* = consume throughput per group (MB/s)
 
    On our hardware (AMD EPYC-Rome 2 GHz with AES-NI), we measured *k* = 25 mc/MB/s on a 10-topic workload with record encryption — a conservative estimate: more realistic deployments with 100+ topics show *k* = 4–8 mc/MB/s, roughly 3× lower. Simpler filters will be cheaper still. *k* is measured from real workloads, so measure your throughput and validate on your own hardware. The companion post (coming soon) has the full coefficient grid across topic counts and core allocations.
 
    *1:1 (100k msg/s at 1 KB, 1 consumer group)*: k=25, P=100, N=1, C=100 → 25 × (100 + 1 × 100) = 5,000m (~5 cores)
 
    *Fan-out (same rate, 3 consumer groups)*: k=25, P=100, N=3, C=100 → 25 × (100 + 3 × 100) = 10,000m (~10 cores)
+
+   Not running on Kubernetes? Divide the result by 1,000 to get the number of cores to allocate to the proxy process.
 
 2. **Latency budget**: well below saturation, expect 2–3 ms additional average publish latency and up to ~15 ms additional p99. The overhead scales with how hard you're pushing — give yourself headroom and you'll barely notice it.
 
