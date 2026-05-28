@@ -31,14 +31,15 @@ We used [OpenMessaging Benchmark (OMB)](https://github.com/openmessaging/benchma
 
 ## Test environment
 
-No, we didn't run this on a laptop — it's a realistic deployment: an 8-node OpenShift cluster on Fyre (5 workers, 3 masters), IBM's internal cloud platform — a controlled environment. Kroxylicious ran as a single proxy pod with a 1000m CPU limit.
+No, we didn't run this on a laptop — it's a realistic deployment: an 11-node OpenShift cluster on Fyre (8 workers, 3 masters), IBM's internal cloud platform — a controlled environment. Kroxylicious ran as a single proxy pod with a 1000m CPU limit. The cluster is sized so that the Kafka brokers, the proxy, and the benchmark workers each run on separate nodes, ensuring traffic crosses real network links rather than looping back on the same host.
 
 | Component | Details |
 |-----------|---------|
 | CPU | AMD EPYC-Rome, 2 GHz |
-| Cluster | 8-node OpenShift 4.21 (5 workers, 3 masters), RHCOS 9.6 |
+| Memory | 16 GiB per node |
+| Cluster | 11-node OpenShift 4.21 (8 workers, 3 masters), RHCOS 9.6 |
 | Kafka | 3-broker Strimzi 0.51.0 (Kafka 3.9) cluster, replication factor 3 |
-| Kroxylicious | 0.20.0, single proxy pod, 1000m CPU limit |
+| Kroxylicious | 0.21.0, single proxy pod |
 | KMS | HashiCorp Vault 2.0.0 (in-cluster) |
 
 The primary workload used 1 topic, 1 partition, 1 KB messages. We chose single-partition deliberately: it concentrates all traffic on one broker, so you hit ceilings quickly and any proxy overhead is easy to isolate. We also ran 10-topic and 100-topic workloads to make sure the results hold when load is spread more realistically across brokers.
