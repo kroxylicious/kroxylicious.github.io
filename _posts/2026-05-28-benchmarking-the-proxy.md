@@ -56,39 +56,41 @@ A quick note on percentiles for anyone not steeped in performance benchmarking: 
 
 Two latency metrics appear in the tables. **Publish latency** is measured from the record's intended send time — as dictated by the target producer rate — to when the producer receives the broker's acknowledgement. That means it captures any producer-side delay (backpressure, client queuing, batch accumulation) alongside the network round-trip and ISR replication (we run with `acks=all`). **End-to-end (E2E) latency** is measured from that same intended send time to when the consumer receives the record, adding consumer-side fetch batching on top of everything publish latency already covers.
 
-**10 topics, 1 KB messages (~5,000 msg/s per topic):**
+### 10 topics, 1 partition each, 1 KB messages — 50,000 msg/s (50 MB/s)
 
-| Metric | Baseline | Proxy (no filters) | Encryption |
-|--------|----------|--------------------|------------|
-| Publish latency avg | 4.3 ms | 4.5 ms (+0.2 ms) | 14.3 ms (+10.0 ms) |
-| Publish latency p99 | 22.4 ms | 19.6 ms (−2.7 ms) | 36.3 ms (+13.9 ms) |
-| E2E latency avg | 96.9 ms | 99.0 ms (+2.1 ms) | 97.4 ms (+0.5 ms) |
-| E2E latency p99 | 193 ms | 190 ms (−3 ms) | 182 ms (−11 ms) |
-| Throughput | 5,000 msg/s | 5,000 msg/s | 5,000 msg/s |
+At moderate topic counts, traffic is concentrated enough that proxy overhead is more visible.
 
-*Negative deltas for proxy-no-filters publish latency are within measurement noise — they indicate the proxy is indistinguishable from baseline, not that it improves latency.*
+| Metric | Baseline | Proxy (no filters) |
+|--------|----------|--------------------|
+| Publish latency avg | 4.3 ms | 4.5 ms (+0.2 ms) |
+| Publish latency p99 | 22.4 ms | 19.6 ms (−2.7 ms) |
+| E2E latency avg | 96.9 ms | 99.0 ms (+2.1 ms) |
+| E2E latency p99 | 193 ms | 190 ms (−3 ms) |
+| Throughput | 50,000 msg/s | 50,000 msg/s |
+
+*Negative deltas for publish latency are within measurement noise — they indicate the proxy is indistinguishable from baseline, not that it improves latency.*
 
 The passthrough proxy is not adding measurable per-record overhead at this rate. E2E average overhead is +2.1 ms (p<0.001), but practically negligible for any sizing decision.
 
-Encryption adds significant publish latency (+10 ms avg, +13.9 ms p99, p<0.001), as you'd expect for per-record AES-256-GCM. The E2E result is counterintuitive: both proxy scenarios have *lower* E2E p99 than direct Kafka (−3 ms and −11 ms respectively, both p<0.001). E2E latency includes consumer behaviour — fetch timeouts, batch accumulation, scheduling jitter. At 5k msg/s per topic, the proxy's processing of each record slightly regularises delivery timing, damping the consumer-side spikes that drive tail latency in direct Kafka.
+### 100 topics, 1 partition each, 1 KB messages — 50,000 msg/s (50 MB/s)
 
-**100 topics, 1 KB messages (~500 msg/s per topic):**
+At higher topic counts, the same total load is spread across more partitions and brokers. The proxy does identical work per record regardless — there is no cross-partition coordination. The point of this table is simply to confirm the pattern holds when load is distributed more broadly.
 
-| Metric | Baseline | Proxy (no filters) | Encryption |
-|--------|----------|--------------------|------------|
-| Publish latency avg | 2.9 ms | 4.1 ms (+1.2 ms) | 4.7 ms (+1.8 ms) |
-| Publish latency p99 | 6.4 ms | 8.1 ms (+1.7 ms) | 12.1 ms (+5.7 ms) |
-| E2E latency avg | 256.7 ms | 254.6 ms (−2.1 ms) | 256.3 ms (−0.4 ms) |
-| E2E latency p99 | 502 ms | 501 ms (−1 ms) | 502 ms (≈0) |
-| Throughput | 500 msg/s | 500 msg/s | 500 msg/s |
+| Metric | Baseline | Proxy (no filters) |
+|--------|----------|--------------------|
+| Publish latency avg | 2.9 ms | 4.1 ms (+1.2 ms) |
+| Publish latency p99 | 6.4 ms | 8.1 ms (+1.7 ms) |
+| E2E latency avg | 256.7 ms | 254.6 ms (−2.1 ms) |
+| E2E latency p99 | 502 ms | 501 ms (−1 ms) |
+| Throughput | 50,000 msg/s | 50,000 msg/s |
 
-Publish latency overhead is statistically significant at 100 topics (proxy-no-filters p99 +27%, encryption p99 +90%, both p<0.001). But publish latency at 500 msg/s per topic is a small fraction of E2E, and the E2E picture is what operators care about: average and p99 differences are within measurement noise.
+Publish latency overhead is statistically significant at 100 topics (proxy-no-filters p99 +27%, p<0.001). But publish latency at 500 msg/s per topic is a small fraction of E2E, and the E2E picture is what operators care about: differences are within measurement noise.
 
-**The headline: negligible passthrough overhead — throughput unaffected across all three scenarios.**
+**The headline: negligible passthrough overhead — throughput unaffected.**
 
 What did I take away from this? We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7. Most proxies operate on Kafka at Layer 4 — they shuffle bytes without ever understanding what those bytes mean. Kroxylicious works at Layer 7, parsing every Kafka message, yet still adds only a few milliseconds at the E2E average. That's the design working.
 
-The overhead staying flat across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. Topics don't contend for shared resources: throughput scales linearly across them, and this data validates it.
+The overhead staying flat across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. In the proxy, topics don't contend for shared resources: proxy overhead scales linearly across them, and this data validates it.
 
 ---
 
