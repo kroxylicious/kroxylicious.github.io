@@ -86,11 +86,23 @@ At higher topic counts, the same total load is spread across more partitions and
 
 Publish latency overhead is statistically significant at 100 topics (proxy-no-filters p99 +27%, p<0.001). But publish latency at 500 msg/s per topic is a small fraction of E2E, and the E2E picture is what operators care about: differences are within measurement noise.
 
+### 1 topic, 1 partition, 1 KB messages — 10,100 msg/s (10 MB/s)
+
+With all traffic on a single topic and partition, Kafka is under the most concentrated load — every record contends for the same broker, the same partition, and the same ISR replication round-trip. The proxy still doesn't register.
+
+| Metric | Baseline | Proxy (no filters) |
+|--------|----------|--------------------|
+| Publish latency avg | 7.2 ms | 6.7 ms (−0.5 ms) |
+| Publish latency p99 | 12.6 ms | 11.8 ms (−0.7 ms) |
+| E2E latency avg | 13.0 ms | 13.5 ms (+0.5 ms) |
+| E2E latency p99 | 21.0 ms | 21.0 ms (0 ms) |
+| Throughput | 10,100 msg/s | 10,100 msg/s |
+
 **The headline: negligible passthrough overhead — throughput unaffected.**
 
 What did I take away from this? We replaced a hunch with data. The remarkable part: the proxy is doing this at Layer 7. Most proxies operate on Kafka at Layer 4 — they shuffle bytes without ever understanding what those bytes mean. Kroxylicious works at Layer 7, parsing every Kafka message, yet still adds only a few milliseconds at the E2E average. That's the design working.
 
-The overhead staying flat across 10 and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. In the proxy, topics don't contend for shared resources: proxy overhead scales linearly across them, and this data validates it.
+The overhead staying flat across 1, 10, and 100 topics makes sense for the same reason: the proxy doesn't contend between topics. Think of the proxy as independent circuits on a distribution board — switching the breaker for lights doesn't cut power to the fridge. A Kafka broker is more like the mains supply itself — every circuit draws from the same source, so heavy load anywhere reduces what's available everywhere. In the proxy, topics don't contend for shared resources: proxy overhead scales linearly across them, and this data validates it.
 
 ---
 
