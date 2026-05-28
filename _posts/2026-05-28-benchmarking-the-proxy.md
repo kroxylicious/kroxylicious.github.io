@@ -15,7 +15,7 @@ So we stopped saying "it depends" — we built something you can run **yourselve
 
 **TL;DR**:
 - A passthrough proxy adds negligible overhead: publish latency impact is below measurement noise, E2E adds ~2 ms at moderate topic rates, throughput unaffected
-- Add record encryption and expect a ~25% throughput reduction and 0.2–3 ms of additional latency at comfortable rates
+- Add record encryption and expect a ~25% throughput reduction; at comfortable rates, E2E latency stays within measurement noise and publish latency adds up to ~10 ms
 - The throughput ceiling scales linearly with CPU: budget ~25 mc per MB/s of total proxy traffic (conservative; a companion post, coming soon, has the full sizing formula)
 - The full benchmark harness is open source — run it on your own cluster for numbers that reflect your workload
 
