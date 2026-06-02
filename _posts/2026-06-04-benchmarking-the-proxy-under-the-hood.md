@@ -7,7 +7,7 @@ author_url: "https://github.com/SamBarker"
 categories: benchmarking performance engineering
 ---
 
-How hard can it be? We started with a laptop, a codebase, and a lot of confidence it was fast. We ended up with a benchmark harness, an eight-node cluster, and a much more nuanced answer.
+How hard can it be? We started with a laptop, a codebase, and a lot of confidence it was fast. We ended up with a benchmark harness, an eleven-node cluster, and a much more nuanced answer.
 
 Harder than expected. More interesting too.
 
@@ -112,17 +112,17 @@ We added a hard anti-affinity rule to keep the proxy off broker nodes. It wouldn
 
 The penny drops: three worker nodes, three brokers, one per node — there is nowhere for the proxy to go that isn't already co-located with a broker. Obvious in hindsight. We needed a bigger cluster.
 
-We provisioned one: five workers, three masters, 16 vCPU per node.
+We provisioned one: eight workers, three masters, 16 vCPU per node.
 
 ### The baseline shock
 
 Baseline first. Direct Kafka, no proxy.
 
-~17,000 msg/s. The original cluster had been sustaining ~50,000.
+~19,400 msg/s. The original cluster had been sustaining ~50,000.
 
 The proxy wasn't in the picture. We checked the obvious suspects: disk I/O — fine, local and unsaturated. OMB worker scaling — correct. Broker CPU: ~1.2 vCPU. Nothing was at a limit.
 
-The answer was in the pipeline arithmetic. A Kafka producer has a maximum number of in-flight requests — batches sent but not yet acknowledged. With real round-trip times between nodes, that in-flight window bounds throughput. We measured: 0.87 ms between worker nodes, with three replication hops before the leader can confirm a produce at RF=3 — roughly 3–4 ms total. Five in-flight requests across that round trip gives a ceiling that matched ~17k msg/s almost exactly.
+The answer was in the pipeline arithmetic. A Kafka producer has a maximum number of in-flight requests — batches sent but not yet acknowledged. With real round-trip times between nodes, that in-flight window bounds throughput. We measured: 0.87 ms between worker nodes, with three replication hops before the leader can confirm a produce at RF=3 — roughly 3–4 ms total. Five in-flight requests across that round trip gives a theoretical ceiling in the right ballpark, and the measured ~19,400 msg/s baseline confirmed it.
 
 On the original cluster, those nodes were almost certainly co-located on the same physical host. Inter-node RTTs at that scale are sub-millisecond — effectively free. The original cluster's 50k baseline wasn't what a 3-broker Kafka cluster does. It was what a 3-broker Kafka cluster does when the network is a memcpy.
 
@@ -206,60 +206,59 @@ The flamegraphs below are fully interactive: hover over a frame to see its name 
 <iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: no-filter proxy at FIXME msg/s">
+        title="CPU flamegraph: no-filter proxy at 13,600 msg/s">
 </iframe>
-<figcaption>CPU flamegraph — passthrough proxy (no filters), FIXME msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — passthrough proxy (no filters), 13,600 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/proxy-no-filters-cpu-profile.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | CPU share |
 |----------|-----------|
-| Syscalls (send/recv) | 59.2% |
-| Native/VM | 16.7% |
-| Netty I/O | 10.5% |
-| Memory operations | 4.7% |
-| JDK libraries | 2.9% |
-| Kroxylicious proxy | 1.4% |
-| GC | 0.1% |
+| Syscalls (send/recv) | 63.2% |
+| Netty I/O | 14.6% |
+| Native/VM | 10.8% |
+| Memory operations | 5.2% |
+| JDK libraries | 3.8% |
+| Kroxylicious proxy | 1.7% |
+| Kafka protocol | 0.6% |
+| GC | 0.2% |
 
-The proxy is overwhelmingly I/O-bound. 59% of CPU is in `send`/`recv` syscalls — the inherent cost of maintaining two TCP connections (client→proxy, proxy→Kafka) with data flowing through the JVM. The proxy itself accounts for 1.4% — and understanding *why* that number is so small is the interesting part.
+The proxy is overwhelmingly I/O-bound. 63% of CPU is in `send`/`recv` syscalls — the inherent cost of maintaining two TCP connections (client→proxy, proxy→Kafka) with data flowing through the JVM. The proxy itself accounts for 1.7% — and understanding *why* that number is so small is the interesting part.
 
 Kroxylicious decodes Kafka RPCs selectively: each filter declares which API keys it cares about, and the proxy only deserialises messages that at least one filter needs. Even in the no-filter scenario, the default infrastructure filters are doing genuine L7 work — broker address rewriting, API version negotiation, topic name caching — which means metadata, FindCoordinator, and API version exchanges are fully decoded. But the high-volume produce and consume traffic? The decode predicate skips full deserialisation for those entirely, passing them through at close to L4 speed.
 
-The 1.4% is the cost of a proxy that is *selectively* L7: doing real Kafka protocol work where it matters, and treating the hot path like a TCP relay where it doesn't. That's not a side-effect — it's what the decode predicate design is for, and this flamegraph validates it.
+The 1.7% is the cost of a proxy that is *selectively* L7: doing real Kafka protocol work where it matters, and treating the hot path like a TCP relay where it doesn't. That's not a side-effect — it's what the decode predicate design is for, and this flamegraph validates it.
 
-### Encryption proxy (same FIXME msg/s rate)
+### Encryption proxy (same 13,600 msg/s)
 
 <figure>
-<iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-FIXME.html' | relative_url }}"
+<iframe src="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-13k.html' | relative_url }}"
         width="100%" height="600"
         style="border: 1px solid #ddd; border-radius: 4px;"
-        title="CPU flamegraph: encryption proxy at FIXME msg/s">
+        title="CPU flamegraph: encryption proxy at 13,600 msg/s">
 </iframe>
-<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), FIXME msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-FIXME.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
+<figcaption>CPU flamegraph — encryption proxy (AES-256-GCM), 13,600 msg/s, 1 topic, 1 KB messages. <a href="{{ '/assets/blog/flamegraphs/benchmarking-the-proxy/encryption-cpu-profile-13k.html' | relative_url }}" target="_blank">Open full screen ↗</a></figcaption>
 </figure>
 
 | Category | No-filters | Encryption | Delta |
 |----------|-----------|------------|-------|
-| Syscalls (send/recv) | 59.2% | 23.5% | −35.7%* |
-| Native/VM | 16.7% | 18.9% | +2.2% |
-| JCA/AES-GCM crypto | 0.0% | 11.3% | **+11.3%** |
-| Memory operations | 4.7% | 10.4% | **+5.8%** |
-| JDK libraries | 2.9% | 9.3% | **+6.4%** |
-| GC / JVM housekeeping | 0.1% | 5.0% | **+4.9%** |
-| Netty I/O | 10.5% | 5.1% | −5.4%* |
-| Kafka protocol re-encoding | 0.4% | 3.5% | **+3.1%** |
-| Kroxylicious encryption filter | 0.0% | 2.0% | **+2.0%** |
+| Syscalls (send/recv) | 63.2% | 28.5% | −34.7%* |
+| Netty I/O | 14.6% | 6.2% | −8.4%* |
+| Native/VM | 10.8% | 17.5% | +6.7% |
+| Memory operations | 5.2% | 13.7% | **+8.5%** |
+| JDK libraries | 3.8% | 9.7% | **+5.9%** |
+| GC / JVM housekeeping | 0.2% | 10.5% | **+10.3%** |
+| JCA/AES-GCM crypto | 0.0% | 6.5% | **+6.5%** |
+| Kroxylicious proxy logic | 1.7% | 4.5% | **+2.8%** |
+| Kafka protocol re-encoding | 0.6% | 2.9% | **+2.3%** |
 
 *\* Send/recv and Netty I/O appear to shrink as a percentage share because encryption adds CPU work that grows the total pie. The absolute I/O cost is similar in both scenarios.*
 
-The direct crypto cost is 13.3% (11.3% AES-GCM + 2.0% Kroxylicious filter logic). But encryption adds indirect costs too:
+The direct crypto cost is 9.3%: 6.5% in the AES-GCM cipher itself, with the additional 2.8% in Kroxylicious proxy logic representing the encryption filter's dispatch and record handling on top of the baseline proxy work. But the more striking result is the indirect costs — encryption's second-order effects dwarf its first-order cost:
 
-- **Buffer management (+5.8%)**: encrypted records need to be read into buffers, encrypted, and written to new buffers — more allocation, more copying
-- **GC pressure (+4.9%)**: more short-lived objects from encryption buffers and crypto operations
-- **JDK security infrastructure (+6.4%)**: security provider lookups, key spec handling, parameter generation
-- **Kafka protocol re-encoding (+3.1%)**: encrypted records are different sizes and must be re-serialised into Kafka protocol format
-
-Total additional CPU: ~33%. This aligns closely with the ~26% throughput reduction.
+- **GC pressure (+10.3%)**: encryption creates a stream of short-lived byte buffers — encrypted ciphertext, plaintext copies, re-encoded Kafka record wrappers — most of them dead before the next record arrives. The JVM's young-gen collector is working hard to keep up.
+- **Buffer management (+8.5%)**: each record must be read into a buffer, decrypted or encrypted into a new buffer, then re-packed into Kafka protocol format — three buffer lifetimes per record instead of one.
+- **JDK security infrastructure (+5.9%)**: cipher instance creation, security provider dispatch, key spec handling.
+- **Kafka protocol re-encoding (+2.3%)**: encrypted records are a different size to their plaintext originals; they must be re-serialised into the Kafka batch format before forwarding.
 
 If you wanted to optimise this, the highest-impact areas would be: reducing buffer copies (encrypt in-place or use composite buffers), pooling encryption buffers to reduce GC pressure, and caching `Cipher` instances to reduce per-record JDK security overhead.
 
