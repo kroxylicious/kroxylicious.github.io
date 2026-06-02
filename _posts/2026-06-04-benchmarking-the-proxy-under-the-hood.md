@@ -294,12 +294,14 @@ jbang src/main/java/io/kroxylicious/benchmarks/results/ResultComparator.java \
   results/baseline results/encryption
 ```
 
-## What's still open
+## Wait! Just... one... more... run...
 
-The coefficient is validated at 1, 2, and 4 cores for 1 KB messages. Known gaps:
+The coefficient is validated at 1, 2, and 4 cores for 1 KB messages. There are more runs I'd like to do:
 
-- **Message size variation**: larger messages should show lower overhead as a percentage; smaller messages may show higher. 1 KB is a reasonable middle ground but not the whole picture.
-- **Horizontal scaling**: multiple proxy pods haven't been measured; linear scaling is expected but not confirmed.
-- **Multi-pass sweeps**: each rate point was measured once. Running each probe three times and taking the median would give tighter bounds in the saturation transition zone.
+- **io_uring**: 63% of the passthrough proxy's CPU goes to `send`/`recv` syscalls — each a kernel entry and exit. io_uring batches I/O through a shared ring buffer, eliminating per-operation syscall overhead entirely. Netty has a native io_uring transport. If it halves that 63%, the passthrough proxy becomes genuinely unmeasurable. The flamegraph made this obvious; the run hasn't happened yet.
+- **GC tuning**: Netty naturally produces a clean generational profile, and the proxy leans into this rather than fighting it. Per-message allocations don't outlive their request-response cycle; connection-scoped state lives for the lifetime of the connection. Encryption magnifies the GC cost because it requires more per-message allocations than passthrough, but the memory pressure is expected. That makes it a natural fit for tuning: the collector doesn't have to guess what's garbage. Generational ZGC is one well-motivated experiment: designed for high-allocation workloads where most objects die young, which matches exactly. But it runs concurrently, trading stop-the-world pauses for continuous background CPU cost. Whether that helps or hurts a proxy that's already CPU-bound at saturation — here be dragons.
+- **Message size variation**: larger messages should show lower overhead as a percentage (fixed per-record costs spread over more bytes); smaller messages the opposite. 1 KB is a reasonable middle ground but not the whole story.
+- **Horizontal scaling**: multiple proxy pods haven't been measured; linear scaling is expected but unconfirmed.
+- **Multi-pass sweeps**: each rate point was measured once. Running each probe three times and taking the median would tighten the bounds in the saturation transition zone.
 
 The operator-facing sizing reference and all the key tables are in `SIZING-GUIDE.md` in the benchmarks directory.
