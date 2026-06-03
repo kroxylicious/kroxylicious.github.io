@@ -1,5 +1,5 @@
 delay: 0
 mappings:
   - name: benchmark-data
-    subgroup: benchmarking-the-proxy
+    subgroup: benchmarking-the-proxy-under-the-hood
     absoluteTarget: https://drive.google.com/drive/folders/14jR_eWoTeVQVC-WiTuZAK7NlwSVKN2a5?usp=drive_link
