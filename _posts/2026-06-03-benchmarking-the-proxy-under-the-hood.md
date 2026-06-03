@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "How hard can it be??? Maxing out a Kroxylicious instance"
-date:   2026-06-03 04:30:00 +0000
+date:   2026-06-03 00:00:00 +0000
 author: "Sam Barker"
 author_url: "https://github.com/SamBarker"
 categories: benchmarking performance engineering
