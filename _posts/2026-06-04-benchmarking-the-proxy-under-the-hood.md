@@ -278,7 +278,7 @@ Spotting these required noticing that two different probe flamegraphs were pixel
 
 ## Run it yourself
 
-We're an open source project — we share our workings. The raw OMB result JSON, JFR recordings, and flamegraph files that back this post are available [TODO: link to raw data]. If you want to verify the numbers, reproduce the analysis, or compare against your own runs, everything you need is there.
+We're an open source project — we share our workings. The raw OMB result JSON, JFR recordings, and flamegraph files that back this post are [available for download](/redirect/blog/benchmarking-the-proxy/benchmark-data). If you want to verify the numbers, reproduce the analysis, or compare against your own runs, everything you need is there.
 
 If you want to run it against your own cluster, everything is in `kroxylicious-openmessaging-benchmarks/` in the [main Kroxylicious repository](https://github.com/kroxylicious/kroxylicious). See `QUICKSTART.md` for step-by-step instructions. You'll need a Kubernetes or OpenShift cluster, the Kroxylicious operator installed, and Helm 3. Minikube works for local runs — the quickstart covers recommended CPU and memory settings.
 
