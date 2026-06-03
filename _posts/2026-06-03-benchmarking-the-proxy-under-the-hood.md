@@ -188,6 +188,8 @@ The full picture — coefficient measured across all three core counts and three
 
 *† 4-core 1-topic: at high producer counts, the Kafka partition limit caps single-partition throughput before the proxy saturates — the high stdev (±18.6) reflects this. Use the 10-topic or 100-topic rows for sizing.*
 
+*The coefficient rises with core count, which might seem at odds with the linear scaling claim. The ceiling table above — 4-core sustaining double the throughput of 1-core — is the cleaner test of linearity. The coefficient is measured from a connection-count sweep where each data point adds both more connections and more throughput simultaneously; decomposing those two effects requires a separate rate sweep at fixed connection count, which we have not yet run. Preliminary analysis suggests the per-byte encryption cost is roughly stable across core counts, and the rising coefficient reflects a per-thread baseline overhead that scales with the number of Netty event loop threads.*
+
 Setting `requests` equal to `limits` makes this practical: a pod that can burst above its CPU limit introduces headroom uncertainty that breaks the model. Fix the CPU budget; fix the ceiling.
 
 ## The flamegraph: where the CPU actually goes
