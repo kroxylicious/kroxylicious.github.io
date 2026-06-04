@@ -9,17 +9,21 @@ module SamplePlugin
       config.each { |redirect_config|
         Jekyll.logger.info "generating redirects for #{redirect_config[0]}"
         redirect_config[1]['mappings'].each do |mapping|
-          to_version = Version.parse(mapping['toVersion'] ||= latest_release)
-          from_version = Version.parse(mapping['fromVersion'] ||= latest_release)
-          versions = releases.select { |rel| rel.between?(from_version, to_version) }
-          versions.each { |version|
-            mapping['version'] = version
-            site.pages << RedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
-            if version == latest_release
-              mapping['landing_version'] = "latest"
+          if mapping['absoluteTarget']
+            site.pages << AbsoluteRedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
+          else
+            to_version = Version.parse(mapping['toVersion'] ||= latest_release)
+            from_version = Version.parse(mapping['fromVersion'] ||= latest_release)
+            versions = releases.select { |rel| rel.between?(from_version, to_version) }
+            versions.each { |version|
+              mapping['version'] = version
               site.pages << RedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
-            end
-          }
+              if version == latest_release
+                mapping['landing_version'] = "latest"
+                site.pages << RedirectPage.new(site, redirect_config[0], redirect_config[1], mapping)
+              end
+            }
+          end
         end
         Jekyll.logger.info "Generated redirects #{redirect_config[0]}"
       }
@@ -60,6 +64,34 @@ module SamplePlugin
     end
 
     # Placeholders that are used in constructing page URL.
+    def url_placeholders
+      {
+        :path => @dir,
+        :category => @dir,
+        :basename => basename,
+        :output_ext => output_ext,
+      }
+    end
+  end
+
+  class AbsoluteRedirectPage < Jekyll::Page
+    def initialize(site, group, redirect_config, mapping)
+      @site = site
+      @base = site.source
+      subgroup = mapping['subgroup']
+      @dir = subgroup ? "/redirect/#{group}/#{subgroup}/" : "/redirect/#{group}/"
+      @basename = mapping['name']
+      @ext = '.html'
+      @name = basename + ext
+      delay = redirect_config['delay'] ||= 1
+      @data = {
+        'target' => mapping['absoluteTarget'],
+        'layout' => 'redirect',
+        'delay' => "#{delay}",
+      }
+      Jekyll.logger.info "generated absolute redirect from #{@dir}#{@basename} to #{data['target']}"
+    end
+
     def url_placeholders
       {
         :path => @dir,
