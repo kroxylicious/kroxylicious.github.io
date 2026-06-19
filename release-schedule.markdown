@@ -47,9 +47,13 @@ permalink: /release-schedule/
   <div class="row">
     <div class="col">
       <h2>Backports, CVEs, and respins, oh my!</h2>
+      <div class="alert alert-warning" role="alert">
+        <strong>Found an undisclosed vulnerability?</strong> Please follow our <a href="https://github.com/kroxylicious/kroxylicious/security/policy">security disclosure policy</a> rather than raising it publicly. The process below is for backporting CVEs that are already public.
+      </div>
       <p>Kroxylicious is a community endeavour: we maintain one branch, <code>main</code>, and make releases from it.
       We always recommend running the latest release.</p>
       <p>We recognise this doesn't work for everyone. The community can get fixes into older releases — with a little help from a friend.</p>
+
       <p>A note on <strong>respins</strong>: a CVE in a base image alone is not a reason to cut a maintenance release — rebuild your container image instead.
       Maintenance releases are for vulnerabilities in Kroxylicious code or its runtime dependencies.</p>
 
