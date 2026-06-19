@@ -55,7 +55,7 @@ permalink: /release-schedule/
 
       <h3>How to get a maintenance release</h3>
       <ol>
-        <li><strong>Start a conversation</strong> — any community member, committer, project manager, or otherwise needs to drop a note to <a href="mailto:kroxylicious-dev@googlegroups.com">kroxylicious-dev@googlegroups.com</a> describing the version you need and the fixes required.
+        <li><strong>Start a conversation</strong> — anyone in the community, including committers and project managers, needs to drop a note to <a href="mailto:kroxylicious-dev@googlegroups.com">kroxylicious-dev@googlegroups.com</a> describing the version you need and the fixes required.
         This is a discussion, not a demand: you'll need to convince a committer that a maintenance release makes sense.</li>
         <li><strong>A committer creates the release branch</strong> — if a committer agrees, they will create a <code>release/X.Y</code> branch.
         Community members cannot create release branches directly; this step requires a committer.</li>
