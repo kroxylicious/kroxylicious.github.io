@@ -1,0 +1,246 @@
+{% raw %}
+<html>
+ <head></head>
+ <body>
+  <div id="preamble">
+   <div class="sectionbody">
+    <h2 id="con-about-oauth-bearer-validation-guide-oauth-bearer-validation" class="discrete">About this guide</h2>
+    <div class="paragraph _abstract">
+     <p>This guide covers using the <strong>Kroxylicious Oauth Bearer Validation Filter</strong>. This filter validates the JWT token received from client before forwarding it to the cluster. Refer to other Kroxylicious guides for information on running the proxy or for advanced topics such as plugin development.</p>
+    </div>
+    <div class="paragraph _abstract">
+     <p>OauthBearerValidation filter enables a validation on the JWT token received from client before forwarding it to cluster.</p>
+    </div>
+    <div class="paragraph">
+     <p>If the token is not validated, then the request is short-circuited. It reduces resource consumption on the cluster when a client sends too many invalid SASL requests.</p>
+    </div>
+    <div class="imageblock">
+     <div class="content">
+      <img src="../images/oauth-bearer-validation-seq.svg" alt="Sequence diagram showing the filter validating the oauth token before it reaches the broker.">
+     </div>
+     <div class="title">Figure 1. Sequence diagram showing the filter validating the oauth token before it reaches the broker.</div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="assembly-configuring-oauth-bearer-validation-filter-oauth-bearer-validation">1. Configuring the Oauth Bearer Validation filter</h2>
+   <div class="sectionbody">
+    <div class="paragraph _abstract">
+     <p>This procedure describes how to set up the Oauth Bearer Validation filter by configuring it in Kroxylicious.</p>
+    </div>
+    <div class="ulist">
+     <div class="title">Prerequisites</div>
+     <ul>
+      <li>
+       <p>An instance of Kroxylicious. For information on deploying Kroxylicious, see the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> or <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a>.</p>
+      </li>
+     </ul>
+    </div>
+    <div class="olist arabic">
+     <div class="title">Procedure</div>
+     <ol class="arabic">
+      <li>
+       <p>Configure a <code>OauthBearerValidation</code> type filter.</p>
+       <div class="ulist">
+        <ul>
+         <li>
+          <p>In a standalone proxy deployment. See <a href="#con-example-proxy-config-oauth-bearer-validation">Example proxy configuration file</a></p>
+         </li>
+         <li>
+          <p>In a Kubernetes deployment using a <code>KafkaProtocolFilter</code> resource. See <a href="#con-example-kafkaprotocolfilter-resource-oauth-bearer-validation">Example <code>KafkaProtocolFilter</code> resource</a></p>
+         </li>
+        </ul>
+       </div>
+      </li>
+     </ol>
+    </div>
+    <div class="admonitionblock note">
+     <table>
+      <tbody>
+       <tr>
+        <td class="icon"><i class="fa icon-note" title="Note"></i></td>
+        <td class="content">OauthBearer configuration follows <a href="https://kafka.apache.org/42/security/encryption-and-authentication-using-ssl">Kafka’s SSL properties</a>.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-proxy-config-oauth-bearer-validation">1.1. Example proxy configuration file</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of the Kroxylicious Proxy runs directly on an operating system, provide the filter configuration in the <code>filterDefinitions</code> list of your proxy configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>filterDefinitions</code> entry configured for Oauth Bearer validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>filterDefinitions</code> configuration
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">filterDefinitions</span>:
+  - <span class="string"><span class="content">name: my-oauth-filter</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">OauthBearerValidation</span></span>
+    <span class="key">config</span>:
+      <span class="key">jwksEndpointUrl</span>: <span class="string"><span class="content">https://oauth/JWKS</span></span>
+      <span class="key">jwksEndpointRefreshMs</span>: <span class="string"><span class="content">3600000</span></span>
+      <span class="key">jwksEndpointRetryBackoffMs</span>: <span class="string"><span class="content">100</span></span>
+      <span class="key">jwksEndpointRetryBackoffMaxMs</span>: <span class="string"><span class="content">10000</span></span>
+      <span class="key">scopeClaimName</span>: <span class="string"><span class="content">scope</span></span>
+      <span class="key">subClaimName</span>: <span class="string"><span class="content">sub</span></span>
+      <span class="key">authenticateBackOffMaxMs</span>: <span class="string"><span class="content">60000</span></span>
+      <span class="key">authenticateCacheMaxSize</span>: <span class="string"><span class="content">1000</span></span>
+      <span class="key">expectedAudience</span>: <span class="string"><span class="content">https://first.audience, https//second.audience</span></span>
+      <span class="key">expectedIssuer</span>: <span class="string"><span class="content">https://your-domain.auth/</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>jwksEndpointUrl</code> (Required) specifies the OAuth/OIDC provider endpoint from which the JSON Web Key Set (JWKS) is retrieved. The following properties are optional:</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRefreshMs</code> specifies the interval, in milliseconds, between refreshes of the JWKS cache used to verify JWT signatures.</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRetryBackoffMs</code> specifies the initial delay, in milliseconds, between attempts to retrieve the JWKS from the external authentication provider.</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRetryBackoffMaxMs</code> specifies the maximum delay, in milliseconds, between JWKS retrieval attempts.</p>
+       </li>
+       <li>
+        <p><code>scopeClaimName</code> specifies an alternative claim name for the scope in the JWT payload.</p>
+       </li>
+       <li>
+        <p><code>subClaimName</code> specifies an alternative claim name for the subject in the JWT payload.</p>
+       </li>
+       <li>
+        <p><code>authenticateBackOffMaxMs</code> specifies the maximum backoff time, in milliseconds, applied to repeated authentication attempts. A value of 0 disables backoff. Otherwise, an exponential delay is added to each authenticate request until the <code>authenticateBackOffMaxMs</code> has been reached.</p>
+       </li>
+       <li>
+        <p><code>authenticateCacheMaxSize</code> specifies the maximum number of failed tokens retained in the cache.</p>
+       </li>
+       <li>
+        <p><code>expectedAudience</code> specifies a comma-delimited list of valid audiences used to verify the JWT.</p>
+       </li>
+       <li>
+        <p><code>expectedIssuer</code> specifies the expected issuer used to verify the JWT.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-proxy/">Kroxylicious Proxy guide</a> for more information about configuring the proxy.</p>
+     </div>
+    </div>
+    <div class="sect2">
+     <h3 id="con-example-kafkaprotocolfilter-resource-oauth-bearer-validation">1.2. Example <code>KafkaProtocolFilter</code> resource</h3>
+     <div class="paragraph _abstract">
+      <p>If your instance of Kroxylicious runs on Kubernetes, you must use a <code>KafkaProtocolFilter</code> resource to contain the filter configuration.</p>
+     </div>
+     <div class="paragraph">
+      <p>Here’s a complete example of a <code>KafkaProtocolFilter</code> resource configured for Oauth Bearer validation:</p>
+     </div>
+     <div class="listingblock">
+      <div class="title">
+       Example <code>KafkaProtocolFilter</code> resource for record validation
+      </div>
+      <div class="content">
+       <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">kind</span>: <span class="string"><span class="content">KafkaProtocolFilter</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">my-oauth-bearer-validation-filter</span></span>
+<span class="key">spec</span>:
+  <span class="key">type</span>: <span class="string"><span class="content">OauthBearerValidation</span></span>
+  <span class="key">configTemplate</span>:
+      <span class="key">jwksEndpointUrl</span>: <span class="string"><span class="content">https://oauth/JWKS</span></span>
+      <span class="key">jwksEndpointRefreshMs</span>: <span class="string"><span class="content">3600000</span></span>
+      <span class="key">jwksEndpointRetryBackoffMs</span>: <span class="string"><span class="content">100</span></span>
+      <span class="key">jwksEndpointRetryBackoffMaxMs</span>: <span class="string"><span class="content">10000</span></span>
+      <span class="key">scopeClaimName</span>: <span class="string"><span class="content">scope</span></span>
+      <span class="key">subClaimName</span>: <span class="string"><span class="content">sub</span></span>
+      <span class="key">authenticateBackOffMaxMs</span>: <span class="string"><span class="content">60000</span></span>
+      <span class="key">authenticateCacheMaxSize</span>: <span class="string"><span class="content">1000</span></span>
+      <span class="key">expectedAudience</span>: <span class="string"><span class="content">https://first.audience, https//second.audience</span></span>
+      <span class="key">expectedIssuer</span>: <span class="string"><span class="content">https://your-domain.auth/</span></span></code></pre>
+      </div>
+     </div>
+     <div class="paragraph">
+      <p>where:</p>
+     </div>
+     <div class="ulist">
+      <ul>
+       <li>
+        <p><code>jwksEndpointUrl</code> (Required) specifies the OAuth/OIDC provider URL from which the provider’s JSON Web Key Set (JWKS) is retrieved. The following properties are optional:</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRefreshMs</code> specifies the interval, in milliseconds, between refreshes of the JWKS cache used to verify JWT signatures.</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRetryBackoffMs</code> specifies the initial delay, in milliseconds, between attempts to retrieve the JWKS from the external authentication provider.</p>
+       </li>
+       <li>
+        <p><code>jwksEndpointRetryBackoffMaxMs</code> specifies the maximum delay, in milliseconds, between JWKS retrieval attempts.</p>
+       </li>
+       <li>
+        <p><code>scopeClaimName</code> specifies an alternative claim name for the scope in the JWT payload.</p>
+       </li>
+       <li>
+        <p><code>subClaimName</code> specifies an alternative claim name for the subject in the JWT payload.</p>
+       </li>
+       <li>
+        <p><code>authenticateBackOffMaxMs</code> specifies the maximum backoff time, in milliseconds, applied to repeated authentication attempts. A value of 0 disables backoff. Otherwise, an exponential delay is added to each authenticate request until the <code>authenticateBackOffMaxMs</code> has been reached.</p>
+       </li>
+       <li>
+        <p><code>authenticateCacheMaxSize</code> specifies the maximum number of failed tokens retained in the cache.</p>
+       </li>
+       <li>
+        <p><code>expectedAudience</code> specifies a comma-delimited list of valid audiences used to verify the JWT.</p>
+       </li>
+       <li>
+        <p><code>expectedIssuer</code> specifies the expected issuer used to verify the JWT.</p>
+       </li>
+      </ul>
+     </div>
+     <div class="paragraph">
+      <p>Refer to the <a href="../kroxylicious-operator/">Kroxylicious Operator for Kubernetes guide</a> for more information about configuration on Kubernetes.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="sect1">
+   <h2 id="trademark_notice">2. Trademark notice</h2>
+   <div class="sectionbody">
+    <div class="ulist _abstract">
+     <ul>
+      <li>
+       <p>Apache Kafka is a registered trademark of The Apache Software Foundation.</p>
+      </li>
+      <li>
+       <p>Kubernetes is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Prometheus is a registered trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Strimzi is a trademark of The Linux Foundation.</p>
+      </li>
+      <li>
+       <p>Hashicorp Vault is a registered trademark of HashiCorp, Inc.</p>
+      </li>
+      <li>
+       <p>AWS Key Management Service is a trademark of Amazon.com, Inc. or its affiliates.</p>
+      </li>
+      <li>
+       <p>Microsoft, Azure, and Microsoft Entra are trademarks of the Microsoft group of companies.</p>
+      </li>
+      <li>
+       <p>Fortanix and Data Security Manager are trademarks of Fortanix, Inc.</p>
+      </li>
+     </ul>
+    </div>
+   </div>
+  </div>
+ </body>
+</html>
+{% endraw %}
