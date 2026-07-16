@@ -1,0 +1,46 @@
+#
+# Copyright Kroxylicious Authors.
+#
+# Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
+#
+
+releaseNotesUrl: https://github.com/kroxylicious/kroxylicious/releases/tag/v$(VERSION)/
+assetBaseUrl: https://github.com/kroxylicious/kroxylicious/releases/download/v$(VERSION)/
+assets:
+  - name: Proxy
+    description: The proxy application.
+    downloads:
+      - format: zip
+        path: kroxylicious-app-$(VERSION)-bin.zip
+      - format: tar.gz
+        path: kroxylicious-app-$(VERSION)-bin.tar.gz
+  - name: Operator
+    description: The Kubernetes operator.
+    downloads:
+      - format: zip
+        path: kroxylicious-operator-$(VERSION).zip
+      - format: tar.gz
+        path: kroxylicious-operator-$(VERSION).tar.gz
+  - name: Webhook
+    description: The Kubernetes admission webhook.
+    downloads:
+      - format: zip
+        path: kroxylicious-admission-$(VERSION).zip
+      - format: tar.gz
+        path: kroxylicious-admission-$(VERSION).tar.gz
+images:
+  - name: Proxy
+    url: https://quay.io/repository/kroxylicious/proxy?tab=tags
+    registry: quay.io/kroxylicious/proxy
+    tag: $(VERSION)
+    digest: sha256:52cd6fb28212c4310bd06b8af6de766f7e3a7f19fd27b0249f48a0413c4e5358
+  - name: Operator
+    url: https://quay.io/repository/kroxylicious/operator?tab=tags
+    registry: quay.io/kroxylicious/operator
+    tag: $(VERSION)
+    digest: sha256:c5d9c21d88d381a50f8d97435f45e290ebc9fbb62666d5a985dcab7d97c99bb3
+  - name: Webhook
+    url: https://quay.io/repository/kroxylicious/webhook?tab=tags
+    registry: quay.io/kroxylicious/webhook
+    tag: $(VERSION)
+    digest: sha256:93dca8e4931c3e73fa6364f5721501fb7af0433c1c063134ed3195349b4d7a1c
