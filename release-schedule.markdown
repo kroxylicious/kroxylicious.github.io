@@ -17,6 +17,7 @@ permalink: /release-schedule/
               <th scope="col">Release</th>
               <th scope="col">Planned Release Date</th>
               <th scope="col">Milestone</th>
+              <th scope="col">Project Board</th>
               <th scope="col">Status</th>
             </tr>
           </thead>
@@ -26,7 +27,14 @@ permalink: /release-schedule/
             <tr>
               <td>Kroxylicious {{ release.version }}</td>
               <td>{{ release.plannedDate }}</td>
-              <td><a href="{{ release.milestoneUrl }}">{{ release.version }}</a></td>
+              <td><a href="https://github.com/kroxylicious/kroxylicious/milestone/{{ release.milestoneNumber }}">{{ release.version }}</a></td>
+              <td>
+                {%- if release.projectNumber -%}
+                <a href="https://github.com/orgs/kroxylicious/projects/{{ release.projectNumber }}">{{ release.version }}</a>
+                {%- else -%}
+                -
+                {%- endif -%}
+              </td>
               <td>
                 {%- if site.data.release[underscored_version] -%}
                 <span class="badge bg-success">Released</span>
