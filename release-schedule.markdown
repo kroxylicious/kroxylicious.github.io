@@ -27,7 +27,7 @@ permalink: /release-schedule/
             <tr>
               <td>Kroxylicious {{ release.version }}</td>
               <td>{{ release.plannedDate }}</td>
-              <td><a href="{{ release.milestoneUrl }}">{{ release.version }}</a></td>
+              <td><a href="https://github.com/kroxylicious/kroxylicious/milestone/{{ release.milestoneNumber }}">{{ release.version }}</a></td>
               <td>
                 {%- if release.projectNumber -%}
                 <a href="https://github.com/orgs/kroxylicious/projects/{{ release.projectNumber }}">{{ release.version }}</a>
