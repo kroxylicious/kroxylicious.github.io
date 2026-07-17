@@ -14,7 +14,7 @@ releases:
   - version: 0.24.0
     plannedDate: August 27, 2026
     milestoneNumber: 29
-    projectNumber: 19
+    projectNumber: 18
   - version: 0.25.0
     plannedDate: October 8, 2026
     milestoneNumber: 31
