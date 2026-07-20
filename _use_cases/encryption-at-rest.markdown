@@ -89,9 +89,9 @@ The solution's foundations rest on industry-standard encryption techniques.
   * [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)&#174;
   * [Azure Key Vault](https://azure.microsoft.com/en-us/products/key-vault)&#174;
   * [Fortanix DSM](https://www.fortanix.com/platform/data-security-manager)&#174;
-  * [HashiCorp Vault](https://www.hashicorp.com/)&#174;
+  * [HashiCorp Vault](https://www.hashicorp.com/en/products/vault)&#174;
   * [Thales Cipher Trust Manager](https://cpl.thalesgroup.com/en-gb/encryption/ciphertrust-manager)&#174;
-* Pluggable KMS architecture allows you to bring your own KMS.* 
+* Pluggable KMS architecture allows you to bring your own KMS solution. 
 * Supports key rotation[^1]
 * Records encrypted using previous key-versions remain decryptable.    
 
