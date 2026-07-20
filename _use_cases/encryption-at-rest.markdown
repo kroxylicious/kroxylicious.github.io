@@ -83,12 +83,15 @@ As the solution is proxy-based, it works regardless of the language the applicat
 The solution's foundations rest on industry-standard encryption techniques.
 
 * Envelope Encryption is employed to efficiently encrypt/decrypt records. Envelope Encryption is specified by [NIST SP.-800-57 part 1 revision 5](https://csrc.nist.gov/Projects/Key-Management/Key-Management-Guidelines).
-* Integrates with common Key Management Services for safe and secure storage of key encryption keys.
-  * Plugins for [HashiCorp Vault](https://www.hashicorp.com/)&#174;, [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)&#174;, [Azure Key Vault](https://azure.microsoft.com/en-us/products/key-vault)&#174;, and [Fortanix DSM](https://www.fortanix.com/platform/data-security-manager)&#174;
-  * Additional KMS implementations are planned.
-  * API available to plug in alternatives
-* Uses AES-GCM symmetric keys (in accordance with [NIST FIPS 197](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf)
+* Records encrypted with AES-GCM symmetric keys (in accordance with [NIST FIPS 197](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf)
   and [NIST SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final)).
+* Out of the box integrations for popular Key Management Services.
+  * [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)&#174;
+  * [Azure Key Vault](https://azure.microsoft.com/en-us/products/key-vault)&#174;
+  * [Fortanix DSM](https://www.fortanix.com/platform/data-security-manager)&#174;
+  * [HashiCorp Vault](https://www.hashicorp.com/)&#174;
+  * [Thales Cipher Trust Manager](https://cpl.thalesgroup.com/en-gb/encryption/ciphertrust-manager)&#174;
+* Pluggable KMS architecture allows you to bring your own KMS.* 
 * Supports key rotation[^1]
 * Records encrypted using previous key-versions remain decryptable.    
 
@@ -104,6 +107,11 @@ are encrypted and some remain unencrypted are supported.
 <br/>
 
 [^1]: Replacement key material applied to newly produced records only.
-[^2]: The Kafka logo is a trademark of The Apache Software Foundation. The AWS logo is a trademark of [Amazon Web Services, Inc](https://aws.amazon.com/). The HashiCorp Vault logo is a trademark of [HashiCorp](https://www.hashicorp.com/). The Azure logo is a trademark of [Microsoft Corporation](https://www.microsoft.com/). The Fortanix logo is a trademark of [Fortanix Inc](https://www.fortanix.com/).
+[^2]: The Kafka logo is a trademark of The Apache Software Foundation.
+      The AWS logo is a trademark of [Amazon Web Services, Inc](https://aws.amazon.com/).
+      The Azure logo is a trademark of [Microsoft Corporation](https://www.microsoft.com/).
+      The Fortanix logo is a trademark of [Fortanix Inc](https://www.fortanix.com/).
+      The HashiCorp Vault logo is a trademark of [HashiCorp](https://www.hashicorp.com/).
+      The Thales logo is a trademark of [Thales](https://www.thalesgroup.com/).
 
 
