@@ -12,7 +12,7 @@ This page provides an overview of how Kroxylicious works.  For more details, ple
 # What is Kroxylicious?
 
 Kroxylicious is an Apache Kafka&#174; protocol-aware proxy.  It can be used to layer uniform behaviours onto a
-Kafka based system in areas such as data-governance, security, policy enforcement and audit without needing to
+Kafka based system in areas such as data-governance, security and policy enforcement without needing to
 change either the applications or the Kafka Cluster.
 
 Kroxylicious is a stand-alone component which is deployed between the applications that use Kafka and
@@ -54,7 +54,7 @@ that lets you build custom filters, to fit your own use-case.
 Filters are composable, meaning you can chain filters together to build complex behaviours from simpler units.
 
 For example, you may choose to build a filter chain compromising a policy enforcement filter together with an
-audit filter to suit the requirements of your use-case.
+encryption filter to suit the requirements of your use-case.
 
 | ![image]({{'/assets/pages/images/filter-chain.png' | absolute_url}}){:width="100%"} |
 |:----------------------------------------------------------:|
