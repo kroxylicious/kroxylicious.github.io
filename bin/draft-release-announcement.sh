@@ -131,6 +131,8 @@ Include migration steps or link to an automated migration tool.
 
 -->
 
+---
+
 ### Community Contributions
 
 This release included commits from:
