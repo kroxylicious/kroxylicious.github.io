@@ -67,9 +67,9 @@ echo ""
 
 ask "Release version (e.g. 0.25.0)"  VERSION
 ask "Previous release tag (e.g. v0.24.0)" OLD_TAG
-ask "New release tag or commit SHA   (e.g. v0.25.0)" NEW_TAG
-ask "Author name" AUTHOR
-ask "Author GitHub handle (without @)" AUTHOR_HANDLE
+ask "New release tag or commit SHA   (e.g. v0.25.0)" NEW_TAG main
+ask "Author name" "$(git config get user.name)"
+ask "Author GitHub handle (without @)" "$(gh api user --jq '.login' | tr -d '@')"
 ask "Post date (YYYY-MM-DD)" POST_DATE "$(date +%Y-%m-%d)"
 
 # ── derived values ────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ categories: blog kroxylicious-proxy releases
 tags: [ "releases", "kroxylicious-proxy" ]
 ---
 
-# Kroxylicious ${VERSION}: <!-- TODO: one-line headline capturing the release theme -->
+<!-- TODO: one-line headline capturing the release theme -->
 
 Kroxylicious ${VERSION} has snapped 🐊 into existence!
 
