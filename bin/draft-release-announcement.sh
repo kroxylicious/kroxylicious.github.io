@@ -8,6 +8,7 @@
 #
 # The script prompts for:
 #   - The release version (e.g. 0.25.0)
+#   - The release tagline (key features/themes)
 #   - The previous release tag (e.g. v0.24.0) — used to compute the contributor list
 #   - The new release tag or commit SHA
 #   - The post author name and GitHub handle
@@ -66,6 +67,7 @@ echo "=== New Kroxylicious release post generator ==="
 echo ""
 
 ask "Release version (e.g. 0.25.0)"  VERSION
+ask "Tagline (key features/themes, comma-separated)" TAGLINE "sasl termination, filter api changes"
 ask "Previous release tag (e.g. v0.24.0)" OLD_TAG
 ask "New release tag or commit SHA   (e.g. v0.25.0)" NEW_TAG main
 ask "Author name" "$(git config get user.name)"
@@ -97,7 +99,7 @@ categories: blog kroxylicious-proxy releases
 tags: [ "releases", "kroxylicious-proxy" ]
 ---
 
-<!-- TODO: one-line headline capturing the release theme -->
+# Kroxylicious ${VERSION}: ${TAGLINE}
 
 Kroxylicious ${VERSION} has snapped 🐊 into existence!
 
