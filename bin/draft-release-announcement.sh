@@ -99,7 +99,9 @@ categories: blog kroxylicious-proxy releases
 tags: [ "releases", "kroxylicious-proxy" ]
 ---
 
-# Kroxylicious ${VERSION}: ${TAGLINE}
+<!-- TODO: 2–4 sentence intro. What is the theme of this release? Why should readers care? -->
+
+# ${TAGLINE}
 
 Kroxylicious ${VERSION} has snapped 🐊 into existence!
 
@@ -128,8 +130,6 @@ If this release includes breaking changes, call them out clearly here.
 Include migration steps or link to an automated migration tool.
 
 -->
-
----
 
 ### Community Contributions
 
