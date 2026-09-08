@@ -90,7 +90,7 @@ CONTRIBUTORS="$(fetch_contributors "$OLD_TAG" "$NEW_TAG")"
 cat > "$FILENAME" <<EOF
 ---
 layout: post
-title: "Kroxylicious release ${VERSION}"
+title: "Kroxylicious release ${VERSION}${TAGLINE+: $TAGLINE}"
 date: ${POST_DATE} 00:00:00 +0000
 author: "${AUTHOR}"
 author_url: "https://github.com/${AUTHOR_HANDLE}"
@@ -100,8 +100,6 @@ tags: [ "releases", "kroxylicious-proxy" ]
 ---
 
 <!-- TODO: 2–4 sentence intro. What is the theme of this release? Why should readers care? -->
-
-# ${TAGLINE}
 
 Kroxylicious ${VERSION} has snapped 🐊 into existence!
 
