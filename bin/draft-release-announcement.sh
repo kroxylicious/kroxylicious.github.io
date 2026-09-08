@@ -8,6 +8,7 @@
 #
 # The script prompts for:
 #   - The release version (e.g. 0.25.0)
+#   - The release tagline (key features/themes)
 #   - The previous release tag (e.g. v0.24.0) — used to compute the contributor list
 #   - The new release tag or commit SHA
 #   - The post author name and GitHub handle
@@ -66,10 +67,11 @@ echo "=== New Kroxylicious release post generator ==="
 echo ""
 
 ask "Release version (e.g. 0.25.0)"  VERSION
+ask "Tagline (key features/themes, comma-separated)" TAGLINE "sasl termination, filter api changes"
 ask "Previous release tag (e.g. v0.24.0)" OLD_TAG
-ask "New release tag or commit SHA   (e.g. v0.25.0)" NEW_TAG
-ask "Author name" AUTHOR
-ask "Author GitHub handle (without @)" AUTHOR_HANDLE
+ask "New release tag or commit SHA   (e.g. v0.25.0)" NEW_TAG main
+ask "Author name" "$(git config get user.name)"
+ask "Author GitHub handle (without @)" "$(gh api user --jq '.login' | tr -d '@')"
 ask "Post date (YYYY-MM-DD)" POST_DATE "$(date +%Y-%m-%d)"
 
 # ── derived values ────────────────────────────────────────────────────────────
@@ -88,7 +90,7 @@ CONTRIBUTORS="$(fetch_contributors "$OLD_TAG" "$NEW_TAG")"
 cat > "$FILENAME" <<EOF
 ---
 layout: post
-title: "Kroxylicious release ${VERSION}"
+title: "Kroxylicious release ${VERSION}${TAGLINE+: $TAGLINE}"
 date: ${POST_DATE} 00:00:00 +0000
 author: "${AUTHOR}"
 author_url: "https://github.com/${AUTHOR_HANDLE}"
@@ -97,7 +99,7 @@ categories: blog kroxylicious-proxy releases
 tags: [ "releases", "kroxylicious-proxy" ]
 ---
 
-# Kroxylicious ${VERSION}: <!-- TODO: one-line headline capturing the release theme -->
+<!-- TODO: 2–4 sentence intro. What is the theme of this release? Why should readers care? -->
 
 Kroxylicious ${VERSION} has snapped 🐊 into existence!
 
