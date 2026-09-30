@@ -101,9 +101,11 @@ title: Join Us!
               <p>We take our public APIs seriously and review changes carefully to ensure 
                 they're supportable in the long run.</p>
                <p>You can propose API changes by opening a propsal in the design repo.</p>
+               <p>Browse proposals across the Kafka ecosystem on <a href="https://ossip.dev/kroxylicious.html">ossip.dev</a>.</p>
             </div>
             <div class="card-footer text-center">
                <a href="https://github.com/kroxylicious/design" class="btn btn-primary">Take me there!</a>
+               <a href="https://ossip.dev/kroxylicious.html" class="btn btn-primary">View OSSIPs</a>
             </div>
           </div>
         </div>
