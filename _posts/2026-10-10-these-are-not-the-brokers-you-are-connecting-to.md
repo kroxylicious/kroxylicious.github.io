@@ -25,7 +25,7 @@ So when you need to reshape the underlying infrastructure without breaking appli
 
 **Application-level dual writes** look clean in architecture diagrams. In production, network blips cause asymmetric failures, message ordering drifts, and duplicate delivery becomes every application team's problem. Getting twenty teams to deploy matching code changes on the same timeline is an exercise in cat-herding that usually ends with someone's Friday afternoon becoming someone else's out of hours page.
 
-**Replication pipelines** (MirrorMaker 2, et al.) work great for asynchronous backup, but for live consolidation knowing you are in sync is very difficult question, not to mention doubling storage and network costs, and asking consumers to deal with offset translation. You're running twice as much hardware to move bytes you already owned, fine if the migration ever actually ends.
+**Replication pipelines** (MirrorMaker 2, et al.) work great for asynchronous backup, but for live consolidation knowing whether you're in sync is a very difficult question, not to mention doubling storage and network costs, and asking consumers to deal with offset translation. You're running twice as much hardware to move bytes you already owned, fine if the migration ever actually ends.
 
 **Maintenance windows** are conceptually simple right up until a legacy service ignores DNS TTLs, holds onto stale sockets, and drops messages silently when the old brokers finally go dark. Sunday 2am is when the core reporting pipeline splutters to a halt.
 
