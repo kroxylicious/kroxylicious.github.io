@@ -50,8 +50,6 @@ When executing a planned migration or a DR failover:
 
 Whether you're doing a planned blue/green transition or invoking DR in an emergency, cluster aliasing transforms a massive cross-team coordination exercise into an internal platform switch.
 
-[^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.
-
 ### Production shadowing without the compliance conversation
 
 You're chasing an elusive bug that only manifests in the sixth hour of a high-volume run. Nobody can figure out which specific record payload triggers it. What you really want is to attach a debugger to the live stream in staging—except this production topic is stuffed full of Personally Identifiable Information (PII), and your compliance team has very reasonable objections.
@@ -140,9 +138,9 @@ All of that is a long way of saying: the proxy cannot manage PIDs globally, and 
 
 **Single physical cluster.** When all routes lead to the same physical cluster, there is nothing to solve. This is just standard Kafka protocol semantics — the proxy is a transparent conduit for a PID relationship that exists entirely between the client and the cluster. No mapping, no invention, no state to lose. Two things to keep in mind: routing decisions must be deterministic at the cluster level (a given producer must always land on the same physical cluster), and if the cluster changes — whether through a failover or a routing reconfiguration — the PID means nothing to the new cluster. Not fenced — a brand new client.
 
-**Duplication routing (traffic shadowing).** The shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability.
+**Multiple active clusters.** This is where aliasing ends. The full treatment — what can be made to work, what can't, and at what cost — is in the union clusters post. But the boundary is worth drawing clearly here before we get there: see *Layer 7 can only do so much* below.
 
-**Multiple active clusters.** This is where the whole quilt unravels — we will pick it up in the union clusters post.
+**Duplication routing (traffic shadowing).** One pattern that stays cleanly within the aliasing boundary: the shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability. There will be other safe patterns depending on your topology — the constraint is client visibility, not the number of physical clusters involved.
 
 ---
 
@@ -183,3 +181,5 @@ The proxy routes frames; it doesn't replicate log data. If consumers need to pic
 Cluster aliasing keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
 
 The next post moves from one-to-one aliasing to stitching multiple physical clusters into a single logical view: **Union Clusters**.
+
+[^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.
