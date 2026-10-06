@@ -13,9 +13,7 @@ tags: [ "routing" ]
 
 We called the first pattern **Cluster Aliasing**.
 
-At its core, aliasing is still a 1:1 mapping between a client and a physical cluster. The proxy isn't doing fan-out, merging responses, or stitching disparate topics together (we’ll get to those later in the series). But breaking the static link at boot means *which* cluster a client talks to can be decided dynamically when the connection is established—or redirected when the platform team needs to reshape the backends.
-
-It sounds simple. But when you decouple client configuration from physical infrastructure, the dream of flexible Kafka topologies starts to look feasible.
+Cluster aliasing makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no stitching. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
 
 ## What you can do with it (and the dream it sets up)
 
@@ -130,27 +128,43 @@ When a client sends a request to a route whose topology the proxy doesn't know y
 
 Kafka producers use idempotent delivery by default. The broker deduplicates retried writes so that a message is committed exactly once even if the network drops the acknowledgement and the producer retries. The mechanism relies on a Producer ID (`PID`) that the broker assigns on initialisation, combined with a per-partition sequence number on every batch. If the broker sees a batch it's already committed — same PID, same sequence — it silently discards the duplicate. The client never needs to know.
 
-That works cleanly with a single cluster. The moment you have multiple upstream clusters behind a VKC, you have a problem: each cluster's brokers issue PIDs independently, with no coordination between clusters. A broker on cluster A and a broker on cluster B will independently issue their own PIDs to the same producer — and the proxy needs to present a single coherent PID to the client while keeping track of both broker-allocated ones behind it.
+When you first look at PID management through the proxy, it looks like a problem we already solved. The previous section introduced a bijection for node IDs — a deterministic, stateless mapping between downstream IDs and upstream IDs at each router. PID translation looks like the same pattern, and the surface similarities are convincing: both are integers, both are cluster-scoped, both are assigned by the cluster rather than chosen by the client, and both are opaque values the client simply carries and passes through. So the proxy can just maintain a downstream-to-upstream mapping for both, right? This is the obvious answer. The seams show up quickly, but each one looks stitchable — until you're looking at a patchwork quilt and wondering why it keeps unravelling. The reason is that despite identical protocol syntax, node IDs and producer IDs have completely different semantics within the protocol. A node ID is **spatial** — a label, a coordinate. A PID is **temporal** — not just a label but a claim of active identity. In other words: we can mathematically fake a Node ID because it's just an address. We have to statefully track a Producer ID because it's a weaponised identity claim.
 
-The solution — currently being developed — is a per-router, session-scoped translation table. The structure mirrors the node ID bijection — each router maintains its own mapping between the virtual PIDs on its downstream face and the broker-allocated PIDs on its upstream face — but the mechanism is different. Node IDs can be remapped arithmetically because the proxy controls the virtual ID space and can assign values deterministically. PIDs are opaque integers assigned by the broker; the proxy has no say in what values it receives and no arithmetic relationship to exploit between them. So instead of computing the translation, it remembers it. When a client sends `InitProducerIdRequest` to a VKC, each router intercepts it and fans the initialisation out to its upstream routes. Each upstream issues its own PID. The router assigns a single virtual PID on its downstream face and maintains the mapping to the broker-allocated PIDs behind it. On every subsequent `ProduceRequest`, it rewrites the downstream virtual PID to the correct broker-allocated one before forwarding. From the client's perspective it's talking to one cluster with one PID. From each broker's perspective every request arrives with a PID it recognises. The idempotency guarantee holds end-to-end.
+**Node ID translation is transport-scoped.** A `MetadataResponse` tells you where brokers are. The proxy can tell as many lies as it likes here — the broker never sees them, let alone tries to call them out. And the proxy can be forgetful — stateless, even: if it discards its mapping and rebuilds it from the next `MetadataResponse`, it just tells the same lies again. Nothing notices, nothing breaks.
 
-The translation table is session-scoped, with no durable store and no sharing across sessions — and that's fine. For transactional producers, PID continuity (the same broker-allocated PID handed back with a bumped epoch for the same `transactional.id`) is state the backing brokers already own and persist themselves. The proxy doesn't need to shadow that durability. On every new session — whether the client is brand new or reconnecting with an existing `transactional.id` — the proxy simply re-runs the fan-out and rebuilds the downstream-to-upstream mapping from scratch. The `transactional.id` itself passes through to every route unchanged; it's not something the proxy translates.
+**PID allocation is negotiation-scoped.** Since Kafka 3.0, producers run in idempotent mode by default — you don't have to opt in, it just happens. To support that, the producer calls `InitProducerIdRequest` to ask the broker to allocate it an identity: a (PID, epoch) pair. The broker tracks that identity and uses it to deduplicate retried batches within that session. It will also forcibly evict any connection that presents the same PID with a lower epoch — that is the fencing mechanism, preventing two connections from simultaneously claiming the same identity. If you need that identity to survive across sessions — so a restarted producer can pick up where it left off rather than starting fresh — that is what `transactional.id` is for. A second `InitProducerIdRequest` carrying the same `transactional.id` is treated as a hostile takeover, deliberately: fencing is how Kafka ensures only one producer instance is ever active for a given transactional identity.
+
+Both node IDs and PIDs are cluster-scoped — issued by a specific cluster, honoured within it, meaningless outside it. But the node ID relationship is stateless: if the proxy loses its mapping, it recovers via discovery and rederivation. A PID is unrecoverable. What was negotiated is gone.
+
+All of that is a long way of saying: the proxy cannot manage PIDs globally, and the Routing API makes no attempt to. There is no built-in abstraction that handles this for you — it is left to the team implementing the router to understand what their routing topology implies for producer identity. That is not as bleak as it sounds. There are shapes that work cleanly. If your problem fits one of them, go hard or go home.
+
+**Single physical cluster.** When all routes lead to the same physical cluster, there is nothing to solve. This is just standard Kafka protocol semantics — the proxy is a transparent conduit for a PID relationship that exists entirely between the client and the cluster. No mapping, no invention, no state to lose. Two things to keep in mind: routing decisions must be deterministic at the cluster level (a given producer must always land on the same physical cluster), and if the cluster changes — whether through a failover or a routing reconfiguration — the PID means nothing to the new cluster. Not fenced — a brand new client.
+
+**Duplication routing (traffic shadowing).** The shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability.
+
+**Multiple active clusters.** This is where the whole quilt unravels — we will pick it up in the union clusters post.
 
 ---
 
 ## Proxies aren't magic
 
-Layer 7 protocol inspection gives you a lot of leverage. It doesn't give you the ability to reach inside a Kafka broker and synchronise its internal state with another Kafka broker. That distinction matters, and it's worth being honest about it.
+Layer 7 protocol inspection gives you a lot of leverage. What it doesn't give you is the ability to reach inside a Kafka broker and move its internal state somewhere else. The proxy can route frames to a different cluster. It cannot conjure the state those frames depend on.
 
-### State lives on the physical cluster, not in the proxy
-
-Consumer group offsets, fetch sessions, and transaction coordination are all managed by coordinator brokers on a specific physical cluster. The proxy routes frames. It does not replicate or merge coordinator state between backends.
+### When you flip the target, the state doesn't follow
 
 If the routing target changes while a client is active:
 
-- **Transactional producers:** A transaction is coordinated by the Transaction Coordinator on whichever physical cluster the `InitProducerIdRequest` landed on. That transaction cannot be committed against a different cluster. If a failover happens mid-transaction, the subsequent `EndTxnRequest` will arrive at the new target and get back `INVALID_TXN_STATE` or `UNKNOWN_PRODUCER_ID`. Clients using transactions need to handle that abort cleanly and restart the transactional loop — ideally they already do, because the same failure happens on a plain broker restart.
+- **Transactional producers:** Kafka treats the Transaction Coordinator as an internal role within the cluster. Transactions are therefore scoped to a single cluster by definition — there is no extension point or API through which an external coordinator could be plugged in. A transaction that starts on cluster A cannot be committed on cluster B; if a routing cutover happens mid-transaction, the subsequent `EndTxnRequest` arrives at the new target and gets back `INVALID_TXN_STATE` or `UNKNOWN_PRODUCER_ID`. That abort needs to be handled cleanly and the transactional loop restarted — the same failure mode as a plain broker restart, which well-written transactional producers already handle. A proxy restart itself is safe: the proxy never invents a PID in the single-cluster case, so the KIP-360 fencing fields the client sends on reconnect are the broker's own real values.
 
 - **Consumer groups:** Offset state lives in `__consumer_offsets` on the physical cluster. The secondary cluster's Group Coordinator has no knowledge of what the primary's consumers have committed. Failing over without a replication pipeline that includes offsets means consumers either re-read data they've already processed, or skip ahead and lose it. Neither is silent.
+
+### Layer 7 can only do so much
+
+Aliasing works because there is a single physical cluster backing it. The proxy isn't maintaining an illusion — it's directing traffic to something real, and real Kafka semantics apply throughout. The moment a router exposes brokers from multiple physical clusters as a unified address space, it has to ensure those semantics stay valid. For some operations that's fine — routing a `Fetch` to a local replica is cheap and safe. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router has taken on the obligation of upholding guarantees the protocol no longer provides on its behalf.
+
+The most immediate consequence is session affinity. The router must maintain a session-scoped mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster. That mapping lives in the proxy instance that negotiated it. If the load balancer routes a reconnecting client to a different proxy replica, the mapping is gone — the router re-negotiates, the epoch bumps, and the backend fences the producer. The proxy can't prevent this. Only sticky L4 routing can.
+
+Friends don't let friends cross that line without knowing exactly what they've signed up for.
 
 ### Cutovers are an explicit decision, not a proxy heuristic
 
@@ -166,6 +180,6 @@ The proxy routes frames; it doesn't replicate log data. If consumers need to pic
 
 ---
 
-Cluster aliasing is the simplest pattern in this series, and it's already doing something genuinely useful: platform teams can change the physical backend without the application teams ever knowing it happened.
+Cluster aliasing keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
 
 The next post moves from one-to-one aliasing to stitching multiple physical clusters into a single logical view: **Union Clusters**.
