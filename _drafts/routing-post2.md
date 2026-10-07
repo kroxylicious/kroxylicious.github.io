@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Cluster Aliasing: Identity without commitment"
+title: "Connection Switching: Identity without commitment"
 date: 2026-09-11 15:00:00 +1200
 author: "Sam Barker"
 author_url: "https://github.com/sambarker"
@@ -11,9 +11,9 @@ tags: [ "routing" ]
 
 [Post 1]({link) introduced the Routing API and the fundamental shift it brings: a Virtual Kafka Cluster (VKC) is no longer a fixed pipe wired to a single physical cluster on boot. It’s a stable identity. What actually lives behind it is now the proxy's problem, not the client's.
 
-We called the first pattern **Cluster Aliasing**.
+We called the first pattern **Connection Switching**.
 
-Cluster aliasing makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no stitching. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
+Connection switching makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no stitching. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
 
 ## What you can do with it (and the dream it sets up)
 
@@ -23,13 +23,13 @@ Remember that 2am nightmare from post 1? The sales team launches an unannounced 
 
 In the old world, separating those workloads meant a multi-week coordination exercise: provision new hardware, issue new bootstrap URLs, cajole twenty application teams into updating their config repositories, and schedule rolling restarts.
 
-With cluster aliasing, everyone points at `kafka.corp.internal:9092`. When a client connects, the router inspects the authentication context established during handshake—who is knocking on the door?—and dispatches the connection to the appropriate physical cluster behind the scenes:
+With connection switching, everyone points at `kafka.corp.internal:9092`. When a client connects, the router inspects the authentication context established during handshake—who is knocking on the door?—and dispatches the connection to the appropriate physical cluster behind the scenes:
 
 - High-throughput production services get routed to dedicated, high-IOPS NVMe brokers.
 - Heavy batch analytics jobs get dispatched to high-capacity bulk storage clusters.
 - General application traffic stays on the shared tier.
 
-Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with aliasing—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (more on that reality later). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, cluster aliasing eliminates the connection coordination nightmare entirely.
+Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with connection switching—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (more on that reality later). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, connection switching eliminates the connection coordination nightmare entirely.
 
 ### Client-change-free cluster migrations and DR failover
 
@@ -40,7 +40,7 @@ In a conventional setup, redirecting traffic to a secondary cluster or a freshly
 - Updating DNS records (with all the painful quirks as DNS propagates, seemingly at random[^1]) or editing hundreds of configuration maps.
 - Bouncing client fleets across an agreed maintenance window—or watching an incident drag out while waiting for client restarts.
 
-Cluster aliasing doesn't solve the hard data replication or consumer offset reconciliation problem, but it **completely eliminates the client-side migration cost**. The bootstrap configuration remains stable (`kafka.corp.internal:9092`).
+Connection switching doesn't solve the hard data replication or consumer offset reconciliation problem, but it **completely eliminates the client-side migration cost**. The bootstrap configuration remains stable (`kafka.corp.internal:9092`).
 
 When executing a planned migration or a DR failover:
 
@@ -48,7 +48,7 @@ When executing a planned migration or a DR failover:
 2. **The connection cutover is a control-plane flip:** The proxy updates its route target to the secondary cluster—either globally or tenant-by-tenant.
 3. **Rollback is instant:** If the secondary cluster misbehaves under live load, you can revert the routing target in seconds rather than triggering another round of client config rollbacks.
 
-Whether you're doing a planned blue/green transition or invoking DR in an emergency, cluster aliasing transforms a massive cross-team coordination exercise into an internal platform switch.
+Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching transforms a massive cross-team coordination exercise into an internal platform switch.
 
 ### Production shadowing without the compliance conversation
 
@@ -138,9 +138,9 @@ All of that is a long way of saying: the proxy cannot manage PIDs globally, and 
 
 **Single physical cluster.** When all routes lead to the same physical cluster, there is nothing to solve. This is just standard Kafka protocol semantics — the proxy is a transparent conduit for a PID relationship that exists entirely between the client and the cluster. No mapping, no invention, no state to lose. Two things to keep in mind: routing decisions must be deterministic at the cluster level (a given producer must always land on the same physical cluster), and if the cluster changes — whether through a failover or a routing reconfiguration — the PID means nothing to the new cluster. Not fenced — a brand new client.
 
-**Multiple active clusters.** This is where aliasing ends. The full treatment — what can be made to work, what can't, and at what cost — is in the union clusters post. But the boundary is worth drawing clearly here before we get there: see *Layer 7 can only do so much* below.
+**Multiple active clusters.** This is where connection switching ends. The full treatment — what can be made to work, what can't, and at what cost — is in the post on topic weaving. But the boundary is worth drawing clearly here before we get there: see *Layer 7 can only do so much* below.
 
-**Duplication routing (traffic shadowing).** One pattern that stays cleanly within the aliasing boundary: the shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability. There will be other safe patterns depending on your topology — the constraint is client visibility, not the number of physical clusters involved.
+**Duplication routing (traffic shadowing).** One pattern that stays cleanly within the connection switching boundary: the shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability. There will be other safe patterns depending on your topology — the constraint is client visibility, not the number of physical clusters involved.
 
 ---
 
@@ -158,7 +158,7 @@ If the routing target changes while a client is active:
 
 ### Layer 7 can only do so much
 
-Aliasing works because there is a single physical cluster backing it. The proxy isn't maintaining an illusion — it's directing traffic to something real, and real Kafka semantics apply throughout. The moment a router exposes brokers from multiple physical clusters as a unified address space, it has to ensure those semantics stay valid. For some operations that's fine — routing a `Fetch` to a local replica is cheap and safe. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router has taken on the obligation of upholding guarantees the protocol no longer provides on its behalf.
+Connection switching works because there is a single physical cluster backing it. The proxy isn't maintaining an illusion — it's directing traffic to something real, and real Kafka semantics apply throughout. The moment a router exposes brokers from multiple physical clusters as a unified address space, it has to ensure those semantics stay valid. For some operations that's fine — routing a `Fetch` to a local replica is cheap and safe. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router has taken on the obligation of upholding guarantees the protocol no longer provides on its behalf.
 
 The most immediate consequence is session affinity. The router must maintain a session-scoped mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster. That mapping lives in the proxy instance that negotiated it. If the load balancer routes a reconnecting client to a different proxy replica, the mapping is gone — the router re-negotiates, the epoch bumps, and the backend fences the producer. The proxy can't prevent this. Only sticky L4 routing can.
 
@@ -178,8 +178,8 @@ The proxy routes frames; it doesn't replicate log data. If consumers need to pic
 
 ---
 
-Cluster aliasing keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
+Connection switching keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
 
-The next post moves from one-to-one aliasing to stitching multiple physical clusters into a single logical view: **Union Clusters**.
+The next post moves from one-to-one connection switching to stitching multiple physical clusters into a single logical view: **Topic Weaving**.
 
 [^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.
