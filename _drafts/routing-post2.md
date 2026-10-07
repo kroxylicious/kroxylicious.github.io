@@ -9,27 +9,25 @@ categories: blog kroxylicious-proxy
 tags: [ "routing" ]
 ---
 
-[Post 1]({link) introduced the Routing API and the fundamental shift it brings: a Virtual Kafka Cluster (VKC) is no longer a fixed pipe wired to a single physical cluster on boot. It’s a stable identity. What actually lives behind it is now the proxy's problem, not the client's.
+[Post 1]({% post_url 2026-10-10-these-are-not-the-brokers-you-are-connecting-to %}) introduced the Routing API and the fundamental shift it brings: a Virtual Kafka Cluster (VKC) is no longer a fixed pipe wired to a single physical cluster on boot. It's a stable identity. What actually lives behind it is now the proxy's problem, not the client's.
 
 We called the first pattern **Connection Switching**.
 
-Connection switching makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no stitching. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
+Connection switching makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no weaving. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
 
 ## What you can do with it (and the dream it sets up)
 
 ### The single front door: Tenant & workload dispatch
 
-Remember that 2am nightmare from post 1? The sales team launches an unannounced viral promotion right as end-of-month financial batch analytics fire up on the same shared cluster.
+Workload collision is one of Kafka's classic growing pains. When operations eventually wants to separate workloads onto dedicated hardware — high-IOPS brokers for latency-sensitive services, bulk storage for batch analytics, a shared tier for everything else — the old world makes it a multi-week coordination exercise: provision new hardware, issue new bootstrap URLs, cajole twenty application teams into updating their config repositories, and schedule rolling restarts.
 
-In the old world, separating those workloads meant a multi-week coordination exercise: provision new hardware, issue new bootstrap URLs, cajole twenty application teams into updating their config repositories, and schedule rolling restarts.
-
-With connection switching, everyone points at `kafka.corp.internal:9092`. When a client connects, the router inspects the authentication context established during handshake—who is knocking on the door?—and dispatches the connection to the appropriate physical cluster behind the scenes:
+With connection switching, everyone bootstraps at `kafka.corp.internal:9092`. When a client connects, the router inspects the authentication context established during handshake—who is knocking on the door? — and dispatches the connection to the appropriate physical cluster behind the scenes:
 
 - High-throughput production services get routed to dedicated, high-IOPS NVMe brokers.
-- Heavy batch analytics jobs get dispatched to high-capacity bulk storage clusters.
+- Heavy batch analytics jobs get dispatched to the spinning rust cluster.
 - General application traffic stays on the shared tier.
 
-Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with connection switching—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (more on that reality later). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, connection switching eliminates the connection coordination nightmare entirely.
+Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with connection switching—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (the migrations section below gets into what that actually requires). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, connection switching eliminates the connection coordination nightmare entirely.
 
 ### Client-change-free cluster migrations and DR failover
 
@@ -44,19 +42,11 @@ Connection switching doesn't solve the hard data replication or consumer offset 
 
 When executing a planned migration or a DR failover:
 
-1. **The data plane is handled out-of-band:** Topics and offsets are synced beforehand via active replication (MirrorMaker 2, KIP-1279 cluster mirroring), or recovered from storage volume snapshots.
+1. **The data plane is handled out-of-band:** Topics and offsets are synced beforehand via active replication (MirrorMaker 2, KIP-1279 cluster mirroring, or your vendor's equivalent), or recovered from storage volume snapshots.
 2. **The connection cutover is a control-plane flip:** The proxy updates its route target to the secondary cluster—either globally or tenant-by-tenant.
 3. **Rollback is instant:** If the secondary cluster misbehaves under live load, you can revert the routing target in seconds rather than triggering another round of client config rollbacks.
 
-Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching transforms a massive cross-team coordination exercise into an internal platform switch.
-
-### Production shadowing without the compliance conversation
-
-You're chasing an elusive bug that only manifests in the sixth hour of a high-volume run. Nobody can figure out which specific record payload triggers it. What you really want is to attach a debugger to the live stream in staging—except this production topic is stuffed full of Personally Identifiable Information (PII), and your compliance team has very reasonable objections.
-
-Because routing stages compose cleanly into a pipeline with standard filters, a duplicating router can shadow live traffic to a staging cluster alias while passing it through a redaction filter on the way. The PII is transformed into gibberish before the bytes ever touch staging disks.
-
-The client never knows. You get the real stream volume, the real cadence, the real record shapes—just not the real customer names.
+Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching takes client coordination off the critical path. The data still has to be in sync — that's on you — but at least the cutover itself isn't a multi-team event.
 
 ### The cloud bill from hell: Replica routing
 
@@ -75,7 +65,7 @@ Kafka's native rack awareness is great, but client compliance is leaky. Centrali
 
 And this isn't just about inspecting frames at Layer 7. If all you have is a filter pipeline on a static 1:1 pipe, understanding that a `Fetch` belongs in `eu-west-1a` doesn't help you—the pipe is already nailed to broker 1 in `eu-west-1c`. The breakthrough comes from the Routing API making the backend connection dynamic.
 
-When a proxy instance deployed in `eu-west-1a` intercepts a `Fetch` request arriving on a virtual connection to the leader over in `eu-west-1c`, it inspects the partition's in-sync replica (ISR) set. If broker 3 is sitting right next door in `eu-west-1a` with a caught-up replica, the proxy doesn't rewrite the frame—it dynamically dispatches that individual request down a separate backend pipe to broker 3:
+When a `Fetch` request arrives at a Kroxylicious instance in `eu-west-1a` — on the pipe for the leader over in `eu-west-1c` — the router inspects the partition's in-sync replica (ISR) set. If broker 3 is sitting right next door in `eu-west-1a` with a caught-up replica, the router doesn't rewrite the frame—it dynamically dispatches that individual request down a separate backend pipe to broker 3:
 
 ```
 [ Consumer (AZ-a) ] ──Fetch──► [ Kroxylicious (AZ-a) ] ────► [ Broker 3 (AZ-a, Replica) ]
@@ -87,12 +77,12 @@ When a proxy instance deployed in `eu-west-1a` intercepts a `Fetch` request arri
 
 The application didn't configure `client.rack`. The request payload is completely untouched. It simply travelled down a different pipe. Broker 1 never sees the read, and the cross-AZ request never happened so never reaches the invoice.
 
-Rack-local fetching is just leveraging the existing Kafka protocol. In theory, dynamic per-request dispatch opens up other intriguing possibilities to explore in your custom Bugatti router:
+Rack-local fetching is just leveraging the existing Kafka protocol. In theory, dynamic per-request dispatch opens up other intriguing possibilities to explore in your custom Bugatti router from post 1:
 - **Replica lag awareness:** Steering reads strictly to the most caught-up followers to avoid trailing-edge staleness.
 - **Broker load shedding:** Diverting fetch traffic away from CPU- or IO-bound leaders to give them headroom for critical writes.
 - **Tiered storage offloading:** Routing historical backfills to brokers backed by cheap object storage while keeping hot tail-reads on fast NVMe.
 
-Whether those speculative policies prove practical in production remains to be seen—they require telemetry the proxy might not easily have—but proximity routing alone solves a very real, very expensive problem right now.
+Whether those speculative policies prove practical in production remains to be seen—they require telemetry the router might not easily have—but proximity routing alone solves a very real, very expensive problem right now.
 
 There is, of course, a hard constraint: **proxy placement**. If a client in `eu-west-1a` talks to a proxy sitting in `eu-west-1b`, which then forwards to a broker in `eu-west-1a`, you’ve just invented a two-hop cross-AZ detour. For replica routing to pay off, your proxy fleet must be co-located with the clients it fronts.
 
@@ -102,9 +92,11 @@ There is, of course, a hard constraint: **proxy placement**. If a client in `eu-
 
 Making one physical cluster look like a different one at Layer 7 requires more than TCP forwarding. There are three places where the proxy has to do actual work.
 
-### Broker IDs are integers, not names
+### When is 2 != 2?
 
-Kafka wire frames identify brokers by integer `NodeId` — not hostnames. A `MetadataResponse` carries a broker list (node ID, host, port, rack) and maps each partition to its leader and replicas by node ID. The client resolves those node IDs to connections itself. That's fine when there's one physical cluster. When you have multiple physical clusters behind a VKC, you immediately run into a collision problem: broker 2 on cluster A and broker 2 on cluster B are completely different machines, but the proxy can only send one broker list to the client — it cannot have two different entries for node ID 2.
+When broker 2 on cluster A and broker 2 on cluster B are both behind the same VKC.
+
+Kafka identifies brokers by an integer called `NodeId` — not hostnames. A `MetadataResponse` carries a broker list (node ID, host, port, rack) and maps each partition to its leader and replicas by node ID. The client resolves those node IDs to connections itself. That's fine when there's one physical cluster. When you have multiple physical clusters behind a VKC, you immediately run into a collision problem: broker 2 on cluster A and broker 2 on cluster B are completely different machines, but the proxy can only send one broker list to the client — it cannot have two different entries for node ID 2.
 
 The proxy solves this with a deterministic, stateless mapping applied at every node in the routing DAG. Each router speaks two consistent ID languages: a downstream ID space shared with whatever is below it, and an upstream ID space shared with whatever is above it. Requests flow upstream with IDs translated from downstream to upstream; responses flow downstream with IDs translated from upstream to downstream. The router reads and writes both spaces fluently in both directions. A node can have multiple upstream ID spaces — one per route — all of which must be collapsed into a single, unambiguous downstream space. The mapping is strictly one-to-one in both directions — a bijection, if you want the precise term — so every downstream ID resolves to exactly one upstream ID and route, with no collisions and no ambiguity. No database lookup, no distributed state, just arithmetic: the downstream node ID is the upstream node ID multiplied by the number of routes, plus the route index. For a leaf router, the upstream ID space happens to be the physical IDs coming off the wire from a real broker — but the mapping rule is the same regardless. In theory the upstream could itself be another Kroxylicious instance — the mapping rule is indifferent to what sits above the leaf. The only realistic reason you'd pay that latency tax is Conway's Law: separate teams owning separate proxy tiers with their own trust boundaries and operational responsibilities. The proxy runtime handles the translation at each hop transparently; routers work with opaque `VirtualNode` handles scoped to their own ID space and never need to care about the underlying integer arithmetic.
 
@@ -114,33 +106,15 @@ The proxy solves this with a deterministic, stateless mapping applied at every n
                                                     ◄──(cluster B IDs)──► [ broker1.cluster-b, broker2.cluster-b, ... ]
 ```
 
+A router could in principle choose which brokers it exposes to the client — but the moment you start hiding brokers, you own the consequences for partition leadership, replica placement, and fetch routing. That's a deep rabbit hole, and the current API doesn't give you a way in: the bijection and topology discovery are handled by the runtime, not the router.
+
 ### Topology discovery happens in-band
 
 The proxy has no independent view of the Kafka topology. It doesn't poll brokers in the background, run health checks, or hold idle connections open just to keep its metadata warm. Clients and routers drive connections; the proxy learns what it needs to know from the traffic that flows through it.
 
-Topology state is cached per-router and shared across all connections using that router — so a second connection to the same virtual cluster benefits from what the first one already discovered. The cache uses additive semantics: entries are added as they are learned, never removed. That matters for safety. A low-privilege connection might get a filtered `MetadataResponse` covering only the topics it can see; an additive cache means it can only *contribute* knowledge, never silently evict entries that a higher-privilege connection established. And cache poisoning doesn't translate into an access control bypass anyway — the cache only influences routing decisions. Brokers enforce ACLs on every request regardless; a misdirected frame gets an error, not someone else's data.
+Topology state is cached per-router and shared across all connections using that router — so a second connection to the same virtual cluster benefits from what the first one already discovered. The cache uses additive semantics: entries are added as they are learned, never removed. That matters for safety. A low-privilege connection might get a filtered `MetadataResponse` covering only the topics it can see; an additive cache means it can only *contribute* knowledge, never silently evict entries that a higher-privilege connection established. And cache poisoning doesn't translate into an access control bypass either — the cache only influences routing decisions. Brokers enforce ACLs on every request regardless; a misdirected frame gets an error, not someone else's data.
 
 When a client sends a request to a route whose topology the proxy doesn't know yet — on first connection, or after a stale entry — it discovers it on demand. The proxy synthesises a `MetadataRequest` on the active client channel, uses the response to populate its topology cache, and then forwards the original request as normal. Crucially, discovery inherits the client's authenticated context, so there's no privileged out-of-band management channel to secure or misconfigure.
-
-### Idempotent producers and the PID problem
-
-Kafka producers use idempotent delivery by default. The broker deduplicates retried writes so that a message is committed exactly once even if the network drops the acknowledgement and the producer retries. The mechanism relies on a Producer ID (`PID`) that the broker assigns on initialisation, combined with a per-partition sequence number on every batch. If the broker sees a batch it's already committed — same PID, same sequence — it silently discards the duplicate. The client never needs to know.
-
-When you first look at PID management through the proxy, it looks like a problem we already solved. The previous section introduced a bijection for node IDs — a deterministic, stateless mapping between downstream IDs and upstream IDs at each router. PID translation looks like the same pattern, and the surface similarities are convincing: both are integers, both are cluster-scoped, both are assigned by the cluster rather than chosen by the client, and both are opaque values the client simply carries and passes through. So the proxy can just maintain a downstream-to-upstream mapping for both, right? This is the obvious answer. The seams show up quickly, but each one looks stitchable — until you're looking at a patchwork quilt and wondering why it keeps unravelling. The reason is that despite identical protocol syntax, node IDs and producer IDs have completely different semantics within the protocol. A node ID is **spatial** — a label, a coordinate. A PID is **temporal** — not just a label but a claim of active identity. In other words: we can mathematically fake a Node ID because it's just an address. We have to statefully track a Producer ID because it's a weaponised identity claim.
-
-**Node ID translation is transport-scoped.** A `MetadataResponse` tells you where brokers are. The proxy can tell as many lies as it likes here — the broker never sees them, let alone tries to call them out. And the proxy can be forgetful — stateless, even: if it discards its mapping and rebuilds it from the next `MetadataResponse`, it just tells the same lies again. Nothing notices, nothing breaks.
-
-**PID allocation is negotiation-scoped.** Since Kafka 3.0, producers run in idempotent mode by default — you don't have to opt in, it just happens. To support that, the producer calls `InitProducerIdRequest` to ask the broker to allocate it an identity: a (PID, epoch) pair. The broker tracks that identity and uses it to deduplicate retried batches within that session. It will also forcibly evict any connection that presents the same PID with a lower epoch — that is the fencing mechanism, preventing two connections from simultaneously claiming the same identity. If you need that identity to survive across sessions — so a restarted producer can pick up where it left off rather than starting fresh — that is what `transactional.id` is for. A second `InitProducerIdRequest` carrying the same `transactional.id` is treated as a hostile takeover, deliberately: fencing is how Kafka ensures only one producer instance is ever active for a given transactional identity.
-
-Both node IDs and PIDs are cluster-scoped — issued by a specific cluster, honoured within it, meaningless outside it. But the node ID relationship is stateless: if the proxy loses its mapping, it recovers via discovery and rederivation. A PID is unrecoverable. What was negotiated is gone.
-
-All of that is a long way of saying: the proxy cannot manage PIDs globally, and the Routing API makes no attempt to. There is no built-in abstraction that handles this for you — it is left to the team implementing the router to understand what their routing topology implies for producer identity. That is not as bleak as it sounds. There are shapes that work cleanly. If your problem fits one of them, go hard or go home.
-
-**Single physical cluster.** When all routes lead to the same physical cluster, there is nothing to solve. This is just standard Kafka protocol semantics — the proxy is a transparent conduit for a PID relationship that exists entirely between the client and the cluster. No mapping, no invention, no state to lose. Two things to keep in mind: routing decisions must be deterministic at the cluster level (a given producer must always land on the same physical cluster), and if the cluster changes — whether through a failover or a routing reconfiguration — the PID means nothing to the new cluster. Not fenced — a brand new client.
-
-**Multiple active clusters.** This is where connection switching ends. The full treatment — what can be made to work, what can't, and at what cost — is in the post on topic weaving. But the boundary is worth drawing clearly here before we get there: see *Layer 7 can only do so much* below.
-
-**Duplication routing (traffic shadowing).** One pattern that stays cleanly within the connection switching boundary: the shadow write to the secondary cluster is entirely router-invented — the client does not know Cluster B exists, and nothing downstream will ever attempt to resume or share that identity. The router negotiates its own PID with the shadow cluster and owns it from start to finish. What makes this safe is precisely the client's ignorance: because the shadow identity is invisible to the client, nothing can collide with it. There is one edge case worth naming: the shadow cluster has no knowledge of the primary's deduplication history. Writes the primary would have fenced as duplicates may be accepted on the shadow side, particularly after a proxy restart, when the negotiated PID is lost and a fresh one is issued to the shadow cluster. This is a dual-write pattern — do not use it where total accuracy is required. Shadow data is for observability. There will be other safe patterns depending on your topology — the constraint is client visibility, not the number of physical clusters involved.
 
 ---
 
@@ -152,9 +126,11 @@ Layer 7 protocol inspection gives you a lot of leverage. What it doesn't give yo
 
 If the routing target changes while a client is active:
 
-- **Transactional producers:** Kafka treats the Transaction Coordinator as an internal role within the cluster. Transactions are therefore scoped to a single cluster by definition — there is no extension point or API through which an external coordinator could be plugged in. A transaction that starts on cluster A cannot be committed on cluster B; if a routing cutover happens mid-transaction, the subsequent `EndTxnRequest` arrives at the new target and gets back `INVALID_TXN_STATE` or `UNKNOWN_PRODUCER_ID`. That abort needs to be handled cleanly and the transactional loop restarted — the same failure mode as a plain broker restart, which well-written transactional producers already handle. A proxy restart itself is safe: the proxy never invents a PID in the single-cluster case, so the KIP-360 fencing fields the client sends on reconnect are the broker's own real values.
+- **Transactional producers:** Kafka treats the Transaction Coordinator as an internal role within the cluster. Transactions are therefore scoped to a single cluster by definition — there is no extension point or API through which an external coordinator could be plugged in. A transaction that starts on cluster A cannot be committed on cluster B; if a routing cutover happens mid-transaction, the subsequent `EndTxnRequest` arrives at the new target and gets back `INVALID_TXN_STATE` or `UNKNOWN_PRODUCER_ID`. That abort needs to be handled cleanly and the transactional loop restarted — the same failure mode as a plain broker restart, which well-written transactional producers already handle. A proxy restart itself is safe: the proxy never invents a PID in the single-cluster case, so the KIP-360 fencing fields the client sends on reconnect are the broker's own real values. But if the cluster itself changes — through a failover or routing reconfiguration — the PID the client holds is meaningless to the new cluster. Not fenced; simply unknown. The producer reconnects as a stranger.
 
 - **Consumer groups:** Offset state lives in `__consumer_offsets` on the physical cluster. The secondary cluster's Group Coordinator has no knowledge of what the primary's consumers have committed. Failing over without a replication pipeline that includes offsets means consumers either re-read data they've already processed, or skip ahead and lose it. Neither is silent.
+
+- **Idempotent producers:** Producer IDs are issued by a specific cluster and are meaningless to any other. Any time a route targets a new cluster — planned migration, DR failover, or routing reconfiguration — every active producer starts fresh. The new cluster has no deduplication history; retried batches that the old cluster would have silently discarded may be accepted and committed. For producers that care about exactly-once semantics, this is a consideration to plan for, not a surprise to discover in production.
 
 ### Layer 7 can only do so much
 
