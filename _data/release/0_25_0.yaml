@@ -33,14 +33,14 @@ images:
     url: https://quay.io/repository/kroxylicious/proxy?tab=tags
     registry: quay.io/kroxylicious/proxy
     tag: $(VERSION)
-    digest: sha256:REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE
+    digest: sha256:d144aceac0cc8d32e56c368ace052c6f568fbb6353988c1f3e6814aab2d5a117
   - name: Operator
     url: https://quay.io/repository/kroxylicious/operator?tab=tags
     registry: quay.io/kroxylicious/operator
     tag: $(VERSION)
-    digest: sha256:REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE
+    digest: sha256:c2cb1046fb31c1bbf685cd485dfe2938e44e01f159b479b1d25f64804455ae0b
   - name: Webhook
     url: https://quay.io/repository/kroxylicious/webhook?tab=tags
     registry: quay.io/kroxylicious/webhook
     tag: $(VERSION)
-    digest: sha256:REPLACE_WITH_SHA_AFTER_IMAGE_RELEASE
+    digest: sha256:57184df10d8945c3a3153046f85e18f7ba8fd1a5d6de3a004b590b650bcdb88b
