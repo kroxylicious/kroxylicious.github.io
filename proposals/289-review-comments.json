@@ -1,0 +1,30 @@
+[
+  {
+    "type": "review_thread_reply",
+    "thread": "T5",
+    "replyToId": 4210755206,
+    "body": "Good point — you're right that we don't want to focus on record-level routing here. The design space does cover it (a router reconstituting a branch request can go as fine-grained as it likes), but that's not where current implementations sit. I've tweaked the language in the axis paragraph to avoid the ambiguity, and the stream branching section now covers the routing granularity point in more detail.",
+    "status": "pending"
+  },
+  {
+    "type": "review_thread_reply",
+    "thread": "T6",
+    "replyToId": 4211918741,
+    "body": "Horses for courses — Kafka Streams is absolutely the right answer for some of this. Where the proxy approach has the edge: no duplicate storage cost (you're deriving data in flight rather than materialising a new topic), and no framework overhead for what are often stateless transforms. Kafka Streams and Connect are powerful but they're not lightweight — if all you need is \"emit a record count to a metrics topic as this batch passes through\", standing up a Streams application is a lot of machinery for a stateless operation. I've added a sentence to the section to make this clearer.",
+    "status": "pending"
+  },
+  {
+    "type": "review_thread_reply",
+    "thread": "T9",
+    "replyToId": 4212088090,
+    "body": "Oops that wasn't quite the example I was trying to make. I've tweaked the text to make it clearer the woven topic is only on the consumer side.",
+    "status": "pending"
+  },
+  {
+    "type": "review_thread_reply",
+    "thread": "T4",
+    "replyToId": 4210723236,
+    "body": "Glad the others landed. *Stream branching* was the best I could come up with — open to better suggestions. *Branching streams* is another candidate; the difference is whether you're naming the act (branching a stream) or the result (streams that branch). I went with the former but I'm not attached to it.",
+    "status": "pending"
+  }
+]
