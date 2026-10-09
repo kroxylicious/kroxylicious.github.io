@@ -9,7 +9,7 @@ categories: blog kroxylicious-proxy
 tags: [ "routing" ]
 ---
 
-[Post 1]({% post_url 2026-10-10-these-are-not-the-brokers-you-are-connecting-to %}) introduced the Routing API and the fundamental shift it brings: a Virtual Kafka Cluster (VKC) is no longer a fixed pipe wired to a single physical cluster on boot. It's a stable identity. What actually lives behind it is now the proxy's problem, not the client's.
+[Post 1]({% post_url 2026-10-12-these-are-not-the-brokers-you-are-connecting-to %}) introduced the Routing API and the fundamental shift it brings: a Virtual Kafka Cluster (VKC) is no longer a fixed pipe wired to a single physical cluster on boot. It's a stable identity. What actually lives behind it is now the proxy's problem, not the client's.
 
 We called the first pattern **Connection Switching**.
 
@@ -156,6 +156,6 @@ The proxy routes frames; it doesn't replicate log data. If consumers need to pic
 
 Connection switching keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
 
-The next post moves from one-to-one connection switching to stitching multiple physical clusters into a single logical view: **Topic Weaving**.
+The next post moves from one-to-one connection switching to fanning out traffic and assembling secondary streams on the fly: **Stream Branching**.
 
 [^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.
