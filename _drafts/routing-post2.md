@@ -48,46 +48,6 @@ When executing a planned migration or a DR failover:
 
 Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching takes client coordination off the critical path. The data still has to be in sync — that's on you — but at least the cutover itself isn't a multi-team event.
 
-### The cloud bill from hell: Replica routing
-
-If you run Kafka in the cloud across multiple Availability Zones, you've probably had this exact conversation with your finance team. You opened the monthly AWS bill, choked on the 5-figure line item for cross-AZ data transfer, and dutifully turned on Kafka's built-in follower fetching (`client.rack`).
-
-And it worked! The bill plummeted. You closed the Jira ticket, posted a triumphant graph in `#infra-cost-savings`, and moved on.
-
-Then, six months later, the finance team knocks on your door again. The cross-AZ tax has silently crept right back up.
-
-Why? Because relying on every client in the company to configure rack awareness is an unwinnable game of whack-a-mole:
-- Someone copy-pastes a Helm chart that hardcodes `client.rack=eu-west-1a` into a pod deployed in `eu-west-1b`.
-- A data science team spins up a fleet of Python consumers using a library where nobody realised follower fetching requires a specific flag.
-- A new microservice goes live with the defaults, happily pulling multi-gigabyte streams across the AZ boundary from whatever partition leader happens to be awake.
-
-Kafka's native rack awareness is great, but client compliance is leaky. Centralized problems need centralized controls.
-
-And this isn't just about inspecting frames at Layer 7. If all you have is a filter pipeline on a static 1:1 pipe, understanding that a `Fetch` belongs in `eu-west-1a` doesn't help you—the pipe is already nailed to broker 1 in `eu-west-1c`. The breakthrough comes from the Routing API making the backend connection dynamic.
-
-When a `Fetch` request arrives at a Kroxylicious instance in `eu-west-1a` — on the pipe for the leader over in `eu-west-1c` — the router inspects the partition's in-sync replica (ISR) set. If broker 3 is sitting right next door in `eu-west-1a` with a caught-up replica, the router doesn't rewrite the frame—it dynamically dispatches that individual request down a separate backend pipe to broker 3:
-
-```
-[ Consumer (AZ-a) ] ──Fetch──► [ Kroxylicious (AZ-a) ] ────► [ Broker 3 (AZ-a, Replica) ]
-                                       │
-                                (Skips AZ tax)
-                                       ▼
-                              [ Broker 1 (AZ-c, Leader) ]
-```
-
-The application didn't configure `client.rack`. The request payload is completely untouched. It simply travelled down a different pipe. Broker 1 never sees the read, and the cross-AZ request never happened so never reaches the invoice.
-
-Rack-local fetching is just leveraging the existing Kafka protocol. In theory, dynamic per-request dispatch opens up other intriguing possibilities to explore in your custom Bugatti router from post 1:
-- **Replica lag awareness:** Steering reads strictly to the most caught-up followers to avoid trailing-edge staleness.
-- **Broker load shedding:** Diverting fetch traffic away from CPU- or IO-bound leaders to give them headroom for critical writes.
-- **Tiered storage offloading:** Routing historical backfills to brokers backed by cheap object storage while keeping hot tail-reads on fast NVMe.
-
-Whether those speculative policies prove practical in production remains to be seen—they require telemetry the router might not easily have—but proximity routing alone solves a very real, very expensive problem right now.
-
-There is, of course, a hard constraint: **proxy placement**. If a client in `eu-west-1a` talks to a proxy sitting in `eu-west-1b`, which then forwards to a broker in `eu-west-1a`, you’ve just invented a two-hop cross-AZ detour. For replica routing to pay off, your proxy fleet must be co-located with the clients it fronts.
-
----
-
 ## How the proxy makes it work
 
 Making one physical cluster look like a different one at Layer 7 requires more than TCP forwarding. There are three places where the proxy has to do actual work.
@@ -136,7 +96,7 @@ If the routing target changes while a client is active:
 
 Connection switching works because there is a single physical cluster backing it. The proxy isn't maintaining an illusion — it's directing traffic to something real, and real Kafka semantics apply throughout. The moment a router exposes brokers from multiple physical clusters as a unified address space, it has to ensure those semantics stay valid. For some operations that's fine — routing a `Fetch` to a local replica is cheap and safe. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router has taken on the obligation of upholding guarantees the protocol no longer provides on its behalf.
 
-The most immediate consequence is session affinity. The router must maintain a session-scoped mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster. That mapping lives in the proxy instance that negotiated it. If the load balancer routes a reconnecting client to a different proxy replica, the mapping is gone — the router re-negotiates, the epoch bumps, and the backend fences the producer. The proxy can't prevent this. Only sticky L4 routing can.
+The most immediate consequence is that producer identity becomes connection-scoped. The router must maintain a mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster, and that mapping lives with the client connection that negotiated it. Kafka connections are long-lived, but they aren't forever: when one drops, the proxy tears down everything attached to it, mapping included. Reconnecting doesn't help — not even to the same proxy instance — the router re-negotiates, and whatever sequence or epoch continuity the client was relying on is gone. Nor is there only one mapping to lose. A client holds a connection per leader broker, possibly spread across proxy instances that know nothing of each other, so a single client PID can end up fronting several unrelated backend identities. Sticky L4 routing doesn't fix that; the state isn't anywhere a load balancer can point at.
 
 Friends don't let friends cross that line without knowing exactly what they've signed up for.
 
@@ -151,6 +111,20 @@ Kroxylicious gives you the mechanism to flip the routing target without restarti
 ### Offset continuity requires out-of-band replication
 
 The proxy routes frames; it doesn't replicate log data. If consumers need to pick up where they left off on the secondary cluster, offsets have to line up — which means your replication pipeline ([KIP-1279](https://cwiki.apache.org/confluence/display/KAFKA/KIP-1279%3A+Cluster+Mirroring) or equivalent) needs to be in place and caught up *before* you flip the switch, not after. Flipping the switch is not a substitute for having done that work.
+
+---
+
+## Egress, ingress, or does it matter?
+
+Post 1 promised we'd call out where each pattern lands on the egress/ingress axis. From a protocol standpoint connection switching is neutral — the mechanics work either side of the wire. In practice, your use case has a strong opinion about placement.
+
+When talking about DR failover it's obvious once you say it out loud. If the proxy lives in the broker domain — in front of the brokers, a reverse proxy — and the primary site goes down, so does the proxy. Your switch just went boom along with the primary site... The secondary site's ingress proxy was never in the traffic path to begin with; you can't flip a routing target on a proxy your clients weren't talking to. You'd still need to redirect clients to a different address, which is exactly the coordination problem connection switching was supposed to eliminate.
+
+Thus for DR, the proxy needs to sit on the client side of the link as an egress deployment. The proxy isn't collocated with what failed. It's still in the traffic path. You can flip the routing target, and clients never notice.
+
+Connection switching also sits quite happily on the ingress side of the fence. If your goal is to give every team in the organisation a single `kafka.corp.internal:9092` and route their connections to the right tenant cluster behind the scenes, the proxy will most likely sit in front of the brokers — the platform team controls that domain and the stable endpoint is theirs to publish. You could run tenant dispatch egress-side, but now you're managing a fleet of client-side proxies, one per team or workload, and keeping them all pointed at the same routing config. That's a lot of instances to babysit for a problem the platform team already owns.
+
+So what happens when you need to perform a failover of a multi-tenant system? You put a proxy at both ends of the link — egress on the client side, ingress on the broker side. What makes this work cleanly is that each proxy is completely indifferent to what sits behind it: it dials what it's told, speaks Kafka, and has no idea whether the thing on the other end is a broker or another Kroxylicious instance. There's no shared state between them, no coordination protocol, no handshake. That's the pay-off from being a native layer 7 proxy.
 
 ---
 
