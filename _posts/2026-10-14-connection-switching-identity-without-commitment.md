@@ -120,14 +120,6 @@ If the routing target changes while a client is active:
 
 - **Idempotent producers:** Deduplication state lives in the broker. For each partition, the leader remembers the recent sequence numbers it has accepted from each producer (PID and epoch), and that's how it recognises a retried batch and discards it. Producer IDs are handed out by a specific cluster, so when the route changes that history stays behind. The new cluster has never heard of the client's PID: at best the producer is told to start over, and at worst a batch that was in flight across the cutover (already committed on the old cluster) is accepted a second time, because nothing on the new cluster can tell it's a retry. The proxy has no way to inject that state into the new cluster. Idempotence holds within each cluster, but not across the switch: a cutover is a boundary the guarantee doesn't cross. If you depend on it, treat the cutover as a known risk, and either quiesce producers first or make sure downstream consumers can tolerate the odd duplicate. If that isn't good enough, extreme measures exist: a filter could track what it has forwarded and reject re-submitted batches itself. That behaviour is specific to your deployment and would require a custom filter. You know your business better than we do, but it's not a filter we'd expect to ship as a project.
 
-### Layer 7 can only do so much
-
-The moment a router exposes brokers from multiple physical clusters as a unified address space, it stops inheriting Kafka's semantics for free and has to enforce them itself. For some operations that's cheap and safe — routing a `Fetch` to a local replica, say. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router is now the one upholding the guarantee. That's the axis post 1 was built around: how deep into the protocol the router has to reach.
-
-The most immediate consequence is that producer identity becomes connection-scoped. The router must maintain a mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster, and that mapping lives with the client connection that negotiated it. Kafka connections are long-lived, but they aren't forever: when one drops, the proxy tears down everything attached to it, mapping included. Reconnecting doesn't help — not even to the same proxy instance — the router re-negotiates, and whatever sequence or epoch continuity the client was relying on is gone. Nor is there only one mapping to lose. A client holds a connection per leader broker, possibly spread across proxy instances that know nothing of each other, so a single client PID can end up fronting several unrelated backend identities. Sticky L4 routing doesn't fix that; the state isn't anywhere a load balancer can point at.
-
-Friends don't let friends cross that line without knowing exactly what they've signed up for.
-
 ### Cutovers are an explicit decision, not a proxy heuristic
 
 Because the proxy can't silently catch up coordinator state, automated failover *inside the proxy* is a deliberate non-goal.
@@ -139,6 +131,12 @@ Kroxylicious gives you the mechanism to flip the routing target without restarti
 ### Offset continuity requires out-of-band replication
 
 The proxy routes frames; it doesn't replicate log data. If consumers need to pick up where they left off on the secondary cluster, offsets have to line up — which means your replication pipeline ([KIP-1279](https://cwiki.apache.org/confluence/display/KAFKA/KIP-1279%3A+Cluster+Mirroring) or equivalent) needs to be in place and caught up *before* you flip the switch, not after. Flipping the switch is not a substitute for having done that work.
+
+### Layer 7 can only do so much
+
+Every failure mode above shares the same root: the proxy routed a frame to a new cluster, and something on that cluster had no memory of the client. That isn't a proxy bug. It's the definition of where connection switching ends. Post 1 framed the four patterns around a single axis: how deep into the Kafka protocol the router has to reach. Connection switching is the shallow end — it makes one decision, which door to open, and then steps back. The session that follows belongs to the broker.
+
+The patterns deeper on that axis — topic weaving, partition weaving — require the proxy to maintain protocol-level continuity across clusters: intercepting coordinator requests, translating partition spaces, bridging producer identity across backends. That's a different contract. Not a harder version of connection switching; a different pattern, because the axis moved.
 
 ## Egress, ingress, or does it matter?
 
