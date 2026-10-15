@@ -106,8 +106,6 @@ Unusually for the routing capabilities in this series, this isn't logic the rout
 
 Because the rule is purely local to each router, routers compose cleanly without coordinating with each other. A router doesn't need to know what the rest of the graph looks like or whether an upstream target is a physical cluster or another router in the DAG. The runtime handles the integer translation transparently on the wire, leaving custom routers to work with clean `VirtualNode` handles and focus solely on routing decisions.
 
----
-
 ## Proxies aren't magic
 
 Layer 7 protocol inspection gives you a lot of leverage. What it doesn't give you is the ability to reach inside a Kafka broker and move its internal state somewhere else. The proxy can route frames to a different cluster. It cannot conjure the state those frames depend on.
@@ -120,11 +118,11 @@ If the routing target changes while a client is active:
 
 - **Consumer groups:** Offset state lives in `__consumer_offsets` on the physical cluster. The secondary cluster's Group Coordinator has no knowledge of what the primary's consumers have committed. Failing over without a replication pipeline that includes offsets means consumers either re-read data they've already processed, or skip ahead and lose it. Neither is silent.
 
-- **Idempotent producers:** Producer IDs are issued by a specific cluster and are meaningless to any other. Any time a route targets a new cluster — planned migration, DR failover, or routing reconfiguration — every active producer starts fresh. The new cluster has no deduplication history; retried batches that the old cluster would have silently discarded may be accepted and committed. For producers that care about exactly-once semantics, this is a consideration to plan for, not a surprise to discover in production.
+- **Idempotent producers:** Deduplication state lives in the broker. For each partition, the leader remembers the recent sequence numbers it has accepted from each producer (PID and epoch), and that's how it recognises a retried batch and discards it. Producer IDs are handed out by a specific cluster, so when the route changes that history stays behind. The new cluster has never heard of the client's PID: at best the producer is told to start over, and at worst a batch that was in flight across the cutover (already committed on the old cluster) is accepted a second time, because nothing on the new cluster can tell it's a retry. The proxy has no way to inject that state into the new cluster. Idempotence holds within each cluster, but not across the switch: a cutover is a boundary the guarantee doesn't cross. If you depend on it, treat the cutover as a known risk, and either quiesce producers first or make sure downstream consumers can tolerate the odd duplicate. If that isn't good enough, extreme measures exist: a filter could track what it has forwarded and reject re-submitted batches itself. That behaviour is specific to your deployment and would require a custom filter. You know your business better than we do, but it's not a filter we'd expect to ship as a project.
 
 ### Layer 7 can only do so much
 
-Connection switching works because there is a single physical cluster backing it. The proxy isn't maintaining an illusion — it's directing traffic to something real, and real Kafka semantics apply throughout. The moment a router exposes brokers from multiple physical clusters as a unified address space, it has to ensure those semantics stay valid. For some operations that's fine — routing a `Fetch` to a local replica is cheap and safe. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router has taken on the obligation of upholding guarantees the protocol no longer provides on its behalf.
+The moment a router exposes brokers from multiple physical clusters as a unified address space, it stops inheriting Kafka's semantics for free and has to enforce them itself. For some operations that's cheap and safe — routing a `Fetch` to a local replica, say. But for anything that touches producer identity or coordination — PIDs, epochs, transaction coordinators, consumer group coordinators — the router is now the one upholding the guarantee. That's the axis post 1 was built around: how deep into the protocol the router has to reach.
 
 The most immediate consequence is that producer identity becomes connection-scoped. The router must maintain a mapping between the client's virtual PID and the real (PID, epoch) on each backend cluster, and that mapping lives with the client connection that negotiated it. Kafka connections are long-lived, but they aren't forever: when one drops, the proxy tears down everything attached to it, mapping included. Reconnecting doesn't help — not even to the same proxy instance — the router re-negotiates, and whatever sequence or epoch continuity the client was relying on is gone. Nor is there only one mapping to lose. A client holds a connection per leader broker, possibly spread across proxy instances that know nothing of each other, so a single client PID can end up fronting several unrelated backend identities. Sticky L4 routing doesn't fix that; the state isn't anywhere a load balancer can point at.
 
@@ -142,8 +140,6 @@ Kroxylicious gives you the mechanism to flip the routing target without restarti
 
 The proxy routes frames; it doesn't replicate log data. If consumers need to pick up where they left off on the secondary cluster, offsets have to line up — which means your replication pipeline ([KIP-1279](https://cwiki.apache.org/confluence/display/KAFKA/KIP-1279%3A+Cluster+Mirroring) or equivalent) needs to be in place and caught up *before* you flip the switch, not after. Flipping the switch is not a substitute for having done that work.
 
----
-
 ## Egress, ingress, or does it matter?
 
 Post 1 promised we'd call out where each pattern lands on the egress/ingress axis. From a protocol standpoint connection switching is neutral — the mechanics work either side of the wire. In practice, your use case has a strong opinion about placement.
@@ -155,8 +151,6 @@ Thus for DR, the proxy needs to sit on the client side of the link as an egress 
 Connection switching also sits quite happily on the ingress side of the fence. If your goal is to give every team in the organisation a single `kafka.corp.internal:9092` and route their connections to the right tenant cluster behind the scenes, the proxy will most likely sit in front of the brokers — the platform team controls that domain and the stable endpoint is theirs to publish. You could run tenant dispatch egress-side, but now you're managing a fleet of client-side proxies, one per team or workload, and keeping them all pointed at the same routing config. That's a lot of instances to babysit for a problem the platform team already owns.
 
 So what happens when you need to perform a failover of a multi-tenant system? You put a proxy at both ends of the link — egress on the client side, ingress on the broker side. What makes this work cleanly is that each proxy is completely indifferent to what sits behind it: it dials what it's told, speaks Kafka, and has no idea whether the thing on the other end is a broker or another Kroxylicious instance. There's no shared state between them, no coordination protocol, no handshake. That's the pay-off from being a native layer 7 proxy.
-
----
 
 Connection switching keeps the operational promise simple: platform teams can change the physical backend without the application teams ever knowing it happened. That's not a small thing.
 
