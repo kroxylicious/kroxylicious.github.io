@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Connection Switching: Identity without commitment"
-date: 2026-09-11 15:00:00 +1200
+date: 2026-10-14 15:00:00 +1200
 author: "Sam Barker"
 author_url: "https://github.com/sambarker"
 # noinspection YAMLSchemaValidation
@@ -50,15 +50,41 @@ Whether you're doing a planned blue/green transition or invoking DR in an emerge
 
 ## How the proxy makes it work
 
-Making one physical cluster look like a different one at Layer 7 requires more than TCP forwarding. There are three places where the proxy has to do actual work.
+Post 1 established that Kafka clients care intensely about broker identity: *Broker 1 is Broker 1*. When a client bootstraps, it asks for a cluster map and manages direct connections to each broker at the address advertised for its `NodeId`.
+
+To switch what sits behind those connections without triggering that "unexpected divorce", the proxy runtime has to solve two concrete problems:
+
+1. **In-band topology discovery:** The proxy needs to learn which brokers exist in the target cluster without running out-of-band polling loops or requiring separate management credentials. Luckily, Kroxylicious discovers this on the fly directly from client traffic.
+2. **Broker identity virtualisation:** Once the proxy knows the underlying topology, it has to prevent collisions. If cluster A and cluster B both contain a "broker 2" (and they almost certainly will), presenting both behind the same virtual cluster requires deterministically translating node IDs so the client never sees a clash.
+
+Here is how each piece works under the hood.
+
+### Topology discovery happens in-band
+
+What's the point of being a Layer 7 protocol proxy if you don't take advantage of the protocol? Kafka already advertises the broker layout as part of every `MetadataResponse`—so the proxy simply listens in.
+
+Doing discovery in-band means we don't need background polling loops, synthetic health checks, or separate privileged admin credentials to keep an out-of-band cluster map warm. When a route's topology is unknown, discovery inherits the client's authenticated connection, and the proxy simply harvests the broker layout from the traffic that flows through.
+
+Topology state is cached per-router and shared across all connections using that router — so a second connection to the same virtual cluster benefits from what the first one already discovered. The cache uses additive semantics: entries are added as they are learned, never removed. That matters for safety. A low-privilege connection might get a filtered `MetadataResponse` covering only the topics it can see; an additive cache means it can only *contribute* knowledge, never silently evict entries that a higher-privilege connection established. And cache poisoning doesn't translate into an access control bypass either — the cache only influences routing decisions. Brokers enforce ACLs on every request regardless; a misdirected frame gets an error, not someone else's data.
+
+When a client sends a request to a route whose topology the proxy doesn't know yet — on first connection, or after a stale entry — it discovers it on demand. The proxy synthesises a `MetadataRequest` on the active client channel, uses the response to populate its topology cache, and then forwards the original request as normal.
+
+This is all proven technology from the pre-routing world, but routing throws us a curve ball.
 
 ### When is 2 != 2?
 
 When broker 2 on cluster A and broker 2 on cluster B are both behind the same VKC.
 
-Kafka identifies brokers by an integer called `NodeId` — not hostnames. A `MetadataResponse` carries a broker list (node ID, host, port, rack) and maps each partition to its leader and replicas by node ID. The client resolves those node IDs to connections itself. That's fine when there's one physical cluster. When you have multiple physical clusters behind a VKC, you immediately run into a collision problem: broker 2 on cluster A and broker 2 on cluster B are completely different machines, but the proxy can only send one broker list to the client — it cannot have two different entries for node ID 2.
+To understand why this is interesting, look at what the proxy has always done. From day one, Kroxylicious has rewritten broker addresses in `MetadataResponse` frames—how else would a client connect to the proxy instead of the real broker? But the breakthrough routing gave us was realising that we are dealing with two distinct pools of broker IDs:
 
-The proxy solves this with a deterministic, stateless mapping applied at every node in the routing DAG. Each router speaks two consistent ID languages: a downstream ID space shared with whatever is below it, and an upstream ID space shared with whatever is above it. Requests flow upstream with IDs translated from downstream to upstream; responses flow downstream with IDs translated from upstream to downstream. The router reads and writes both spaces fluently in both directions. A node can have multiple upstream ID spaces — one per route — all of which must be collapsed into a single, unambiguous downstream space. The mapping is strictly one-to-one in both directions — a bijection, if you want the precise term — so every downstream ID resolves to exactly one upstream ID and route, with no collisions and no ambiguity. No database lookup, no distributed state, just arithmetic: the downstream node ID is the upstream node ID multiplied by the number of routes, plus the route index. For a leaf router, the upstream ID space happens to be the physical IDs coming off the wire from a real broker — but the mapping rule is the same regardless. In theory the upstream could itself be another Kroxylicious instance — the mapping rule is indifferent to what sits above the leaf. The only realistic reason you'd pay that latency tax is Conway's Law: separate teams owning separate proxy tiers with their own trust boundaries and operational responsibilities. The proxy runtime handles the translation at each hop transparently; routers work with opaque `VirtualNode` handles scoped to their own ID space and never need to care about the underlying integer arithmetic.
+1. The **downstream ID space** facing the client.
+2. The **upstream ID space** facing the physical cluster.
+
+In the pre-routing world, you could think of the proxy (not that we framed it this way at the time) as running a simple identity mapping between upstream and downstream `NodeId`s. Broker 2 upstream was presented as Broker 2 downstream; only the advertised socket address changed.
+
+Routing breaks that simplicity by introducing **multiple upstream ID pools**. That would be trivial if those pools were provably disjoint—if Cluster A only ever used IDs `0..99` and Cluster B used `100..199`. But in the real world, almost every Kafka cluster starts numbering its brokers from 0 or 1.
+
+Because Kafka clients resolve partition leaders by integer `NodeId`, the proxy cannot return a `MetadataResponse` containing two completely different machines that both claim to be `NodeId: 2`. We have to collapse multiple upstream ID pools into a single, unambiguous downstream space:
 
 ```
                                                     ◄──(cluster A IDs)──► [ broker1.cluster-a, broker2.cluster-a, ... ]
@@ -66,15 +92,19 @@ The proxy solves this with a deterministic, stateless mapping applied at every n
                                                     ◄──(cluster B IDs)──► [ broker1.cluster-b, broker2.cluster-b, ... ]
 ```
 
-A router could in principle choose which brokers it exposes to the client — but the moment you start hiding brokers, you own the consequences for partition leadership, replica placement, and fetch routing. That's a deep rabbit hole, and the current API doesn't give you a way in: the bijection and topology discovery are handled by the runtime, not the router.
+The proxy solves this with a stateless and deterministic mapping function applied at each step in the routing DAG — technically speaking, a bijection. No database lookup, no distributed coordinator — just integer arithmetic:
 
-### Topology discovery happens in-band
+`downstreamId = (upstreamId * numRoutes) + routeIndex`
 
-The proxy has no independent view of the Kafka topology. It doesn't poll brokers in the background, run health checks, or hold idle connections open just to keep its metadata warm. Clients and routers drive connections; the proxy learns what it needs to know from the traffic that flows through it.
+If Cluster A is route index 0 and Cluster B is route index 1 across two routes:
+- Broker 2 on Cluster A becomes virtual Node ID `(2 * 2) + 0` = **4**
+- Broker 2 on Cluster B becomes virtual Node ID `(2 * 2) + 1` = **5**
 
-Topology state is cached per-router and shared across all connections using that router — so a second connection to the same virtual cluster benefits from what the first one already discovered. The cache uses additive semantics: entries are added as they are learned, never removed. That matters for safety. A low-privilege connection might get a filtered `MetadataResponse` covering only the topics it can see; an additive cache means it can only *contribute* knowledge, never silently evict entries that a higher-privilege connection established. And cache poisoning doesn't translate into an access control bypass either — the cache only influences routing decisions. Brokers enforce ACLs on every request regardless; a misdirected frame gets an error, not someone else's data.
+Requests flowing upstream have their node IDs translated from downstream to upstream; responses flowing downstream have them translated back. The mapping is strictly one-to-one in both directions, so every downstream ID resolves to exactly one physical broker and route with zero ambiguity.
 
-When a client sends a request to a route whose topology the proxy doesn't know yet — on first connection, or after a stale entry — it discovers it on demand. The proxy synthesises a `MetadataRequest` on the active client channel, uses the response to populate its topology cache, and then forwards the original request as normal. Crucially, discovery inherits the client's authenticated context, so there's no privileged out-of-band management channel to secure or misconfigure.
+Unusually for the routing capabilities in this series, this isn't logic the router author has to build—the Kroxylicious runtime maintains the mapping for you at every hop.
+
+Because the rule is purely local to each router, routers compose cleanly without coordinating with each other. A router doesn't need to know what the rest of the graph looks like or whether an upstream target is a physical cluster or another router in the DAG. The runtime handles the integer translation transparently on the wire, leaving custom routers to work with clean `VirtualNode` handles and focus solely on routing decisions.
 
 ---
 
