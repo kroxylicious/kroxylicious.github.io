@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Connection Switching: Identity without commitment"
-date: 2026-10-14 15:00:00 +1200
+date: 2026-10-19 15:00:00 +1200
 author: "Sam Barker"
 author_url: "https://github.com/sambarker"
 # noinspection YAMLSchemaValidation
