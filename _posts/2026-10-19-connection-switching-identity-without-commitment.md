@@ -13,7 +13,9 @@ tags: [ "routing" ]
 
 We called the first pattern **Connection Switching**.
 
-Connection switching makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no weaving. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; what it resolves to is now the proxy's problem, not the client's.
+Connection switching makes the smallest possible change to Kafka protocol semantics. A connection to a VKC is still a connection to exactly one physical cluster — no fan-out, no merging, no weaving. The broker on the other end behaves like any Kafka broker, because it is one. What the proxy adds is a single degree of freedom: *which* cluster. Think of it in DNS terms: we transform a hardwired A record into a CNAME. The client has a stable name; where the traffic actually lands is entirely up to the proxy.
+
+Post 1 framed it as throwing points before the train departs: the routing decision is made once at connection time, and after that it's a straight run to the destination. That's still the right picture. This post is about what the stationmaster has to do to make the points throw cleanly — and what falls off the back of the train when they do.
 
 ## What you can do with it (and the dream it sets up)
 
@@ -27,7 +29,7 @@ With connection switching, everyone bootstraps at `kafka.corp.internal:9092`. Wh
 - Heavy batch analytics jobs get dispatched to the spinning rust cluster.
 - General application traffic stays on the shared tier.
 
-Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with connection switching—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (the migrations section below gets into what that actually requires). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, connection switching eliminates the connection coordination nightmare entirely.
+Now, let's be honest about the boundaries: migrating a producer pumping ephemeral clickstream data to a new cluster is trivial with connection switching—the platform team updates the route, and the producer begins writing to the new cluster with zero config changes and zero downtime. But what about the downstream analytics consumers that need to process that data? If they need continuous historical context, or if data was split across clusters mid-stream, the downstream consumer story is much more complicated. The proxy solves the connection and routing problem, but physical log replication and consumer offset synchronisation remain out-of-band challenges (the DR and migrations section below gets into what that actually requires). Still, for producers emitting fresh streams or teams operating in clean, discrete domains, connection switching eliminates the connection coordination nightmare entirely.
 
 ### Client-change-free cluster migrations and DR failover
 
@@ -42,9 +44,9 @@ Connection switching doesn't solve the hard data replication or consumer offset 
 
 When executing a planned migration or a DR failover:
 
-1. **The data plane is handled out-of-band:** Topics and offsets are synced beforehand via active replication (MirrorMaker 2, KIP-1279 cluster mirroring, or your vendor's equivalent), or recovered from storage volume snapshots.
-2. **The connection cutover is a control-plane flip:** The proxy updates its route target to the secondary cluster—either globally or tenant-by-tenant.
-3. **Rollback is instant:** If the secondary cluster misbehaves under live load, you can revert the routing target in seconds rather than triggering another round of client config rollbacks.
+- **The data plane is handled out-of-band:** Topics and offsets are synced beforehand via active replication (MirrorMaker 2, KIP-1279 cluster mirroring, or your vendor's equivalent), or recovered from storage volume snapshots.
+- **The connection cutover is a control-plane flip:** The proxy updates its route target to the secondary cluster and drops active downstream client connections. Rather than attempting to hand over in-flight state, we let Kafka clients do what they were built to do: reconnect to the stable bootstrap address, issue a fresh `MetadataRequest`, discover the secondary cluster's virtual broker endpoints, and resume from where they left off.
+- **Rollback is instant:** If the secondary cluster misbehaves under live load, you can revert the routing target in seconds rather than triggering another round of client config rollbacks.
 
 Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching takes client coordination off the critical path. The data still has to be in sync — that's on you — but at least the cutover itself isn't a multi-team event.
 
@@ -54,16 +56,16 @@ Post 1 established that Kafka clients care intensely about broker identity: *Bro
 
 To switch what sits behind those connections without triggering that "unexpected divorce", the proxy runtime has to solve two concrete problems:
 
-1. **In-band topology discovery:** The proxy needs to learn which brokers exist in the target cluster without running out-of-band polling loops or requiring separate management credentials. Luckily, Kroxylicious discovers this on the fly directly from client traffic.
+1. **In-band topology discovery:** The proxy needs to learn which brokers exist in the target cluster without running out-of-band polling loops or requiring separate management credentials. By design, Kroxylicious discovers this on the fly directly from client traffic.
 2. **Broker identity virtualisation:** Once the proxy knows the underlying topology, it has to prevent collisions. If cluster A and cluster B both contain a "broker 2" (and they almost certainly will), presenting both behind the same virtual cluster requires deterministically translating node IDs so the client never sees a clash.
 
-Here is how each piece works under the hood.
+Here's what's actually happening under the hood.
 
 ### Topology discovery happens in-band
 
 What's the point of being a Layer 7 protocol proxy if you don't take advantage of the protocol? Kafka already advertises the broker layout as part of every `MetadataResponse`—so the proxy simply listens in.
 
-Doing discovery in-band means we don't need background polling loops, synthetic health checks, or separate privileged admin credentials to keep an out-of-band cluster map warm. When a route's topology is unknown, discovery inherits the client's authenticated connection, and the proxy simply harvests the broker layout from the traffic that flows through.
+Doing discovery in-band means we don't need background polling loops, synthetic health checks, or separate privileged admin credentials to keep an out-of-band cluster map warm. When a route's topology is unknown, discovery inherits the client's authenticated connection, and the proxy harvests the broker layout from the traffic that flows through.
 
 Topology state is cached per-router and shared across all connections using that router — so a second connection to the same virtual cluster benefits from what the first one already discovered. The cache uses additive semantics: entries are added as they are learned, never removed. That matters for safety. A low-privilege connection might get a filtered `MetadataResponse` covering only the topics it can see; an additive cache means it can only *contribute* knowledge, never silently evict entries that a higher-privilege connection established. And cache poisoning doesn't translate into an access control bypass either — the cache only influences routing decisions. Brokers enforce ACLs on every request regardless; a misdirected frame gets an error, not someone else's data.
 
@@ -73,18 +75,20 @@ This is all proven technology from the pre-routing world, but routing throws us 
 
 ### When is 2 != 2?
 
-When broker 2 on cluster A and broker 2 on cluster B are both behind the same VKC.
+When broker 2 on cluster A and broker 2 on cluster B are both managed behind the same router.
 
-To understand why this is interesting, look at what the proxy has always done. From day one, Kroxylicious has rewritten broker addresses in `MetadataResponse` frames—how else would a client connect to the proxy instead of the real broker? But the breakthrough routing gave us was realising that we are dealing with two distinct pools of broker IDs:
+A single connection only ever talks to one cluster at a time — so a client will never see a `MetadataResponse` containing brokers from both. But the router configuration covers both routes simultaneously, and the proxy runtime maintains a shared topology cache across all of them. During a cutover, a client might also hold cached metadata or open connections referencing Broker 2 from the old cluster while the new cluster's Broker 2 is coming into view. Those two things can't share an ID.
+
+To understand the full picture, look at what the proxy has always done. From day one, Kroxylicious has rewritten broker addresses in `MetadataResponse` frames — how else would a client connect to the proxy instead of the real broker? But the insight routing gave us was realising that we are dealing with two distinct pools of broker IDs:
 
 1. The **downstream ID space** facing the client.
 2. The **upstream ID space** facing the physical cluster.
 
-In the pre-routing world, you could think of the proxy (not that we framed it this way at the time) as running a simple identity mapping between upstream and downstream `NodeId`s. Broker 2 upstream was presented as Broker 2 downstream; only the advertised socket address changed.
+In the pre-routing world, the proxy ran a simple identity mapping between them: Broker 2 upstream was presented as Broker 2 downstream; only the advertised socket address changed.
 
-Routing breaks that simplicity by introducing **multiple upstream ID pools**. That would be trivial if those pools were provably disjoint—if Cluster A only ever used IDs `0..99` and Cluster B used `100..199`. But in the real world, almost every Kafka cluster starts numbering its brokers from 0 or 1.
+Routing breaks that simplicity by introducing **multiple upstream ID pools**. That would be trivial if those pools were provably disjoint — if Cluster A only ever used IDs `0..99` and Cluster B used `100..199`. But in the real world, almost every Kafka cluster starts numbering its brokers from 0 or 1.
 
-Because Kafka clients resolve partition leaders by integer `NodeId`, the proxy cannot return a `MetadataResponse` containing two completely different machines that both claim to be `NodeId: 2`. We have to collapse multiple upstream ID pools into a single, unambiguous downstream space:
+To keep the runtime's shared topology cache unambiguous and to prevent collisions across a cutover, we have to collapse multiple upstream ID pools into a single downstream space:
 
 ```
                                                     ◄──(cluster A IDs)──► [ broker1.cluster-a, broker2.cluster-a, ... ]
