@@ -35,9 +35,15 @@ To be clear: this only affects trains being dispatched going forward. Any freigh
 
 ### Kafka doesn't do CNAMEs
 
-Swapping a CNAME is how the rest of the world handles this. Update the record, wait for the TTL to expire, done — clients follow without noticing.[^1] Kafka can't do that. The client doesn't resolve a hostname and move on; it resolves a hostname, connects, asks for a broker map, and then manages direct connections to every broker in that map by integer ID. A CNAME flip is an unexpected divorce, not a transparent redirect.
+Swapping a CNAME is how the rest of the world handles this. Update the record, wait for the TTL to expire, done — clients follow along without noticing.[^1]
 
-Connection switching is like giving Kafka support for CNAMEs. The bootstrap address stays stable. Planned migrations — major version bumps, moving to KRaft, cloud region shifts — and unplanned DR failovers still carry operational friction, but they no longer share the most expensive bottleneck: coordinating every client team to update their endpoints. Connection switching doesn't solve the hard data replication or consumer offset reconciliation problem, but it **completely eliminates the client-side migration cost**.
+Kafka can't do that. Kafka connections are persistent and long-lived. Flipping a DNS record does nothing to existing TCP connections; clients will happily keep talking to the old brokers until something drops their socket. Even after the DNS TTL expires and the new record propagates, existing clients don't disconnect. Instead, they only trickle over to the new cluster as individual applications happen to restart, redeploy, or hit network blips over the following hours or days.
+
+Swapping a CNAME gives you the illusion of a clean cutover, but in the words of Admiral Ackbar: *"It's a trap."* You haven't executed a cutover; you've stumbled into an unplanned active-active deployment. Some portion of your producers and consumers are still writing to Cluster A while the rest commit to Cluster B, leaving your data consistency and offset state caught in the middle.
+
+Connection switching gives you the clean cutover DNS promises, but with the coordination Kafka actually needs. The bootstrap and broker endpoints remain stable. When you flip the route target, the proxy severs existing downstream connections in a single, coordinated cut. Every client hits its built-in reconnect loop at the same time, re-establishes connections to the stable proxy endpoints, receives the metadata map for the new cluster, and carries on—moving all traffic from Cluster A to Cluster B without spending hours trapped in an unintended active-active limbo.
+
+Let's be realistic: getting clients to point at a new cluster isn't the hardest part of a migration or DR scenario. Data consistency is what keeps Kafka operators awake at night — topic replication, offset mapping, replication lag, and consumer state. Connection switching doesn't solve any of that (that's still on you and your replication tooling). But what it *does* do is take client endpoint coordination off the critical path. You don't have to chase twenty application teams into a midnight maintenance window just to change their configs.
 
 When executing a planned migration or a DR failover:
 
@@ -45,13 +51,13 @@ When executing a planned migration or a DR failover:
 - **The connection cutover is a control-plane flip:** The proxy updates its route target to the secondary cluster and closes existing downstream connections. Clients reconnect to the stable bootstrap address, issue a fresh `MetadataRequest` against the new target, and resume. The Kafka client's standard reconnect loop is the recovery mechanism; no application-level coordination is required.
 - **Rollback is fast:** If the secondary cluster misbehaves under live load, you can revert the routing target in seconds — with a few bonus state management headaches.
 
-Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching takes client coordination off the critical path. The data still has to be in sync — that's on you — but at least the cutover itself doesn't involve getting the app teams in a "room".
+Whether you're doing a planned blue/green transition or invoking DR in an emergency, connection switching means the cutover itself doesn't involve herding cats.
 
 ## How the proxy makes it work
 
 Post 1 established that Kafka clients care intensely about broker identity: *Broker 1 is Broker 1*. When a client bootstraps, it asks for a cluster map and manages direct connections to each broker at the address advertised for its `NodeId`.
 
-To switch what sits behind those connections without triggering that "unexpected divorce", the proxy runtime has to solve two concrete problems:
+To switch what sits behind those connections without breaking client expectations, the proxy runtime has to solve two concrete problems:
 
 1. **Knowing who's who:** Everyone needs to know who is who, the proxy included. We really don't want to manage that state ourselves — I work hard at being lazy — and it turns out we don't have to. We can just listen in to the discovery the client is already doing.
 2. **The five Daves problem:** The underlying topology is all well and good but we can't naively send it straight to the client. If cluster A and cluster B both contain a "broker 2" (and they almost certainly will), presenting both behind the same virtual cluster requires deterministically translating node IDs so the client never sees a clash.
