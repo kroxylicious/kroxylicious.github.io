@@ -57,10 +57,14 @@ Whether you're doing a planned blue/green transition or invoking DR in an emerge
 
 Post 1 established that Kafka clients care intensely about broker identity: *Broker 1 is Broker 1*. When a client bootstraps, it asks for a cluster map and manages direct connections to each broker at the address advertised for its `NodeId`.
 
-To switch what sits behind those connections without breaking client expectations, the proxy runtime has to solve two concrete problems:
+If you've ever used a modern public transit map or navigated an airport terminal, you know that nobody navigates by real geography. Harry Beck's famous 1931 London Underground map—the inspiration for virtually every subway schematic and transit diagram that followed—worked because travelers don't care about winding tunnels or true physical distances. They only care about topology: which station connects to which, and where you change trains.
 
-1. **Knowing who's who:** Everyone needs to know who is who, the proxy included. We really don't want to manage that state ourselves — I work hard at being lazy — and it turns out we don't have to. We can just listen in to the discovery the client is already doing.
-2. **The five Daves problem:** The underlying topology is all well and good but we can't naively send it straight to the client. If cluster A and cluster B both contain a "broker 2" (and they almost certainly will), presenting both behind the same virtual cluster requires deterministically translating node IDs so the client never sees a clash.
+Kafka clients operate on the exact same premise. They have no concept of physical infrastructure; their entire mental model of the world is the schematic map handed to them in a `MetadataResponse`. As long as that map is internally consistent, they're happy.
+
+To swap the physical reality behind that schematic without breaking client expectations, the proxy runtime has to solve two concrete problems:
+
+1. **Drafting the map on the fly:** The proxy needs to know which upstream brokers exist. Rather than surveying the network ourselves and hardcoding it into configuration — I work hard at being lazy — we just look at the map the client is already requesting and learn it in-band.
+2. **The Platform 2 problem:** Tell someone to board "the train on Platform 2" at King's Cross without qualification, and one person is on the mainline concourse waiting for the Edinburgh express while the other is three escalators down on the Piccadilly Line. If Cluster A and Cluster B both contain a "broker 2" (and they almost certainly will), we must deterministically translate node IDs so the client never boards the wrong train.
 
 Here's what's actually happening under the hood.
 
@@ -78,7 +82,7 @@ This is all proven technology from the pre-routing world, but routing throws us 
 
 ### When is 2 != 2?
 
-When broker 2 on cluster A and broker 2 on cluster B are both hidden behind the same router. Welcome to the five Daves problem: shout "Dave!" across the office and five heads turn round.
+When broker 2 on cluster A and broker 2 on cluster B are both hidden behind the same router. Welcome to the Platform 2 problem: telling someone to board "the train on Platform 2" is ambiguous when both the mainline railway and the deep Underground line share the same front doors. Without translation, two completely different destinations collide under the same number.
 
 A single connection only ever references a single cluster at a time. However many clusters are behind the proxy, the IDs in the `MetadataResponse` must paint a single coherent picture. We can't give the client an identity crisis by presenting N different addresses for node 2. The ID space the client sees must be stable: if NodeId 4 meant cluster A's broker 2 before the cutover, it can't silently start meaning cluster B's broker 2 after it.
 
