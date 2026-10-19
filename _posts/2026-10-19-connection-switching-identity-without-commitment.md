@@ -168,4 +168,5 @@ Connection switching keeps the operational promise simple: platform teams can ch
 
 The next post moves from one-to-one connection switching to fanning out traffic and assembling secondary streams on the fly: **Stream Branching**.
 
+---
 [^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.
