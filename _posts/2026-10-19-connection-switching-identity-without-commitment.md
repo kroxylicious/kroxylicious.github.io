@@ -55,7 +55,7 @@ Whether you're doing a planned blue/green transition or invoking DR in an emerge
 
 ## How the proxy makes it work
 
-Post 1 established that Kafka clients care intensely about broker identity: *Broker 1 is Broker 1*. When a client bootstraps, it asks for a cluster map and manages direct connections to each broker at the address advertised for its `NodeId`.
+[Post 1]({% post_url 2026-10-12-these-are-not-the-brokers-you-are-connecting-to %}) established that Kafka clients care intensely about broker identity: *Broker 1 is Broker 1*. When a client bootstraps, it asks for a cluster map and manages direct connections to each broker at the address advertised for its `NodeId`.
 
 If you've ever used a modern public transit map or navigated an airport terminal, you know that nobody navigates by real geography. Harry Beck's famous 1931 London Underground map—the inspiration for virtually every subway schematic and transit diagram that followed—worked because travelers don't care about winding tunnels or true physical distances. They only care about topology: which station connects to which, and where you change trains.
 
