@@ -201,6 +201,19 @@ Branching can have other awkward memory effects. The client's request/response i
 
 Keep it self-contained. Every station handles each batch on its own, acting on each request and response as it passes. Joins, windows, and aggregations over time need state that survives restarts, rebalances, and late data — Kafka Streams and Kafka Connect exist to manage exactly that. A router that starts accumulating state across batches has become a badly built stream processor, and badly built stream processors are how senior engineers get paged at 3am.
 
+## Egress, ingress, or does it matter?
+
+[Post 2]({% post_url 2026-10-19-connection-switching-identity-without-commitment %}) asked whether the proxy belongs on the client side of the link (egress) or the broker side (ingress), and for DR the answer was egress: a proxy that dies with the primary can't flip anything. That argument carries over unchanged, and probably matters more. Stream branching adds a second question: what is the branch local to? The protocol doesn't care where the proxy sits, but the branch target is usually closer to one end of the link than the other. The rule of thumb: all else being equal, put the proxy close to the thing you're branching to.
+
+Your topology will have opinions of its own:
+
+- **Staging** sits next to production, so the proxy goes at the broker end and the shadow never crosses the link. **Audit** goes there too: if the brokers are only reachable through the proxy, nobody can opt out of being audited.
+- **Telemetry** can go either way. If the observability stack lives with the clients, so does the proxy.
+
+Redaction follows the trust boundary instead. Say your telemetry feed goes to in-house storage with the IP addresses intact, and a copy goes to a third-party anomaly detector minus the PII. The scrubbing has to happen before the copy leaves your domain, so the proxy goes wherever that exit is. Flip it round and redact what an untrusted client is allowed to read, and the proxy lands at the broker end. Same filter, opposite ends of the link.
+
+Replica routing isn't really an ingress or egress question at all. The consumer, the proxy and the replica it fetches from all need to share an AZ, otherwise the cross-AZ hop just moves to a different leg. That's the **proxy placement** constraint from earlier, and it holds whichever end of the link the proxy sits at.
+
 ## Mind the gap
 
 Stream branches generally take the form of a dual write, and dual writes are like juggling with knives. Fine as long as you catch the hilt, painful if you catch the blade.
