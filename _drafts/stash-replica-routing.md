@@ -58,3 +58,30 @@ When you first look at PID management through the proxy, it looks like a problem
 Node IDs and PIDs are both cluster-scoped: issued by one cluster, honoured within it, meaningless outside it. But the node ID mapping is stateless. If the proxy loses it, the proxy rediscovers and recomputes it. A PID can't be recovered that way. Once the negotiation is lost, so is the identity.
 
 The upshot is that the proxy can't manage PIDs globally, and the Routing API doesn't try to. No built-in abstraction handles this for you. Whoever writes the router has to work out what their routing topology means for producer identity.
+
+## Weaving: what the PID argument means for producing vs consuming
+
+The PID argument bites on the produce side only. The consume side works without any PID state.
+
+**Consuming: pass the upstream PID through.**
+
+- The PID, epoch and base sequence appear once per batch, in the batch header. Records carry only deltas, so nothing per record needs rewriting.
+- A `read_committed` consumer sees the same upstream PID (call it U) in three places: data batch headers, control batch (commit/abort marker) headers, and the `aborted_transactions` entries in the fetch response. All three are written by one cluster for one partition, so they are consistent with each other.
+- The consumer matches them against each other and never presents a PID back to a broker. There is no need for a U to D (downstream PID) mapping on the fetch path.
+- Caveats, all filter-author rules rather than weaving problems:
+  - A filter that rebuilds fetch-response batches must preserve PID, epoch and control-batch flags, and keep `aborted_transactions` consistent.
+  - Offsets must stay untouched. `first_offset` in the aborted list is a per-partition offset. Partition weaving rewrites partition numbers, not offsets, so it is fine.
+  - Admin APIs (`DescribeProducers`, `ListTransactions`) expose U, not D. A minor observability gap.
+- Losing PID state does hurt `read_committed` consumers indirectly, via the produce side: a lost mapping leaves transactions hanging until `transaction.timeout.ms`, which holds back the LSO.
+
+**Producing: this is where it gets hard.** (Parked issues to come back to.)
+
+- The PID is inside the CRC-covered part of the v2 record batch. Mapping D to U means decoding every produce batch, rewriting `producerId`, `producerEpoch` and `baseSequence`, and recomputing the CRC32C. Weaving therefore gives up zero-copy entirely.
+- If the D to U mapping is lost, the router allocates a fresh U' for the same D. The log then holds the same logical producer under U and U' with nothing linking them. A transaction started under U cannot be completed under U'. It hangs, or the broker aborts the part written under U while the client believes it committed (silent loss, not just a stalled LSO).
+- Each cluster allocates PIDs independently, so U on cluster A and U on cluster B can be different producers. Harmless per partition, but it would break any consumer logic that keyed on PID across partitions. No known client does this.
+
+## Weaving: KIP-939 is not magic (link to the Gemini write-up)
+
+TODO: link the Gemini doc from the weaving post: <https://docs.google.com/document/d/1ShcWeGuP1kMAzqFtEmjuIIAMJJre0Uy4bzkWm3bZbZ8/edit?usp=sharing>
+
+Point to make: KIP-939 (two-phase commit support) still does not fix this. If we went anywhere near it we would be in full distributed consensus pain. Not read or verified yet. Summarise from the doc before quoting, and check its claims against the KIP.
