@@ -56,9 +56,9 @@ graph LR
 
 Yes, I know this looks like a DR solution, it's really not. By definition the branch is a best-effort copy; the DR cluster can have holes and duplicates that the primary doesn't — [Mind the gap](#mind-the-gap) goes into the gory details. You can't trust it for failover — the only way to verify nothing's missing is to compare both copies, and if both copies are online you don't need to fail over. If you need reliable replication to a DR cluster, use MirrorMaker 2 or [KIP-1279](https://cwiki.apache.org/confluence/display/KAFKA/KIP-1279%3A+Cluster+Mirroring) cluster mirroring — they were designed and built for that job.
 
-Where pure duplication earns its keep is staging: a complete-ish copy of production traffic so you can test against real-shaped data, where the odd missing record doesn't affect whether your code works.
+Cloning a feed to a staging environment is the trivial example, even though audit and telemetry are the more likely reasons to branch in practice. You get a complete-ish copy of production traffic to test against real-shaped data, and the odd missing record doesn't affect whether your code works. It's also the branch you'd most expect to have a bad day, and that is exactly what the golden rule is for.
 
-Your staging cluster is big enough for your production load, right? No, I thought not. As described in [Post 1]({% post_url 2026-10-12-these-are-not-the-brokers-you-are-connecting-to %}), routers exist in a DAG; each node has a filter chain, a composable pipeline of steps that can inspect and transform requests as they pass through. Add a sampling filter on the staging branch that drops 90% of produce requests and forwards the rest. The mainline is untouched; staging gets a 10% sample; nobody had to change any application code.
+And why would staging have a bad day? Your staging cluster is big enough for your production load, right? No, I thought not. As described in [Post 1]({% post_url 2026-10-12-these-are-not-the-brokers-you-are-connecting-to %}), routers exist in a DAG; each node has a filter chain, a composable pipeline of steps that can inspect and transform requests as they pass through. Add a sampling filter on the staging branch that drops 90% of produce requests and forwards the rest. The mainline is untouched; staging gets a 10% sample; nobody had to change any application code.
 
 Speaking of filter chains: your production data is full of PII that can't touch staging. Add a redaction filter after the sampler — no point scrubbing records you're about to throw away. The filters compose.
 
@@ -145,9 +145,9 @@ That's the normal contract: branch writes are fire-and-forget from the client's 
 
 So far we've focused on produce requests. Branching on the fetch side took me a while to realise the value of, but there are two cases worth a look.
 
-The first is a branch driven by the response: the primary's `FetchResponse` goes back to the client, and the router also sends a small record of what was read (per-consumer bytes, lag, an audit trail of who read what) down a branch line. The catch is that a delivered fetch isn't a processed one, so the numbers will drift from committed offsets, and a refetch counts the same records twice. There can still be a signal in there. Any mismatches tell operators something about what's going on out there, but it needs careful handling.
+The first is a branch driven by the response: the primary's `FetchResponse` goes back to the client, and the router also sends a small record of what was read (per-consumer bytes, lag, an audit trail of who read what) down a branch line. The catch is that a delivered fetch isn't a processed one, and a refetch counts the same records twice. If you need to know the group member really acked, tap its `OffsetCommitRequest` as well: the request says what the member claims to have processed, and the `OffsetCommitResponse` says whether the broker accepted it.
 
-The second is a shadow fetch: the router sends its own read-only fetch to a candidate cluster, say to validate a passive site is in sync with the active site. The client only cares about the primary's response. The router can compare the shadow response with the primary and summon help if they aren't identical. We don't need to check every response; a sample would work well here. It needs the offsets to line up between the two clusters, and the shadow must never be allowed to hold up the mainline. Both are forgiving in a way the produce side isn't. Neither is a copy of the client's data, so there's no ghost or MIA batch to reconcile.
+The second is a shadow fetch: the router sends its own read-only fetch to a candidate cluster, say to validate a passive site is in sync with the active site. The client only cares about the primary's response. The router can compare the shadow response with the primary and summon help if they aren't identical. We don't need to check every response; a sample would work well here. It needs the offsets to line up between the two clusters, and the shadow must never be allowed to hold up the mainline. Both are forgiving in a way the produce side isn't. Neither is a copy of the client's data, so there's no ghost or MIA (missing in action) batch to reconcile.
 
 Branching isn't the only thing worth doing on the fetch side though. Sometimes the better move is to change where the fetch goes — not to a different cluster, but to a different broker on the same one. That's a substitution, not a branch: one stream, better-routed.
 
@@ -222,7 +222,7 @@ Stream branches generally take the form of a dual write, and dual writes are lik
 
 A Kafka log only ever appends. When a batch lands on one cluster and fails on the other, nothing can take the successful write back. That leaves the branch out of step with the primary in two ways, and we'll need names for them:
 
-- An **MIA batch** is one the primary has and the branch doesn't. The branch is behind, and has a hole.
+- An **MIA (missing in action) batch** is one the primary has and the branch doesn't. The branch is behind, and has a hole.
 - A **ghost batch** is one the branch has and the primary doesn't. The branch is ahead, and if the client retries it becomes a duplicate on the branch.
 
 There are three ways to sequence the branch write, and it is worth understanding what each one actually buys you.
@@ -283,6 +283,8 @@ Kafka producers use idempotent delivery by default. The broker deduplicates retr
 #### The router is its own producer on the branch
 
 The branch cluster's identity is something the router created. The client doesn't know the branch cluster exists and nothing downstream will ever try to resume or share that identity. The router sends its own `InitProducerIdRequest` to the branch cluster and owns that identity start to finish. This is safe *because* the client can't see it — an identity the client can't see is one the client can't collide with. It also means the client's batches can't simply be forwarded down the branch. The router has to build each branch batch itself, stamped with its own PID and epoch and a fresh checksum.
+
+Order matters too. Anything that binds a batch's body to its headers, such as encryption that authenticates the batch identity, has to be applied to the batch exactly as the broker will persist it. Change the headers afterwards and the binding no longer holds, probably in unrecoverable ways. The binding can happen at any node in the DAG, but once it has, nothing downstream may change the batch or the records in it. The runtime can't readily police conflicting manipulations, so it's up to whoever writes the configuration to get the order right.
 
 To the branch cluster, the router is just another idempotent producer. For each PID and partition, the branch broker remembers the last few batches it accepted, discards any it has already seen, and rejects anything that isn't the next one in line. It's the same check the primary applies to the client.
 
