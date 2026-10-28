@@ -58,7 +58,7 @@ The patterns build on each other along a single axis: how deep into the Kafka pr
 Connection switching operates at the connection level — which broker, which forms part of which cluster, is this connection actually being sent to? Stream branching works at the stream level — where does this request go? Topic weaving reaches into the topic catalog — which topics are visible and where do they live? Partition weaving goes deepest — how do physical partition spaces map onto a logical one? Each step requires the router(s) to understand more of the protocol than the last. But the complexity doesn't compound as routing is managed through a DAG which allows them to be composed rather than monolithic. A router handling topic visibility doesn't care whether the partitions behind it are woven from multiple clusters. A router rewriting partition numbers doesn't care whether the topic catalog above it spans two physical clusters or twenty.
 
 
-### Connection switching
+### [Connection switching]({% post_url 2026-10-19-connection-switching-identity-without-commitment %})
 
 Until recently a VKC provided a 1:1 mapping between the thing the client addressed and the thing the proxy dialled. The routing API breaks that constraint — one VKC can now connect to one or more physical backends, and the target isn't fixed. The VKC is stable; what's behind it doesn't have to be.
 
@@ -70,7 +70,7 @@ With connection switching, you leave a Kroxylicious instance in the cage and poi
 
 Before routing, Kroxylicious was a pipe with opinions — it could inspect and rewrite the stream, but it was inherently connection-oriented. One client socket, one backend, straight through. Connection switching breaks the static part of that: the backend can now change. The routing decision is made once at connection time — the points are thrown before the train departs, and after that it's a straight run to the destination. It's still 1:1; the interesting thing is that the 1 on the right side is now chosen, not fixed.
 
-### Stream branching
+### [Stream branching]({% post_url 2026-10-29-stream-branching-mind-the-gap %})
 
 You're chasing an issue in the reporting pipeline that only shows up in the sixth hour of the run and nobody can figure out which record trips it up. You've been there, right? What you really want is access to the live data with a debugger. Alas, this job is stuffed full of Personally Identifiable Information — so you're out of luck. You've been there and got *that* t-shirt. What now? You build a router that shadows production traffic to a staging cluster, piping it through a redaction filter on the way so the PII becomes gibberish before it touches staging brokers. The client is still producing to one VKC. But the proxy is now opening *two* backend connections — one to the primary cluster, one to staging — and writing every record to both. The acknowledgement the client gets back is from the primary; the shadow write happens on the side. One stream in, two streams out. If you've got your EIP book off the shelf already, yes — it's a Wire Tap with a Message Translator on the diverted stream.
 

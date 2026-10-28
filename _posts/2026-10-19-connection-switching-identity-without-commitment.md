@@ -172,7 +172,7 @@ So what happens when you want to combine both — cross-site DR failover with pl
 
 Connection switching keeps the operational promise simple: platform teams can change the physical backend without the application teams having to do anything. The state work above is still yours, but it's work you can do on your own schedule instead of everyone else's. That's not a small thing.
 
-The next post moves from one-to-one connection switching to fanning out traffic and assembling secondary streams on the fly: **Stream Branching**.
+The next post moves from one-to-one connection switching to fanning out traffic and assembling secondary streams on the fly: [**Stream Branching: Mind the gap**]({% post_url 2026-10-29-stream-branching-mind-the-gap %}).
 
 ---
 [^1]: There is always some bit of infra that fails to honour the TTL properly or doesn't understand a CNAME or PTR record.

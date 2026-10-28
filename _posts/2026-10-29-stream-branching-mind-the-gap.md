@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Stream Branching: Mind the gap"
-date: 2026-10-26 15:00:00 +1200
+date: 2026-10-29 15:00:00 +1200
 author: "Sam Barker"
 author_url: "https://github.com/sambarker"
 # noinspection YAMLSchemaValidation
