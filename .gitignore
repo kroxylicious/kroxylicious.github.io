@@ -13,3 +13,4 @@ _config-overrides.yml
 _data/documentation/*-SNAPSHOT.yaml
 _data/release/*-SNAPSHOT.yaml
 download/*-SNAPSHOT/
+.scratch/
