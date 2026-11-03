@@ -86,6 +86,22 @@ Both are stateless. Interleaving isn't saving anything the declared list hasn't 
 
 (Constituents are numbered from 0, and the ranges column assumes the first holds at least 6 partitions.)
 
+{% comment %}
+```mermaid
+graph TB
+    subgraph Ranges
+        R1["logical 5, K = 2"] --> R2["constituent 0, partition 5"]
+        R3["logical 5, K = 3"] --> R4["constituent 0, partition 5"]
+    end
+    subgraph Interleaved
+        I1["logical 5, K = 2"] --> I2["constituent 1, partition 2"]
+        I3["logical 5, K = 3"] --> I4["constituent 2, partition 1"]
+    end
+    style I4 fill:#fdd,stroke:#a33,stroke-width:2px
+```
+{% endcomment %}
+![Logical partition 5 under the two numbering schemes, before and after a third constituent joins. With ranges, it stays on partition 5 of constituent 0 both times. With interleaving, it is partition 2 of constituent 1 with two constituents, and partition 1 of constituent 2 with three, so the same logical number now reads from a different log.](/assets/blog/images/routing-series/partition-range-management.svg)
+
 Interleaving moves every logical partition when K changes. The data hasn't moved. Committed offsets sit in `__consumer_offsets` keyed by the physical topic and partition, and earlier records were placed by an earlier hash. After the change the same logical number reads from a different log. In Post 2 the same formula was safe because node IDs are re-learned from the next `Metadata` response. Partition identity is stored, so it can't be re-learned. Ranges are only growable at the end, but at least they know what that means.
 
 Reshuffling isn't a quirk of weaving. A normal Kafka topic can't shrink either, and adding partitions already moves keys. A key with a hash of 50 lands in carriage 18 of 32 and carriage 2 of 48. The number is only illustrative. The principle is that a partition count is a promise to clients, and weaving doesn't let you break it any more cheaply.
@@ -119,6 +135,22 @@ I'd treat the two sides differently:
 - **Client side: derived.** The router computes the ID for a logical topic from its name and something that says which incarnation it is. A generation number alongside the layout is one way to do that. Every instance computes the same value, with nothing stored. Going the other way, from a UUID back to a topic, you can't invert a hash. The router builds a table at startup by computing the ID for every topic it declares. The result must avoid the all-zero UUID, which the protocol uses to mean "no ID". Kafka's own generator also skips a few reserved values and any ID whose string form contains a dash, and it would be sensible to follow suit.
 - **Broker side: learned.** The physical ID comes from the backing cluster's `Metadata` response, discovered in-band as in Post 2. If it goes stale, the broker answers `UNKNOWN_TOPIC_ID` and the router refreshes. The broker's own protection against stale topics stays intact on this leg.
 
+{% comment %}
+```mermaid
+graph LR
+    C[Client]
+    R[Router]
+    L["Declared layout and generation"]
+    B["Backing cluster"]
+    L -- "derives the client topic ID" --> R
+    C -- "Produce or Fetch with the client topic ID" --> R
+    R -- "Produce or Fetch with the physical topic ID" --> B
+    B -- "Metadata: the physical topic ID" --> R
+    B -. "UNKNOWN_TOPIC_ID if stale, so the router refreshes" .-> R
+```
+{% endcomment %}
+![The client topic ID is derived by the router from the declared layout and its generation, so no instance needs to store it. The client sends Produce and Fetch requests with that ID to the router. The router swaps in the physical topic ID, which it learned from the backing cluster's Metadata response, and sends the request on. If the physical ID is stale, the cluster answers UNKNOWN_TOPIC_ID and the router refreshes its Metadata.](/assets/blog/images/routing-series/topicIds.svg)
+
 That's the opposite of a producer ID. The client-facing ID can be rebuilt from the declared layout by any instance, and the physical ID can be re-learned from the cluster. Nothing that can't be recomputed has to survive a restart.
 
 What you lose is the client-facing guarantee. The client's protection against a delete-and-recreate is only as good as the generation. Nobody really wants to delete and recreate a woven topic at will, so I wouldn't build anything to evolve client IDs automatically. Whoever does it is doing a migration, and bumping the generation is how they say so. It needs managing, for topic weaving as well as for this.
@@ -134,6 +166,26 @@ Arranging it means a custom partitioner that knows which numbers are local, and 
 ## Consuming
 
 Consumer groups work as they did in [Post 4]({% post_url 2026-11-02-topic-weaving-one-client-many-clusters %}), with one change of granularity. Membership goes to the boss, and the group leader works out the assignment from the merged `Metadata`, so every member sees `orders` with 32 partitions and may be handed some from each cluster. Offsets split inside a topic now, not between topics. Commits for the partitions on the boss go with the member's ID and generation. Commits for the rest go as standalone commits. All of Post 4's caveats come along, including that fencing is partial and the new group protocol isn't covered. A woven topic that gains a constituent changes its partition count, and subscribed consumers rebalance as they would for any topic that gained partitions.
+
+{% comment %}
+```mermaid
+graph TB
+    M[Group member]
+    R[Router]
+    subgraph Boss cluster
+        BC["Group coordinator: membership, generation, offsets for the partitions it holds"]
+    end
+    subgraph Other cluster
+        OC["__consumer_offsets: offsets for the partitions it holds"]
+    end
+    M -- "JoinGroup, SyncGroup, Heartbeat" --> R
+    M -- "OffsetCommit for orders, partitions 0 .. 31" --> R
+    R -- "membership" --> BC
+    R -- "commit with member ID and generation" --> BC
+    R -- "standalone commit: generation -1, no member ID, group ID prefixed, partitions renumbered" --> OC
+```
+{% endcomment %}
+![A group member sends its group membership requests and its offset commits for the woven topic to the router. The router sends membership requests to the boss cluster, which is the group coordinator. It sends commits for the partitions on the boss cluster there too, with the member ID and generation. Commits for the partitions on the other cluster go there as standalone commits with generation minus one and no member ID, with the group ID prefixed and the partitions renumbered.](/assets/blog/images/routing-series/consumer-groups-v1.svg)
 
 Standalone commits bring a hazard of their own. They land in the other clusters' `__consumer_offsets`, and the `group.id` namespace there is shared with every other application on the cluster. If one of them uses the same group ID, the commit is either rejected because that group has live members, or it quietly overwrites that application's offsets. So the router prefixes the group ID on the way to those clusters, and strips it again on the way back. Yes, yes, we could coordinate group names across the clusters instead. Then we're back on the same conference bridge at 2am, arguing about which team owns which name.
 
