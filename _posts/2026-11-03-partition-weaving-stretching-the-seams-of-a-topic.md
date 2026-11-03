@@ -17,9 +17,9 @@ Partition weaving is a cautionary tale. My first reaction was "that's a really n
 
 [Post 4]({% post_url 2026-11-02-topic-weaving-one-client-many-clusters %}) said the railway had run out of track. It had, for topics. For partitions there turns out to be a siding.
 
-[Post 2]({% post_url 2026-10-19-connection-switching-identity-without-commitment %}) gave us a ticket: the 3:15 to Mos Eisley, carriage 13, seat 342323. In Kafka terms that's `topic-A.partition-13` at offset 342323. Take a train whose timetable says it has 32 carriages. Passengers are assigned a carriage by hashing their name and taking the remainder after dividing by 32, so everyone called Smith ends up in the same one, every time. Carriages 0 to 15 are one portion of the train, which started out in us-east. Carriages 16 to 31 are another, which started out in eu-west. The two are coupled together at a junction the passengers never see. Each portion keeps its own reservations, so seat 342323 only means something within its own carriage. The ticket says carriage 20. The guard knows that is carriage 4 of the eu-west portion.
+Picture a train coming back from Tatooine with 32 carriages. A carriage is a partition and a seat within it is an offset, so a ticket for carriage 13, seat 342323 means partition 13 at offset 342323. Passengers were loaded into a carriage on the outbound journey, by hashing their name and taking the remainder after dividing by 32, so everyone called Smith ends up in the same one, every time. Carriages 0 to 15 are one portion of the train, which started out in Mos Eisley. Carriages 16 to 31 are another, which started out in Mos Espa. Two towns on one planet, with the portions coupled together at a junction that neither the passengers nor the consumer at the end of the line ever see. The consumer believes it is meeting one 32-carriage train from Tatooine. Each portion keeps its own reservations, so seat 342323 only means something within its own carriage. The consumer's ticket says carriage 20. The guard knows that is carriage 4 of the Mos Espa portion.
 
-That's the scenario from Post 1: a risk engine in us-east, hardcoded to read a topic called `orders`, and an EU team producing to `orders-eu` on a local cluster. The router presents both as one `orders` with 32 partitions.
+That's the scenario from Post 1: a risk engine in us-east, hardcoded to read a topic called `orders`, and an EU team producing to `orders-eu` on a local cluster. The router presents both as one `orders` with 32 partitions. In the story, Tatooine is the virtual cluster, Mos Eisley is us-east and Mos Espa is eu-west.
 
 {% comment %}
 ```mermaid
@@ -104,10 +104,12 @@ Partition numbers turn up in nearly every RPC that names a partition. I'm sticki
 | Request | Where the partition number is | What the router does |
 |---|---|---|
 | `Metadata` response | Each partition's index, and its leader as a node ID | Emits logical 0 to N-1. Sets each leader to a virtual node on the owning route, with an error for an unreachable constituent |
-| `Produce` | The partition index under each topic | Maps logical to (route, physical topic, physical partition), splits by route, rewrites the response the other way |
+| `Produce` | The partition index under each topic | Maps logical to (route, physical topic, physical partition) and rewrites the response the other way |
 | `Fetch` | The partition under each topic, and the partitions to drop in the forgotten-topics list of an incremental fetch | The same translation. The session state is kept on both sides, as in the [topic routing proof of concept]({% post_url 2026-05-21-topic-routing %}) |
 | `ListOffsets` | The partition index | The same translation. Consumers use it to find the start or end of a partition |
 | `OffsetCommit`, `OffsetFetch` | The partition index under each topic | Splits by owning route, with the boss and standalone commits from Post 4 |
+
+`Produce`, `Fetch` and `ListOffsets` never need to be split. A client sends each of them to the leader of the partitions involved. With the node ID mapping from Post 2 every virtual node belongs to exactly one route, so a client that follows the `Metadata` it was given sends a frame whose partitions all live on one cluster. The router rewrites the coordinates and forwards the whole frame. The requests that do get torn apart are `Metadata`, which merges several answers into one, and the offset requests, because a group has a single coordinator whichever clusters its partitions are on.
 
 Offsets, leader epochs and the record batches themselves belong to the physical partition and pass through untouched. Rewriting a partition number doesn't touch the batch, so unlike rewriting a producer ID it costs no CRC recalculation.
 
@@ -139,6 +141,8 @@ Arranging it means a custom partitioner that knows which numbers are local, and 
 ## Consuming
 
 Consumer groups work as they did in [Post 4]({% post_url 2026-11-02-topic-weaving-one-client-many-clusters %}), with one change of granularity. Membership goes to the boss, and the group leader works out the assignment from the merged `Metadata`, so every member sees `orders` with 32 partitions and may be handed some from each cluster. Offsets split inside a topic now, not between topics. Commits for the partitions on the boss go with the member's ID and generation. Commits for the rest go as standalone commits. All of Post 4's caveats come along, including that fencing is partial and the new group protocol isn't covered. A woven topic that gains a constituent changes its partition count, and subscribed consumers rebalance as they would for any topic that gained partitions.
+
+Standalone commits bring a hazard of their own. They land in the other clusters' `__consumer_offsets`, and the `group.id` namespace there is shared with every other application on the cluster. If one of them uses the same group ID, the commit is either rejected because that group has live members, or it quietly overwrites that application's offsets. So the router prefixes the group ID on the way to those clusters, and strips it again on the way back. Yes, yes, we could coordinate group names across the clusters instead. Then we're back on the same conference bridge at 2am, arguing about which team owns which name.
 
 Two smaller points. An `OffsetFetch` for every topic returns offsets under physical names, so the router has to translate or hide them, particularly if a group also reads `orders-eu` directly. And an unreachable constituent is reported the way a broker reports a partition whose leader is offline, which is the shape clients already expect. I'd start there and not invent something new. We haven't tested it with real clients.
 
