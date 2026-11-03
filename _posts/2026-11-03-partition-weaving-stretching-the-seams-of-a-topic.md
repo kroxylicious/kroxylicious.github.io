@@ -25,28 +25,21 @@ That's the scenario from Post 1: a risk engine in us-east, hardcoded to read a t
 ```mermaid
 graph TB
     subgraph Client view
-        L["orders: partitions 0 to 31"]
+        L["orders: partitions 0 .. 31"]
     end
     R[Router]
     subgraph us-east
-        A["orders: partitions 0 to 15"]
+        A["orders: partitions 0 .. 15"]
     end
     subgraph eu-west
-        B["orders-eu: partitions 0 to 15"]
+        B["orders-eu: partitions 0 .. 15"]
     end
     L --> R
     R -- "p" --> A
     R -- "p - 16" --> B
 ```
 {% endcomment %}
-```
-Client sees    orders: [ 0  1  2 ... 15 | 16  17  18 ... 31 ]    32 partitions
-                          │                    │
-                          │ p                  │ p − 16
-                          ▼                    ▼
-Router maps    us-east / orders          eu-west / orders-eu
-               partitions 0 – 15         partitions 0 – 15
-```
+![The client sees one topic, orders, with 32 partitions numbered 0 to 31. The router sends partitions 0 to 15 unchanged to the orders topic on us-east, and partitions 16 to 31 to partitions 0 to 15 of the orders-eu topic on eu-west, subtracting 16 from the partition number.](/assets/blog/images/routing-series/partition-ranges.svg)
 
 The analogy breaks in one place, and it's worth stating because the difficulty lives there. The carriages of a real train are in a line and you can walk between them. Partitions have no order and nothing moves between them. The number is only a label, and the label is the thing the client's hashing depends on. Kafka's default partitioner takes a keyed record, computes a `murmur2` hash of the key bytes and takes the remainder after dividing by the partition count. The count comes from the `Metadata` response. Unkeyed records are spread over whichever partitions are available. A label that stops meaning the same carriage is a label that silently reshuffles every passenger.
 
