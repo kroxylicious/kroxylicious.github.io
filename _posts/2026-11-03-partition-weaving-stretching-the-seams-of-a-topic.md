@@ -13,6 +13,8 @@ This is the fifth post in a series about routing in Kroxylicious, and it covers 
 
 Partition weaving is a cautionary tale. My first reaction was "that's a really neat idea". The more I looked at it, the harder it got. It is clearly part of the design space the Routing API opens up, which is why it's in the series, and it may well be possible. But it is a lot of effort to go to, and I haven't found a use case that justifies it to me. If you have one, I'd like to hear about it.
 
+Back at the sorting office from Post 4, the sorter picked a chute from the label on the parcel. Here every parcel carries the same label, `orders`, and the sorter has to read the house number as well. That number is the one thing it can never reassign once it's printed.
+
 ## One topic, two clusters
 
 Take the scenario from Post 1: a risk engine in us-east, hardcoded to read a topic called `orders`, and an EU team producing to `orders-eu` on a local cluster. The router presents both as one `orders` topic with 32 partitions. Partitions 0 to 15 are the `orders` partitions on us-east. Partitions 16 to 31 are partitions 0 to 15 of `orders-eu` on eu-west. A consumer that asks for partition 20 gets partition 4 of `orders-eu` and never knows. I'll call the numbers the client sees *virtual*, in the same sense as a virtual cluster, and the partitions and topics that actually exist on a backing cluster *physical*. Partition 20 is virtual, and partition 4 of `orders-eu` is the physical partition behind it.
@@ -53,7 +55,7 @@ The best case I have is a migration, for moving a very large topic between clust
 
 **Data residency by key.** This is the one people will suggest, and it fits worst. The default partitioner hashes keys without knowing where anything lives, so residency would need a custom partitioner that sends EU keys to EU partitions. Producers that already know the layout could write to separate topics, and topic weaving would stitch those together without any of this.
 
-That's the list. If you have a better one, tell me.
+That's everything I've found, and I'd be glad to be wrong about it. If you have another idea, I'd like to hear about it.
 
 ## The layout is declared, not discovered
 
@@ -73,9 +75,13 @@ Changing it is where the care goes. The rule is that a virtual partition number 
 
 The first is **ranges**, which is what the picture shows. Constituent *i* starts at the sum of the partition counts before it. A virtual partition `p` falls in the range `[start_i, start_i + count_i)` and maps to physical partition `p - start_i`. The inverse adds `start_i` back. In the example, virtual 20 is `eu-west` / `orders-eu` partition 4. Constituents can have different counts, and appending to the end leaves everything before it alone.
 
-The second is **interleaving**, and it's the tempting one, because it's the arithmetic from Post 2. With K constituents of equal size, virtual `p` goes to constituent `p mod K` as physical partition `p div K`. It looks like the node ID bijection and it's just as stateless.
+The second is **interleaving**, and it's the tempting one, because it's the same arithmetic we use to map broker IDs to virtual node IDs. With K constituents of equal size, virtual `p` goes to constituent `p mod K` as physical partition `p div K`.
 
-Both are stateless. Interleaving isn't saving anything the declared list hasn't already saved, because the router needs that list to know the routes anyway. Where they differ is growth:
+Both are stateless. Interleaving isn't saving anything the declared list hasn't already saved, because the router needs that list to know the routes anyway.
+
+Think of numbering the houses on a street. Ranges build new houses at the far end, so number 5 is still the same house. Interleaving renumbers every house whenever one is built, but the letters already on the doormat stay where they were, and the post, addressed by number, now arrives at the wrong door.
+
+The numbers say the same thing:
 
 | | Ranges | Interleaved |
 |---|---|---|
@@ -159,7 +165,7 @@ The alternative is to avoid IDs altogether. The proposal notes that a router can
 
 A producer writing through the weave picks a partition from 0 to 31 as it would for any topic. The router sends it wherever that number lives. For keyed records the hash decides, so a producer in eu-west has no reason to land on the eu-west partitions. For unkeyed records the client spreads load across available partitions, which includes the ones across the ocean. Writing through the weave gives you no locality unless something outside the router arranges it.
 
-Arranging it means a custom partitioner that knows which numbers are local, and that puts the layout the router hides back into the client. If you can change a producer's `partitioner.class`, you could change its topic name as well. So the producers that gain from partition weaving are, in practice, the ones that don't use it. In Post 1's scenario the EU team writes straight to `orders-eu`, and the weave serves readers only.
+Arranging it means a custom partitioner that knows which numbers are local, and that puts the layout the router hides back into the client. The weave exists for the consumer you can't touch, the vendor's risk engine, while the producers are yours to change. If you can change a producer's `partitioner.class`, you could change its topic name as well. So the producers that gain from partition weaving are, in practice, the ones that don't use it. In Post 1's scenario the EU team writes straight to `orders-eu`, and the weave serves readers only.
 
 ## Consuming
 
