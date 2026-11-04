@@ -41,7 +41,7 @@ graph TB
 {% endcomment %}
 ![The client sees one topic, orders, with 32 partitions numbered 0 to 31. The router sends partitions 0 to 15 unchanged to the orders topic on us-east, and partitions 16 to 31 to partitions 0 to 15 of the orders-eu topic on eu-west, subtracting 16 from the partition number.](/assets/blog/images/routing-series/partition-ranges.svg)
 
-The analogy breaks in one place, and it's worth stating because the difficulty lives there. The carriages of a real train are in a line and you can walk between them. Partitions have no order and nothing moves between them. The number is only a label, and the label is the thing the client's hashing depends on. Kafka's default partitioner takes a keyed record, computes a `murmur2` hash of the key bytes and takes the remainder after dividing by the partition count. The count comes from the `Metadata` response. Unkeyed records are spread over whichever partitions are available. A label that stops meaning the same carriage is a label that silently reshuffles every passenger.
+The analogy breaks in one place, and it's where the difficulty lives: once we've numbered the partitions, we can't re-number them. Nothing moves between carriages. Records stay in the partition they were written to, and the numbers we expose in `Metadata` are the only way a client can address them. Change the count, or what a number points at, and the data can't follow. Clients keep using the old addresses and read or write the wrong place.
 
 ## What would you use it for?
 
@@ -59,7 +59,7 @@ That's the list. If you have a better one, tell me.
 
 ## The layout is declared, not discovered
 
-Everything else depends on where the partition layout comes from. For topic weaving the map could follow the clusters, because topics appearing and disappearing is something clients cope with. A partition count is different. It's the divisor in the client's hash.
+Everything else depends on where the partition layout comes from. For topic weaving the map could follow the clusters, because topics appearing and disappearing is something clients cope with. A partition count is different. A partition number is the only handle a client has on a record, and changing the handle without moving the data breaks all sorts of things.
 
 Suppose the router discovered the layout by asking the clusters. If eu-west became unreachable, the router would find only 16 partitions and report a topic with 16 partitions. Every keyed record produced in that window would hash into 0 to 15, to the wrong carriage, with no error anywhere. So I'd declare it. A woven topic is an ordered list of constituents, each a route, a physical topic and a partition count, held in the router's configuration or a catalogue. Three consequences follow:
 
@@ -104,7 +104,7 @@ graph TB
 
 Interleaving moves every logical partition when K changes. The data hasn't moved. Committed offsets sit in `__consumer_offsets` keyed by the physical topic and partition, and earlier records were placed by an earlier hash. After the change the same logical number reads from a different log. In Post 2 the same formula was safe because node IDs are re-learned from the next `Metadata` response. Partition identity is stored, so it can't be re-learned. Ranges are only growable at the end, but at least they know what that means.
 
-Reshuffling isn't a quirk of weaving. A normal Kafka topic can't shrink either, and adding partitions already moves keys. A key with a hash of 50 lands in carriage 18 of 32 and carriage 2 of 48. The number is only illustrative. The principle is that a partition count is a promise to clients, and weaving doesn't let you break it any more cheaply.
+Re-numbering isn't a quirk of weaving. Changing the partition count of a normal Kafka topic is already a risky business: a key whose hash is 50 lands in carriage 18 of 32 and carriage 2 of 48. Weaving doesn't make that any worse, but it does make an inadvertent change much more likely. Changing the configuration is a much more serious activity than it appears.
 
 ## Where the numbers appear
 
