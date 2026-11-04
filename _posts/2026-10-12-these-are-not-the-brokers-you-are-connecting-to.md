@@ -114,6 +114,8 @@ Instead, the proxy intercepts `OffsetCommit` and `OffsetFetch` requests, demuxes
 
 What the proxy has to do here is far more demanding than in any of the previous patterns: partition numbers must be rewritten consistently across every Kafka RPC that mentions them — and they get everywhere, as you might expect. That's the essential complexity of the pattern, not incidental overhead. It's a lot of surfaces to get right. The operational contract also shifts: both physical topics have to honour the mapping, and your router is now the source of truth for what `orders` means. Transactions don't cross cluster boundaries here either — same caveat as topic weaving, but worth repeating because with partition weaving it's easier to forget the seam is there.
 
+Partition weaving is workable, with a lot of effort. The dedicated post goes into what's involved, and you can judge whether it's worth it.
+
 ---
 
 These four patterns give us a working vocabulary for the rest of the series. The posts that follow take each one in turn — what it can do, what it can't, and why. Some of the limits are ours and will close over time. Some are the Kafka protocol's: transactions have no external coordinator, and no amount of clever routing changes that. And some would require the proxy to grow a consensus layer of its own — which is a whole different animal, and not one we're planning to domesticate any time soon.

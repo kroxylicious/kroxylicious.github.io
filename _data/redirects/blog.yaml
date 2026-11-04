@@ -17,10 +17,10 @@ mappings:
     absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/19/connection-switching-identity-without-commitment.html
   - name: sb
     subgroup: routing
-    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/26/stream-branching-mind-the-gap.html
+    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/29/stream-branching-mind-the-gap.html
   - name: stream-branching
     subgroup: routing
-    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/26/stream-branching-mind-the-gap.html
+    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/29/stream-branching-mind-the-gap.html
   - name: tw
     subgroup: routing
     absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/11/02/topic-weaving-one-client-many-clusters.html
@@ -29,7 +29,7 @@ mappings:
     absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/11/02/topic-weaving-one-client-many-clusters.html
   - name: pw
     subgroup: routing
-    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/12/these-are-not-the-brokers-you-are-connecting-to.html
+    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/11/03/partition-weaving-stretching-the-seams-of-a-topic.html
   - name: partition-weaving
     subgroup: routing
-    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/10/12/these-are-not-the-brokers-you-are-connecting-to.html
+    absoluteTarget: https://kroxylicious.io/blog/kroxylicious-proxy/2026/11/03/partition-weaving-stretching-the-seams-of-a-topic.html

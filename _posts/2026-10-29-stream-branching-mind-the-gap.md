@@ -46,13 +46,7 @@ graph LR
     style DR fill:#ffd,stroke:#333,stroke-width:2px
     style Router fill:#ddf,stroke:#333,stroke-width:2px
 {% endcomment %}
-![
-                                   ┌──(mainline)──► [ Primary cluster ]  ──ack──┐
-[ Producer ] ──Produce──► [ Router ]                                            │
-     ▲                             └──(branch)────► [ DR cluster ] (identical copy)
-     │                                                                          │
-     └──────────────── ProduceResponse (primary's verdict only) ◄───────────────┘
-](/assets/blog/images/routing-series/naive-dr.svg)
+![A producer sends a Produce request to the router. The router forwards it on the mainline to the primary cluster and, on a branch, to a DR cluster that receives an identical copy. The ProduceResponse returned to the producer carries only the primary cluster's verdict.](/assets/blog/images/routing-series/naive-dr.svg)
 
 Yes, I know this looks like a DR solution, it's really not. By definition the branch is a best-effort copy; the DR cluster can have holes and duplicates that the primary doesn't — [Mind the gap](#mind-the-gap) goes into the gory details. You can't trust it for failover — the only way to verify nothing's missing is to compare both copies, and if both copies are online you don't need to fail over. If you need reliable replication to a DR cluster, use MirrorMaker 2 or [KIP-1279](https://cwiki.apache.org/confluence/display/KAFKA/KIP-1279%3A+Cluster+Mirroring) cluster mirroring — they were designed and built for that job.
 
@@ -92,13 +86,7 @@ graph LR
     style Redactor fill:#fff4dd,stroke:#333
 ```
 {% endcomment %}
-![
-                                   ┌──(mainline)──► [ Primary cluster ]  ──ack──┐
-[ Producer ] ──Produce──► [ Router ]                                            │
-     ▲                             └──(branch)──► [sample 10%]──► [redact]──► [ Staging cluster ]
-     │                                                                          │
-     └──────────────── ProduceResponse (primary's verdict only) ◄───────────────┘
-](/assets/blog/images/routing-series/staging-branchline.svg)
+![A producer sends a Produce request to the router. The router forwards it on the mainline to the primary cluster. On a branch, it samples 10% of records, redacts them, and writes them to a staging cluster. The ProduceResponse returned to the producer carries only the primary cluster's verdict.](/assets/blog/images/routing-series/staging-branchline.svg)
 
 
 So far we have talked about taking the original record and forwarding it somewhere. That's powerful, but why stop there? Filters can observe, transform, or act on requests — and what's the use in observing a record without making that observation visible somewhere? We are all Kafka fans here, so of course we send our telemetry via Kafka too. A branch can derive some interesting information from the produce request and send it merrily on its way to the telemetry cluster.
@@ -129,13 +117,7 @@ graph LR
     style Derive fill:#fff4dd,stroke:#333
 ```
 {% endcomment %}
-![
-                                   ┌──(mainline)──► [ Primary cluster ]  ──ack────────────────┐
-[ Producer ] ──Produce──► [ Router ]                                                          │
-     ▲                             └──(branch)──► [derive telemetry]──► [ telemetry cluster ] │
-     │                                                                                        │
-     └──────────────── ProduceResponse (primary's verdict only) ◄─────────────────────────────┘
-](/assets/blog/images/routing-series/telemetry-branchline.svg)
+![A producer sends a Produce request to the router. The router forwards it on the mainline to the primary cluster. On a branch, it derives telemetry from the records and writes that to a telemetry cluster. The ProduceResponse returned to the producer carries only the primary cluster's verdict.](/assets/blog/images/routing-series/telemetry-branchline.svg)
 
 The branch writes belong to the router, not the client. The client didn't send them, never sees their responses, and has no idea they exist. The router opens its own connections to branch targets, dispatches its own copy of the request to each, and decides what to do when they fail.
 
@@ -175,13 +157,7 @@ graph LR
     style Broker1 fill:#eee,stroke:#999,stroke-width:1px,stroke-dasharray: 5 5
 ```
 {% endcomment %}
-![
-[ Consumer (AZ-a) ] ──Fetch──► [ Kroxylicious (AZ-a) ] ────► [ Broker 3 (AZ-a, Replica) ]
-                                       │
-                                (Skips AZ tax)
-                                       ▼
-                              [ Broker 1 (AZ-c, Leader) ]  ← never sees the request
-](/assets/blog/images/routing-series/replica-routing.svg)
+![A consumer in availability zone A sends a Fetch request to a Kroxylicious proxy in the same zone. The proxy sends it to broker 3, a replica in zone A, instead of broker 1, the leader in zone C, which never sees the request. This avoids the cross-zone network charge.](/assets/blog/images/routing-series/replica-routing.svg)
 
 The router can do what it thinks is best here: it can honour a client rack, ignore it, or invent one if the client didn't set it. A router doesn't need to trust what the client says about its own location; it can route correctly regardless. The request payload is untouched, the original broker never receives the fetch, and the cross-AZ charge never reaches the invoice. What makes that possible: the proxy can hold two backend sockets — one to the leader, one to the local replica — and choose between them per request. To the client, that's still one broker on one cluster.
 
