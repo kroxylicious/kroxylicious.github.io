@@ -13,13 +13,11 @@ This is the fifth post in a series about routing in Kroxylicious, and it covers 
 
 Partition weaving is a cautionary tale. My first reaction was "that's a really neat idea". The more I looked at it, the harder it got. It is clearly part of the design space the Routing API opens up, which is why it's in the series, and it may well be possible. But it is a lot of effort to go to, and I haven't found a use case that justifies it to me. If you have one, I'd like to hear about it.
 
-## A train in two portions
+## One topic, two clusters
 
-[Post 4]({% post_url 2026-11-02-topic-weaving-one-client-many-clusters %}) said the railway had run out of track. It had, for topics. For partitions there turns out to be a siding.
+Take the scenario from Post 1: a risk engine in us-east, hardcoded to read a topic called `orders`, and an EU team producing to `orders-eu` on a local cluster. The router presents both as one `orders` topic with 32 partitions. Partitions 0 to 15 are the `orders` partitions on us-east. Partitions 16 to 31 are partitions 0 to 15 of `orders-eu` on eu-west. A consumer that asks for partition 20 gets partition 4 of `orders-eu` and never knows. I'll call the numbers the client sees *virtual*, in the same sense as a virtual cluster, and the partitions and topics that actually exist on a backing cluster *physical*. Partition 20 is virtual, and partition 4 of `orders-eu` is the physical partition behind it.
 
-Picture a train coming back from Tatooine with 32 carriages. A carriage is a partition and a seat within it is an offset, so a ticket for carriage 13, seat 342323 means partition 13 at offset 342323. Passengers were loaded into a carriage on the outbound journey, by hashing their name and taking the remainder after dividing by 32, so everyone called Smith ends up in the same one, every time. Carriages 0 to 15 are one portion of the train, which started out in Mos Eisley. Carriages 16 to 31 are another, which started out in Mos Espa. Two towns on one planet, with the portions coupled together at a junction that neither the passengers nor the consumer at the end of the line ever see. The consumer believes it is meeting one 32-carriage train from Tatooine. Each portion keeps its own reservations, so seat 342323 only means something within its own carriage. The consumer's ticket says carriage 20. The guard knows that is carriage 4 of the Mos Espa portion.
-
-That's the scenario from Post 1: a risk engine in us-east, hardcoded to read a topic called `orders`, and an EU team producing to `orders-eu` on a local cluster. The router presents both as one `orders` with 32 partitions. In the story, Tatooine is the virtual cluster, Mos Eisley is us-east and Mos Espa is eu-west.
+Producers pick a partition by hashing the record key and taking the remainder after dividing by 32, so every record with a given key lands in the same partition, every time. Each cluster keeps its own offsets, so offset 54 only means something within its own partition.
 
 {% comment %}
 ```mermaid
@@ -41,11 +39,11 @@ graph TB
 {% endcomment %}
 ![The client sees one topic, orders, with 32 partitions numbered 0 to 31. The router sends partitions 0 to 15 unchanged to the orders topic on us-east, and partitions 16 to 31 to partitions 0 to 15 of the orders-eu topic on eu-west, subtracting 16 from the partition number.](/assets/blog/images/routing-series/partition-ranges.svg)
 
-The analogy breaks in one place, and it's where the difficulty lives: once we've numbered the partitions, we can't re-number them. Nothing moves between carriages. Records stay in the partition they were written to, and the numbers we expose in `Metadata` are the only way a client can address them. Change the count, or what a number points at, and the data can't follow. Clients keep using the old addresses and read or write the wrong place.
+The difficulty lives in one place: once we've numbered the partitions, we can't re-number them. Records stay in the partition they were written to, and the numbers we expose in `Metadata` are the only way a client can address them. Change the count, or what a number points at, and the data can't follow. Clients keep using the old addresses and read or write the wrong place.
 
 ## What would you use it for?
 
-The best case I have is a migration. The runtime gives you nothing for it today. None of the others are much better, and I've set each against the thing that would usually beat it.
+The best case I have is a migration, for moving a very large topic between clusters. The runtime gives you nothing for it today. None of the other cases are much better, and I've set each against the solution that would usually beat it.
 
 **Moving a very large topic a piece at a time.** Replicate one range of partitions to the new cluster with something that preserves offsets, repoint that range, watch for a while, and repeat. This is connection switching with a finer lever, and it brings the problems from [Post 2]({% post_url 2026-10-19-connection-switching-identity-without-commitment %}) with it, per range instead of all at once: committed offsets have to mean the same thing on the new cluster, and idempotent producers' sequence state stays behind. Compare it with connection switching for the whole topic, which is stateless and already exists. A range at a time buys you a canary, and it only seems worth building for a topic you are properly nervous about moving.
 
@@ -61,7 +59,7 @@ That's the list. If you have a better one, tell me.
 
 Everything else depends on where the partition layout comes from. For topic weaving the map could follow the clusters, because topics appearing and disappearing is something clients cope with. A partition count is different. A partition number is the only handle a client has on a record, and changing the handle without moving the data breaks all sorts of things.
 
-Suppose the router discovered the layout by asking the clusters. If eu-west became unreachable, the router would find only 16 partitions and report a topic with 16 partitions. Every keyed record produced in that window would hash into 0 to 15, to the wrong carriage, with no error anywhere. So I'd declare it. A woven topic is an ordered list of constituents, each a route, a physical topic and a partition count, held in the router's configuration or a catalogue. Three consequences follow:
+Suppose the router discovered the layout by asking the clusters. If eu-west became unreachable, the router would find only 16 partitions and report a topic with 16 partitions. Every keyed record produced in that window would hash into 0 to 15, to the wrong partition, with no error anywhere. So I'd declare it. A woven topic is an ordered list of constituents, each a route, a physical topic and a partition count, held in the router's configuration or a catalogue. Three consequences follow:
 
 - **The numbering has to be contiguous.** The default partitioner picks a number from 0 to N-1 using the count. A hole is a partition the producer will try to use and can't find.
 - **An unreachable constituent still counts.** Its partitions stay in the `Metadata` response, reported with an error and no leader, the way a broker reports a partition whose leader is offline. N doesn't shrink because a cluster is down.
@@ -69,20 +67,20 @@ Suppose the router discovered the layout by asking the clusters. If eu-west beca
 
 Every proxy instance must give the same identity the same answer, as in Post 4. Because the layout is configuration, every instance has the same list, so there's no state to share.
 
-Changing it is where the care goes. The rule is that a logical partition number must keep meaning the same log. Appending a constituent to the end satisfies that: existing numbers don't move and the new ones are simply new. It does grow N, which changes where keyed records land, exactly as adding partitions to any Kafka topic does. Data already written stays where it is. If the new constituent is on a cluster the router has no route to yet, `numRoutes` changes too, and every virtual node ID moves with it, a coordinated reconnect for all clients of that VKC. A rolling update is tolerable for an append. An instance that hasn't picked up the change returns errors for the new partitions, and clients retry. Reordering, removing, resizing or relocating a constituent is a migration, and no amount of careful rollout makes it anything else. The piecemeal migration above is one of those, so it needs a deliberate cutover and not a config push.
+Changing it is where the care goes. The rule is that a virtual partition number must keep meaning the same log. Appending a constituent to the end satisfies that: existing numbers don't move and the new ones are simply new. It does grow N, which changes where keyed records land, exactly as adding partitions to any Kafka topic does. Data already written stays where it is. If the new constituent is on a cluster the router has no route to yet, `numRoutes` changes too, and every virtual node ID moves with it, a coordinated reconnect for all clients of that VKC. A rolling update is tolerable for an append. An instance that hasn't picked up the change returns errors for the new partitions, and clients retry. Reordering, removing, resizing or relocating a constituent is a migration, and no amount of careful rollout makes it anything else. The piecemeal migration above is one of those, so it needs a deliberate cutover and not a config push.
 
 ## Two ways to number them
 
-The first is **ranges**, which is what the picture shows. Constituent *i* starts at the sum of the partition counts before it. A logical partition `p` falls in the range `[start_i, start_i + count_i)` and maps to physical partition `p - start_i`. The inverse adds `start_i` back. In the example, logical 20 is `eu-west` / `orders-eu` partition 4. Constituents can have different counts, and appending to the end leaves everything before it alone.
+The first is **ranges**, which is what the picture shows. Constituent *i* starts at the sum of the partition counts before it. A virtual partition `p` falls in the range `[start_i, start_i + count_i)` and maps to physical partition `p - start_i`. The inverse adds `start_i` back. In the example, virtual 20 is `eu-west` / `orders-eu` partition 4. Constituents can have different counts, and appending to the end leaves everything before it alone.
 
-The second is **interleaving**, and it's the tempting one, because it's the arithmetic from Post 2. With K constituents of equal size, logical `p` goes to constituent `p mod K` as physical partition `p div K`. It looks like the node ID bijection and it's just as stateless.
+The second is **interleaving**, and it's the tempting one, because it's the arithmetic from Post 2. With K constituents of equal size, virtual `p` goes to constituent `p mod K` as physical partition `p div K`. It looks like the node ID bijection and it's just as stateless.
 
 Both are stateless. Interleaving isn't saving anything the declared list hasn't already saved, because the router needs that list to know the routes anyway. Where they differ is growth:
 
 | | Ranges | Interleaved |
 |---|---|---|
-| Logical 5 with K = 2 | constituent 0, partition 5 | constituent 1, partition 2 |
-| Logical 5 after a third constituent joins (K = 3) | constituent 0, partition 5 | constituent 2, partition 1 |
+| Virtual 5 with K = 2 | constituent 0, partition 5 | constituent 1, partition 2 |
+| Virtual 5 after a third constituent joins (K = 3) | constituent 0, partition 5 | constituent 2, partition 1 |
 
 (Constituents are numbered from 0, and the ranges column assumes the first holds at least 6 partitions.)
 
@@ -90,21 +88,21 @@ Both are stateless. Interleaving isn't saving anything the declared list hasn't 
 ```mermaid
 graph TB
     subgraph Ranges
-        R1["logical 5, K = 2"] --> R2["constituent 0, partition 5"]
-        R3["logical 5, K = 3"] --> R4["constituent 0, partition 5"]
+        R1["virtual 5, K = 2"] --> R2["constituent 0, partition 5"]
+        R3["virtual 5, K = 3"] --> R4["constituent 0, partition 5"]
     end
     subgraph Interleaved
-        I1["logical 5, K = 2"] --> I2["constituent 1, partition 2"]
-        I3["logical 5, K = 3"] --> I4["constituent 2, partition 1"]
+        I1["virtual 5, K = 2"] --> I2["constituent 1, partition 2"]
+        I3["virtual 5, K = 3"] --> I4["constituent 2, partition 1"]
     end
     style I4 fill:#fdd,stroke:#a33,stroke-width:2px
 ```
 {% endcomment %}
-![Logical partition 5 under the two numbering schemes, before and after a third constituent joins. With ranges, it stays on partition 5 of constituent 0 both times. With interleaving, it is partition 2 of constituent 1 with two constituents, and partition 1 of constituent 2 with three, so the same logical number now reads from a different log.](/assets/blog/images/routing-series/partition-range-management.svg)
+![Virtual partition 5 under the two numbering schemes, before and after a third constituent joins. With ranges, it stays on partition 5 of constituent 0 both times. With interleaving, it is partition 2 of constituent 1 with two constituents, and partition 1 of constituent 2 with three, so the same virtual number now reads from a different log.](/assets/blog/images/routing-series/partition-range-management.svg)
 
-Interleaving moves every logical partition when K changes. The data hasn't moved. Committed offsets sit in `__consumer_offsets` keyed by the physical topic and partition, and earlier records were placed by an earlier hash. After the change the same logical number reads from a different log. In Post 2 the same formula was safe because node IDs are re-learned from the next `Metadata` response. Partition identity is stored, so it can't be re-learned. Ranges are only growable at the end, but at least they know what that means.
+Interleaving moves every virtual partition when K changes. The data hasn't moved. Committed offsets sit in `__consumer_offsets` keyed by the physical topic and partition, and earlier records were placed by an earlier hash. After the change the same virtual number reads from a different log. In Post 2 the same formula was safe because node IDs are re-learned from the next `Metadata` response. Partition identity is stored, so it can't be re-learned. Ranges are only growable at the end, but at least they know what that means.
 
-Re-numbering isn't a quirk of weaving. Changing the partition count of a normal Kafka topic is already a risky business: a key whose hash is 50 lands in carriage 18 of 32 and carriage 2 of 48. Weaving doesn't make that any worse, but it does make an inadvertent change much more likely. Changing the configuration is a much more serious activity than it appears.
+Re-numbering isn't a quirk of weaving. Changing the partition count of a normal Kafka topic is already a risky business: a key whose hash is 50 lands in partition 18 of 32 and partition 2 of 48. Weaving doesn't make that any worse, but it does make an inadvertent change much more likely. Changing the configuration is a much more serious activity than it appears.
 
 ## Where the numbers appear
 
@@ -112,8 +110,8 @@ Partition numbers turn up in nearly every RPC that names a partition. I'm sticki
 
 | Request | Where the partition number is | What the router does |
 |---|---|---|
-| `Metadata` response | Each partition's index, and its leader as a node ID | Emits logical 0 to N-1. Sets each leader to a virtual node on the owning route, with an error for an unreachable constituent |
-| `Produce` | The partition index under each topic | Maps logical to (route, physical topic, physical partition) and rewrites the response the other way |
+| `Metadata` response | Each partition's index, and its leader as a node ID | Emits virtual 0 to N-1. Sets each leader to a virtual node on the owning route, with an error for an unreachable constituent |
+| `Produce` | The partition index under each topic | Maps virtual to (route, physical topic, physical partition) and rewrites the response the other way |
 | `Fetch` | The partition under each topic, and the partitions to drop in the forgotten-topics list of an incremental fetch | The same translation. The session state is kept on both sides, as in the [topic routing proof of concept]({% post_url 2026-05-21-topic-routing %}) |
 | `ListOffsets` | The partition index | The same translation. Consumers use it to find the start or end of a partition |
 | `OffsetCommit`, `OffsetFetch` | The partition index under each topic | Splits by owning route, with the boss and standalone commits from Post 4 |
@@ -132,7 +130,7 @@ Kafka gives each topic a UUID at creation, and a topic deleted and recreated und
 
 I'd treat the two sides differently:
 
-- **Client side: derived.** The router computes the ID for a logical topic from its name and something that says which incarnation it is. A generation number alongside the layout is one way to do that. Every instance computes the same value, with nothing stored. Going the other way, from a UUID back to a topic, you can't invert a hash. The router builds a table at startup by computing the ID for every topic it declares. The result must avoid the all-zero UUID, which the protocol uses to mean "no ID". Kafka's own generator also skips a few reserved values and any ID whose string form contains a dash, and it would be sensible to follow suit.
+- **Client side: derived.** The router computes the ID for a virtual topic from its name and something that says which incarnation it is. A generation number alongside the layout is one way to do that. Every instance computes the same value, with nothing stored. Going the other way, from a UUID back to a topic, you can't invert a hash. The router builds a table at startup by computing the ID for every topic it declares. The result must avoid the all-zero UUID, which the protocol uses to mean "no ID". Kafka's own generator also skips a few reserved values and any ID whose string form contains a dash, and it would be sensible to follow suit.
 - **Broker side: learned.** The physical ID comes from the backing cluster's `Metadata` response, discovered in-band as in Post 2. If it goes stale, the broker answers `UNKNOWN_TOPIC_ID` and the router refreshes. The broker's own protection against stale topics stays intact on this leg.
 
 {% comment %}
