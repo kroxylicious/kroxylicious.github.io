@@ -1,0 +1,1 @@
+/Users/kwall/.sdkman/candidates/java/21.0.7-tem/bin/javadoc -J-Duser.language= -J-Duser.country= @options @packages

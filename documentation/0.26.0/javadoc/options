@@ -1,0 +1,27 @@
+-classpath
+'/Users/kwall/src/kroxylicious/kroxylicious-api/target/kroxylicious-api-0.26.0.jar:/Users/kwall/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar:/Users/kwall/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4.jar:/Users/kwall/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4.jar:/Users/kwall/.m2/repository/org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar:/Users/kwall/.m2/repository/com/github/luben/zstd-jni/1.5.7-26/zstd-jni-1.5.7-26.jar:/Users/kwall/.m2/repository/at/yawk/lz4/lz4-java/1.12.1/lz4-java-1.12.1.jar:/Users/kwall/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.12/snappy-java-1.1.10.12.jar:/Users/kwall/src/kroxylicious/kroxylicious-annotations/target/kroxylicious-annotations-0.26.0.jar:/Users/kwall/src/kroxylicious/kroxylicious-identity-api/target/kroxylicious-identity-api-0.26.0.jar:/Users/kwall/src/kroxylicious/kroxylicious-authorizer-api/target/kroxylicious-authorizer-api-0.26.0.jar:/Users/kwall/src/kroxylicious/kroxylicious-kms/target/kroxylicious-kms-0.26.0.jar:/Users/kwall/.m2/repository/com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar:/Users/kwall/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar'
+-encoding
+'UTF-8'
+-protected
+--release
+21
+-sourcepath
+'/Users/kwall/src/kroxylicious/kroxylicious-api/src/main/java:/Users/kwall/src/kroxylicious/kroxylicious-api/target/generated-sources/krpc:/Users/kwall/src/kroxylicious/kroxylicious-api/target/generated-sources/kafka-messages:/Users/kwall/src/kroxylicious/kroxylicious-api/target/generated-sources/annotations:/Users/kwall/src/kroxylicious/kroxylicious-authorizer-api/src/main/java:/Users/kwall/src/kroxylicious/kroxylicious-authorizer-api/target/generated-sources/annotations:/Users/kwall/src/kroxylicious/kroxylicious-kms/src/main/java:/Users/kwall/src/kroxylicious/kroxylicious-kms/target/generated-sources/annotations'
+-author
+-bottom
+'Copyright &#169; 2026 Kroxylicious Authors. Licensed under the Apache License, Version 2.0.'
+-charset
+'UTF-8'
+-d
+'/Users/kwall/src/kroxylicious/kroxylicious-docs/kroxylicious-api-javadoc/target/reports/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'Kroxylicious API Javadoc 0.26.0 API'
+-link
+'https://javadoc.io/doc/org.apache.kafka/kafka-clients/4.3.2'
+-notimestamp
+-use
+-version
+-windowtitle
+'Kroxylicious API Javadoc 0.26.0 API'
